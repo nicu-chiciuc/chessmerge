@@ -222,7 +222,7 @@ export function ChessBoard({
   };
 
   return (
-    <div className="inline-block">
+    <div className="flex flex-col items-center justify-center ">
       <div className="grid grid-cols-8 border-2 border-gray-800">
         {Array.from({ length: 8 }, (_, row) =>
           Array.from({ length: 8 }, (_, col) => {
@@ -232,6 +232,10 @@ export function ChessBoard({
           }),
         )}
       </div>
+
+      <textarea className="text-sm text-gray-600 h-40">
+        {JSON.stringify({ selectedSquare, validMoves }, null, 2)}
+      </textarea>
 
       {unmergeMode && (
         <div className="mt-2 text-center text-sm text-gray-600">

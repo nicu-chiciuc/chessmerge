@@ -131,6 +131,7 @@ function getSinglePieceMoves(
 
   switch (type) {
     case "pawn": {
+      debugger;
       const direction = color === "white" ? -1 : 1;
       const startRow = color === "white" ? 6 : 1;
 
@@ -161,7 +162,7 @@ function getSinglePieceMoves(
       break;
     }
 
-    case "rook":
+    case "rook": {
       // Horizontal and vertical moves
       for (const [dr, dc] of [
         [0, 1],
@@ -183,6 +184,7 @@ function getSinglePieceMoves(
         }
       }
       break;
+    }
 
     case "knight": {
       const knightMoves = [
@@ -231,13 +233,14 @@ function getSinglePieceMoves(
       break;
     }
 
-    case "queen":
+    case "queen": {
       // Combination of rook and bishop
       moves.push(...getSinglePieceMoves("rook", color, pos, board));
       moves.push(...getSinglePieceMoves("bishop", color, pos, board));
       break;
+    }
 
-    case "king":
+    case "king": {
       for (const dr of [-1, 0, 1]) {
         for (const dc of [-1, 0, 1]) {
           if (dr === 0 && dc === 0) continue;
@@ -251,6 +254,7 @@ function getSinglePieceMoves(
         }
       }
       break;
+    }
   }
 
   return moves;
