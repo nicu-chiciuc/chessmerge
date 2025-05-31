@@ -3,22 +3,22 @@ import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
-import { GameLobby } from "./components/GameLobby";
-import { ChessGame } from "./components/ChessGame";
-import { useState } from "react";
-import { Id } from "../convex/_generated/dataModel";
+import { AppRoutes } from "./routes";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function App() {
-  const [currentGameId, setCurrentGameId] = useState<Id<"games"> | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isGameRoute = location.pathname.startsWith("/game/");
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm h-16 flex justify-between items-center border-b shadow-sm px-4">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-primary">ChessMerge</h2>
-          {currentGameId && (
+          {isGameRoute && (
             <button
-              onClick={() => setCurrentGameId(null)}
+              onClick={() => void navigate("/")}
               className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded transition-colors"
             >
               ← Back to Lobby
@@ -28,20 +28,14 @@ export default function App() {
         <SignOutButton />
       </header>
       <main className="flex-1 p-4">
-        <Content currentGameId={currentGameId} setCurrentGameId={setCurrentGameId} />
+        <Content />
       </main>
       <Toaster />
     </div>
   );
 }
 
-function Content({ 
-  currentGameId, 
-  setCurrentGameId 
-}: { 
-  currentGameId: Id<"games"> | null;
-  setCurrentGameId: (id: Id<"games"> | null) => void;
-}) {
+function Content() {
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
   if (loggedInUser === undefined) {
@@ -55,13 +49,9 @@ function Content({
   return (
     <div className="max-w-6xl mx-auto">
       <Authenticated>
-        {currentGameId ? (
-          <ChessGame gameId={currentGameId} />
-        ) : (
-          <GameLobby onJoinGame={setCurrentGameId} />
-        )}
+        <AppRoutes />
       </Authenticated>
-      
+
       <Unauthenticated>
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-8">
           <div className="text-center">
