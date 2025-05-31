@@ -27,7 +27,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
-  const [validMoves, setValidMoves] = useState<Position[]>([]);
+  const [validMoves, setValidMoves] = useState<Move[]>([]);
   const [unmergeMode, setUnmergeMode] = useState(false);
   const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
 
@@ -100,68 +100,31 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
     if (selectedSquare) {
       // Try to make a move
-      if (validMoves.some((move) => move.row === row && move.col === col)) {
-        await handleMove(selectedSquare, position, clickedPiece);
+      const targetMove = validMoves.find(
+        (move) => move.to.row === row && move.to.col === col,
+      );
+      if (targetMove) {
+        await executeMove(targetMove);
       }
 
       setSelectedSquare(null);
       setValidMoves([]);
     } else if (clickedPiece && clickedPiece.color === game.currentTurn) {
-      // Select piece
+      // Select piece and get all possible moves (including merges)
       setSelectedSquare(position);
       const moves = getPieceMoves(clickedPiece, position, board);
-
-      // Add same-color pieces that can be merged with as valid targets
-      const mergeTargets: Position[] = [];
-      for (let targetRow = 0; targetRow < 8; targetRow++) {
-        for (let targetCol = 0; targetCol < 8; targetCol++) {
-          const targetPos = { row: targetRow, col: targetCol };
-          const targetPiece = board[targetRow][targetCol];
-          if (
-            targetPiece &&
-            canMerge(clickedPiece, targetPiece, position, targetPos)
-          ) {
-            mergeTargets.push(targetPos);
-          }
-        }
-      }
-
-      setValidMoves([...moves, ...mergeTargets]);
+      setValidMoves(moves);
     }
   };
 
-  const handleMove = async (
-    from: Position,
-    to: Position,
-    targetPiece: Piece | null,
-  ) => {
+  const executeMove = async (move: Move) => {
     try {
-      const selectedPiece = board[from.row][from.col];
-      if (!selectedPiece) return;
+      await makeMove({ gameId, move: JSON.stringify(move) });
 
-      if (
-        targetPiece &&
-        targetPiece.color === selectedPiece.color &&
-        canMerge(selectedPiece, targetPiece, from, to)
-      ) {
-        const move: Move = {
-          from,
-          to,
-          piece: selectedPiece,
-          moveType: "merge",
-          mergeWith: targetPiece,
-        };
-        await makeMove({ gameId, move: JSON.stringify(move) });
+      if (move.moveType === "merge") {
         toast.success("Pieces merged!");
-      } else {
-        const move: Move = {
-          from,
-          to,
-          piece: selectedPiece,
-          capturedPiece: targetPiece || undefined,
-          moveType: "normal",
-        };
-        await makeMove({ gameId, move: JSON.stringify(move) });
+      } else if (move.capturedPiece) {
+        toast.success("Piece captured!");
       }
     } catch (error) {
       toast.error("Invalid move");
@@ -174,6 +137,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
     setValidMoves([]);
     setUnmergePositions([]);
   };
+
+  // Convert Move[] to Position[] for ChessBoard component compatibility
+  const validPositions: Position[] = validMoves.map((move) => move.to);
 
   if (!game) {
     return (
@@ -190,7 +156,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
           <ChessBoard
             board={board}
             selectedSquare={selectedSquare}
-            validMoves={validMoves}
+            validMoves={validPositions}
             unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
             onRightClick={handleRightClick}

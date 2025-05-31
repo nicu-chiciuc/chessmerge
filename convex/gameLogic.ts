@@ -94,7 +94,7 @@ export function getPieceMoves(
   piece: Piece,
   pos: Position,
   board: Board,
-): Position[] {
+): Move[] {
   if (piece.merged) {
     // Merged piece can move like both constituent pieces
     const moves1 = getSinglePieceMoves(
@@ -102,22 +102,19 @@ export function getPieceMoves(
       piece.color,
       pos,
       board,
+      piece,
     );
     const moves2 = getSinglePieceMoves(
       piece.merged.piece2,
       piece.color,
       pos,
       board,
+      piece,
     );
-    return [
-      ...new Set([...moves1, ...moves2].map((p) => `${p.row},${p.col}`)),
-    ].map((s) => {
-      const [row, col] = s.split(",").map(Number);
-      return { row, col };
-    });
+    return [...moves1, ...moves2];
   }
 
-  return getSinglePieceMoves(piece.type, piece.color, pos, board);
+  return getSinglePieceMoves(piece.type, piece.color, pos, board, piece);
 }
 
 function getSinglePieceMoves(
@@ -125,13 +122,13 @@ function getSinglePieceMoves(
   color: PieceColor,
   pos: Position,
   board: Board,
-): Position[] {
-  const moves: Position[] = [];
+  piece: Piece,
+): Move[] {
+  const moves: Move[] = [];
   const { row, col } = pos;
 
   switch (type) {
     case "pawn": {
-      debugger;
       const direction = color === "white" ? -1 : 1;
       const startRow = color === "white" ? 6 : 1;
 
@@ -140,23 +137,50 @@ function getSinglePieceMoves(
         isValidPosition({ row: row + direction, col }) &&
         !board[row + direction][col]
       ) {
-        moves.push({ row: row + direction, col });
+        moves.push({
+          from: pos,
+          to: { row: row + direction, col },
+          piece,
+          moveType: "normal",
+        });
 
         // Double move from start
         if (row === startRow && !board[row + 2 * direction][col]) {
-          moves.push({ row: row + 2 * direction, col });
+          moves.push({
+            from: pos,
+            to: { row: row + 2 * direction, col },
+            piece,
+            moveType: "normal",
+          });
         }
       }
 
-      // Captures
+      // Captures and merges
       for (const dcol of [-1, 1]) {
         const newPos = { row: row + direction, col: col + dcol };
-        if (
-          isValidPosition(newPos) &&
-          board[newPos.row][newPos.col]?.color !== color &&
-          board[newPos.row][newPos.col]
-        ) {
-          moves.push(newPos);
+        if (isValidPosition(newPos)) {
+          const targetPiece = board[newPos.row][newPos.col];
+          if (targetPiece) {
+            if (targetPiece.color !== color) {
+              // Capture enemy piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                capturedPiece: targetPiece,
+                moveType: "normal",
+              });
+            } else if (canMerge(piece, targetPiece, pos, newPos)) {
+              // Merge with friendly piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                moveType: "merge",
+                mergeWith: targetPiece,
+              });
+            }
+          }
         }
       }
       break;
@@ -174,11 +198,34 @@ function getSinglePieceMoves(
           const newPos = { row: row + dr * i, col: col + dc * i };
           if (!isValidPosition(newPos)) break;
 
-          const piece = board[newPos.row][newPos.col];
-          if (!piece) {
-            moves.push(newPos);
+          const targetPiece = board[newPos.row][newPos.col];
+          if (!targetPiece) {
+            moves.push({
+              from: pos,
+              to: newPos,
+              piece,
+              moveType: "normal",
+            });
           } else {
-            if (piece.color !== color) moves.push(newPos);
+            if (targetPiece.color !== color) {
+              // Capture enemy piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                capturedPiece: targetPiece,
+                moveType: "normal",
+              });
+            } else if (canMerge(piece, targetPiece, pos, newPos)) {
+              // Merge with friendly piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                moveType: "merge",
+                mergeWith: targetPiece,
+              });
+            }
             break;
           }
         }
@@ -200,9 +247,32 @@ function getSinglePieceMoves(
       for (const [dr, dc] of knightMoves) {
         const newPos = { row: row + dr, col: col + dc };
         if (isValidPosition(newPos)) {
-          const piece = board[newPos.row][newPos.col];
-          if (!piece || piece.color !== color) {
-            moves.push(newPos);
+          const targetPiece = board[newPos.row][newPos.col];
+          if (!targetPiece) {
+            moves.push({
+              from: pos,
+              to: newPos,
+              piece,
+              moveType: "normal",
+            });
+          } else if (targetPiece.color !== color) {
+            // Capture enemy piece
+            moves.push({
+              from: pos,
+              to: newPos,
+              piece,
+              capturedPiece: targetPiece,
+              moveType: "normal",
+            });
+          } else if (canMerge(piece, targetPiece, pos, newPos)) {
+            // Merge with friendly piece
+            moves.push({
+              from: pos,
+              to: newPos,
+              piece,
+              moveType: "merge",
+              mergeWith: targetPiece,
+            });
           }
         }
       }
@@ -221,11 +291,34 @@ function getSinglePieceMoves(
           const newPos = { row: row + dr * i, col: col + dc * i };
           if (!isValidPosition(newPos)) break;
 
-          const piece = board[newPos.row][newPos.col];
-          if (!piece) {
-            moves.push(newPos);
+          const targetPiece = board[newPos.row][newPos.col];
+          if (!targetPiece) {
+            moves.push({
+              from: pos,
+              to: newPos,
+              piece,
+              moveType: "normal",
+            });
           } else {
-            if (piece.color !== color) moves.push(newPos);
+            if (targetPiece.color !== color) {
+              // Capture enemy piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                capturedPiece: targetPiece,
+                moveType: "normal",
+              });
+            } else if (canMerge(piece, targetPiece, pos, newPos)) {
+              // Merge with friendly piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                moveType: "merge",
+                mergeWith: targetPiece,
+              });
+            }
             break;
           }
         }
@@ -235,8 +328,8 @@ function getSinglePieceMoves(
 
     case "queen": {
       // Combination of rook and bishop
-      moves.push(...getSinglePieceMoves("rook", color, pos, board));
-      moves.push(...getSinglePieceMoves("bishop", color, pos, board));
+      moves.push(...getSinglePieceMoves("rook", color, pos, board, piece));
+      moves.push(...getSinglePieceMoves("bishop", color, pos, board, piece));
       break;
     }
 
@@ -246,10 +339,25 @@ function getSinglePieceMoves(
           if (dr === 0 && dc === 0) continue;
           const newPos = { row: row + dr, col: col + dc };
           if (isValidPosition(newPos)) {
-            const piece = board[newPos.row][newPos.col];
-            if (!piece || piece.color !== color) {
-              moves.push(newPos);
+            const targetPiece = board[newPos.row][newPos.col];
+            if (!targetPiece) {
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                moveType: "normal",
+              });
+            } else if (targetPiece.color !== color) {
+              // Capture enemy piece
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece,
+                capturedPiece: targetPiece,
+                moveType: "normal",
+              });
             }
+            // Note: Kings cannot merge as per the canMerge function
           }
         }
       }
@@ -321,7 +429,8 @@ export function isInCheck(board: Board, color: PieceColor): boolean {
         const moves = getPieceMoves(piece, { row, col }, board);
         if (
           moves.some(
-            (move) => move.row === kingPos.row && move.col === kingPos.col,
+            (move) =>
+              move.to.row === kingPos.row && move.to.col === kingPos.col,
           )
         ) {
           return true;
