@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  /* Colors from your tailwind.config.js */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-secondary: #64748b;
+  
+  /* Spacing from your tailwind.config.js */
+  --spacing-section: 2rem;
+  --spacing-container: 1rem;
+  
+  /* Border radius from your tailwind.config.js */
+  --radius-container: 0.5rem;
+}
+
 :root {
   --color-light: #ffffff;
   --color-dark: #171717;
