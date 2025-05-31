@@ -39,6 +39,13 @@ export interface Move {
   moveType?: "normal" | "merge" | "unmerge" | "castle" | "enpassant";
   mergeWith?: Piece;
   unmergePositions?: Position[];
+  // For unmerge-then-move scenarios
+  unmergeDetails?: {
+    remainingPiecePosition: Position; // Where the non-moving piece stays
+    movingPieceType: PieceType; // Which piece type is moving
+  };
+  // For merged pieces - which constituent piece types can make this move
+  validForPieceTypes?: PieceType[];
 }
 
 export type Board = (Piece | null)[][];
@@ -96,22 +103,59 @@ export function getPieceMoves(
   board: Board,
 ): Move[] {
   if (piece.merged) {
-    // Merged piece can move like both constituent pieces
+    // Get moves for each constituent piece and tag them appropriately
     const moves1 = getSinglePieceMoves(
       piece.merged.piece1,
       piece.color,
       pos,
       board,
       piece,
-    );
+    ).map((move) => ({
+      ...move,
+      validForPieceTypes: [piece.merged!.piece1],
+    }));
+
     const moves2 = getSinglePieceMoves(
       piece.merged.piece2,
       piece.color,
       pos,
       board,
       piece,
-    );
-    return [...moves1, ...moves2];
+    ).map((move) => ({
+      ...move,
+      validForPieceTypes: [piece.merged!.piece2],
+    }));
+
+    // Combine moves and merge duplicates
+    const allMoves = [...moves1, ...moves2];
+    const mergedMoves: Move[] = [];
+
+    for (const move of allMoves) {
+      const existing = mergedMoves.find(
+        (m) =>
+          m.to.row === move.to.row &&
+          m.to.col === move.to.col &&
+          m.moveType === move.moveType,
+      );
+
+      if (existing && existing.validForPieceTypes && move.validForPieceTypes) {
+        // Merge the valid piece types
+        existing.validForPieceTypes = [
+          ...existing.validForPieceTypes,
+          ...move.validForPieceTypes,
+        ];
+      } else {
+        mergedMoves.push(move);
+      }
+    }
+
+    // Add unmerge-then-move moves (one piece moves out)
+    const unmergeThenMoveMoves = getUnmergeThenMoveMoves(piece, pos, board);
+
+    // Add simple unmerge moves (both pieces separate to adjacent squares)
+    const simpleUnmergeMoves = getSimpleUnmergeMoves(piece, pos, board);
+
+    return [...mergedMoves, ...unmergeThenMoveMoves, ...simpleUnmergeMoves];
   }
 
   return getSinglePieceMoves(piece.type, piece.color, pos, board, piece);
@@ -403,6 +447,102 @@ export function getUnmergePositions(pos: Position, board: Board): Position[] {
   return positions;
 }
 
+// Generate moves where a merged piece unmerges and one part moves
+function getUnmergeThenMoveMoves(
+  mergedPiece: Piece,
+  pos: Position,
+  board: Board,
+): Move[] {
+  if (!mergedPiece.merged) return [];
+
+  const moves: Move[] = [];
+
+  // Get moves for piece1 moving out while piece2 stays
+  const piece1Moves = getSinglePieceMoves(
+    mergedPiece.merged.piece1,
+    mergedPiece.color,
+    pos,
+    board,
+    { color: mergedPiece.color, type: mergedPiece.merged.piece1 },
+  ).filter((move) => {
+    // Don't include moves to the current position
+    return !(move.to.row === pos.row && move.to.col === pos.col);
+  });
+
+  // Get moves for piece2 moving out while piece1 stays
+  const piece2Moves = getSinglePieceMoves(
+    mergedPiece.merged.piece2,
+    mergedPiece.color,
+    pos,
+    board,
+    { color: mergedPiece.color, type: mergedPiece.merged.piece2 },
+  ).filter((move) => {
+    // Don't include moves to the current position
+    return !(move.to.row === pos.row && move.to.col === pos.col);
+  });
+
+  // Convert piece1 moves to unmerge-then-move format
+  for (const move of piece1Moves) {
+    moves.push({
+      from: pos,
+      to: move.to,
+      piece: mergedPiece,
+      capturedPiece: move.capturedPiece,
+      moveType: "unmerge",
+      mergeWith: move.mergeWith,
+      unmergeDetails: {
+        remainingPiecePosition: pos,
+        movingPieceType: mergedPiece.merged.piece1,
+      },
+      validForPieceTypes: [mergedPiece.merged.piece1],
+    });
+  }
+
+  // Convert piece2 moves to unmerge-then-move format
+  for (const move of piece2Moves) {
+    moves.push({
+      from: pos,
+      to: move.to,
+      piece: mergedPiece,
+      capturedPiece: move.capturedPiece,
+      moveType: "unmerge",
+      mergeWith: move.mergeWith,
+      unmergeDetails: {
+        remainingPiecePosition: pos,
+        movingPieceType: mergedPiece.merged.piece2,
+      },
+      validForPieceTypes: [mergedPiece.merged.piece2],
+    });
+  }
+
+  return moves;
+}
+
+// Get simple unmerge moves for a merged piece (both pieces move to adjacent squares)
+function getSimpleUnmergeMoves(
+  mergedPiece: Piece,
+  pos: Position,
+  board: Board,
+): Move[] {
+  if (!mergedPiece.merged) return [];
+
+  const moves: Move[] = [];
+  const unmergePositions = getUnmergePositions(pos, board);
+
+  // For each possible unmerge position, create a simple unmerge move
+  for (const unmergePos of unmergePositions) {
+    moves.push({
+      from: pos,
+      to: unmergePos,
+      piece: mergedPiece,
+      moveType: "unmerge",
+      unmergePositions: [unmergePos],
+    });
+  }
+
+  return moves;
+}
+
 // Check if king is in check
 export function isInCheck(board: Board, color: PieceColor): boolean {
   // Find king position
@@ -582,34 +722,75 @@ function applyMove(board: Board, move: Move): Board {
       newBoard[move.from.row][move.from.col] = null;
     }
   } else if (move.moveType === "unmerge") {
-    // Unmerge a piece
     const piece = newBoard[move.from.row][move.from.col];
-    if (
-      piece?.merged &&
-      move.unmergePositions &&
-      move.unmergePositions.length === 1
-    ) {
-      const unmergePos = move.unmergePositions[0];
 
-      // Place first piece at original position
-      newBoard[move.from.row][move.from.col] = {
-        color: piece.color,
-        type: piece.merged.piece1,
-      };
+    if (piece?.merged) {
+      if (move.unmergeDetails) {
+        // Unmerge-then-move scenario
+        const { remainingPiecePosition, movingPieceType } = move.unmergeDetails;
 
-      // Place second piece at unmerge position
-      newBoard[unmergePos.row][unmergePos.col] = {
-        color: piece.color,
-        type: piece.merged.piece2,
-      };
+        // Determine which piece types go where
+        const isMovingPiece1 = movingPieceType === piece.merged.piece1;
+        const movingType = movingPieceType;
+        const stayingType = isMovingPiece1
+          ? piece.merged.piece2
+          : piece.merged.piece1;
+
+        // Place the staying piece
+        newBoard[remainingPiecePosition.row][remainingPiecePosition.col] = {
+          color: piece.color,
+          type: stayingType,
+        };
+
+        // Place the moving piece at destination
+        const movingPiece: Piece = {
+          color: piece.color,
+          type: movingType,
+          hasMoved: true,
+        };
+
+        newBoard[move.to.row][move.to.col] = movingPiece;
+        newBoard[move.from.row][move.from.col] = null;
+
+        // Handle merging at destination if specified
+        if (move.mergeWith) {
+          const mergedPiece: Piece = {
+            color: movingPiece.color,
+            type: movingPiece.type,
+            merged: {
+              piece1: movingPiece.type,
+              piece2: move.mergeWith.type,
+            },
+          };
+          newBoard[move.to.row][move.to.col] = mergedPiece;
+        }
+      } else if (move.unmergePositions && move.unmergePositions.length === 1) {
+        // Simple unmerge (legacy support)
+        const unmergePos = move.unmergePositions[0];
+
+        // Place first piece at original position
+        newBoard[move.from.row][move.from.col] = {
+          color: piece.color,
+          type: piece.merged.piece1,
+        };
+
+        // Place second piece at unmerge position
+        newBoard[unmergePos.row][unmergePos.col] = {
+          color: piece.color,
+          type: piece.merged.piece2,
+        };
+      }
     }
   } else {
     // Normal move
-    newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
-    newBoard[move.from.row][move.from.col] = null;
-
-    if (newBoard[move.to.row][move.to.col]) {
-      newBoard[move.to.row][move.to.col]!.hasMoved = true;
+    const movingPiece = newBoard[move.from.row][move.from.col];
+    if (movingPiece) {
+      // Create a proper copy of the piece to preserve all properties
+      newBoard[move.to.row][move.to.col] = {
+        ...movingPiece,
+        hasMoved: true,
+      };
+      newBoard[move.from.row][move.from.col] = null;
     }
   }
 
@@ -671,3 +852,54 @@ export const getWaitingGames = query({
       .take(10);
   },
 });
+
+// Helper functions for UI move filtering
+export type ViewMode = "merged" | "piece1" | "piece2";
+
+export function filterMovesByViewMode(
+  moves: Move[],
+  piece: Piece,
+  viewMode: ViewMode,
+): Move[] {
+  if (!piece.merged || viewMode === "merged") {
+    return moves;
+  }
+
+  const targetPieceType =
+    viewMode === "piece1" ? piece.merged.piece1 : piece.merged.piece2;
+
+  return moves.filter((move) => {
+    if (move.moveType === "unmerge" && move.unmergeDetails) {
+      // For unmerge moves, only show moves where the target piece type is moving
+      return move.unmergeDetails.movingPieceType === targetPieceType;
+    } else if (move.validForPieceTypes) {
+      // For regular moves, check if the target piece type can make this move
+      return move.validForPieceTypes.includes(targetPieceType);
+    }
+
+    return false;
+  });
+}
+
+export function getAvailableUnmergeOptions(
+  piece: Piece,
+  pos: Position,
+  board: Board,
+): { hasUnmergeOptions: boolean; canMoveAfterUnmerge: boolean } {
+  if (!piece.merged) {
+    return { hasUnmergeOptions: false, canMoveAfterUnmerge: false };
+  }
+
+  const unmergePositions = getUnmergePositions(pos, board);
+  const hasUnmergeOptions = unmergePositions.length > 0;
+
+  if (!hasUnmergeOptions) {
+    return { hasUnmergeOptions: false, canMoveAfterUnmerge: false };
+  }
+
+  // Check if either piece can move after unmerging
+  const unmergeMoves = getUnmergeThenMoveMoves(piece, pos, board);
+  const canMoveAfterUnmerge = unmergeMoves.length > 0;
+
+  return { hasUnmergeOptions, canMoveAfterUnmerge };
+}

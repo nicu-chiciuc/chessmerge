@@ -1,4 +1,4 @@
-import { Board, Position, Piece } from "../../convex/gameLogic";
+import { Board, Position, Piece, Move } from "../../convex/gameLogic";
 import { useState } from "react";
 
 // Import all chess piece SVGs
@@ -19,6 +19,7 @@ interface ChessBoardProps {
   board: Board;
   selectedSquare: Position | null;
   validMoves: Position[];
+  fullMoves?: Move[];
   unmergePositions: Position[];
   onSquareClick: (row: number, col: number) => void;
   onRightClick?: (row: number, col: number) => void;
@@ -32,6 +33,7 @@ export function ChessBoard({
   board,
   selectedSquare,
   validMoves,
+  fullMoves = [],
   unmergePositions,
   onSquareClick,
   onRightClick,
@@ -142,6 +144,16 @@ export function ChessBoard({
     const isValidMove = validMoves.some(
       (move) => move.row === row && move.col === col,
     );
+
+    // Check if this is an unmerge move
+    const unmergeMove = fullMoves.find(
+      (move) =>
+        move.to.row === row &&
+        move.to.col === col &&
+        move.moveType === "unmerge",
+    );
+    const isUnmergeMove = !!unmergeMove;
+
     const isUnmergePosition = unmergePositions.some(
       (pos) => pos.row === row && pos.col === col,
     );
@@ -154,7 +166,8 @@ export function ChessBoard({
       w-12 h-12 flex items-center justify-center cursor-pointer relative
       ${isLight ? "bg-amber-100" : "bg-amber-800"}
       ${isSelected ? "ring-4 ring-blue-500" : ""}
-      ${isValidMove ? "ring-2 ring-green-500" : ""}
+      ${isValidMove && !isUnmergeMove ? "ring-2 ring-green-500" : ""}
+      ${isUnmergeMove ? "ring-2 ring-yellow-500" : ""}
       ${isUnmergePosition ? "ring-2 ring-purple-500" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
       ${isDragOver ? "bg-blue-200" : ""}
@@ -208,11 +221,28 @@ export function ChessBoard({
         )}
 
         {/* Move indicators */}
-        {isValidMove && !piece && (
+        {isValidMove && !piece && !isUnmergeMove && (
           <div className="w-3 h-3 bg-green-500 rounded-full opacity-60" />
         )}
-        {isValidMove && piece && (
+        {isValidMove && piece && !isUnmergeMove && (
           <div className="absolute inset-0 border-4 border-green-500 rounded opacity-60" />
+        )}
+        {/* Unmerge move indicator */}
+        {isUnmergeMove && !piece && (
+          <div className="relative">
+            <div className="w-3 h-3 bg-yellow-500 rounded-full opacity-80" />
+            <div className="absolute -top-1 -right-1 text-xs font-bold text-yellow-600">
+              ⚡
+            </div>
+          </div>
+        )}
+        {isUnmergeMove && piece && (
+          <div className="absolute inset-0">
+            <div className="absolute inset-0 border-4 border-yellow-500 rounded opacity-60" />
+            <div className="absolute top-0 right-0 text-xs font-bold text-yellow-600 bg-white rounded-full w-4 h-4 flex items-center justify-center">
+              ⚡
+            </div>
+          </div>
         )}
         {isUnmergePosition && (
           <div className="w-3 h-3 bg-purple-500 rounded-full opacity-60" />
@@ -240,6 +270,24 @@ export function ChessBoard({
       {unmergeMode && (
         <div className="mt-2 text-center text-sm text-gray-600">
           Click an empty adjacent square to unmerge the selected piece
+        </div>
+      )}
+
+      {/* Move indicator legend */}
+      {selectedSquare && validMoves.length > 0 && (
+        <div className="mt-4 text-xs text-gray-600 space-y-1">
+          <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-green-500 rounded-full opacity-60"></div>
+              <span>Normal move</span>
+            </div>
+            {fullMoves.some((m) => m.moveType === "unmerge") && (
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full opacity-80"></div>
+                <span>⚡ Unmerge & move (leaves piece behind)</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

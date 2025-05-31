@@ -5,6 +5,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { MoveHistory } from "./MoveHistory";
+import { UnmergeSelector, ViewMode } from "./UnmergeSelector";
 import { useState, useEffect } from "react";
 import {
   Board,
@@ -12,8 +13,8 @@ import {
   Position,
   Piece,
   getPieceMoves,
-  canMerge,
   getUnmergePositions,
+  filterMovesByViewMode,
 } from "../../convex/gameLogic";
 import { toast } from "sonner";
 
@@ -30,6 +31,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const [validMoves, setValidMoves] = useState<Move[]>([]);
   const [unmergeMode, setUnmergeMode] = useState(false);
   const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>("merged");
+  const [selectedPiece, setSelectedPiece] = useState<Piece | null>(null);
 
   const board: Board = game ? JSON.parse(game.board) : [];
   const moveHistory: Move[] = game
@@ -91,7 +94,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
           setSelectedSquare(null);
           setUnmergeMode(false);
           setUnmergePositions([]);
-        } catch (error) {
+          setSelectedPiece(null);
+          setViewMode("merged");
+        } catch {
           toast.error("Invalid unmerge");
         }
       }
@@ -109,11 +114,25 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
       setSelectedSquare(null);
       setValidMoves([]);
+      setSelectedPiece(null);
+      setViewMode("merged");
     } else if (clickedPiece && clickedPiece.color === game.currentTurn) {
-      // Select piece and get all possible moves (including merges)
+      // Select piece and get all possible moves
       setSelectedSquare(position);
-      const moves = getPieceMoves(clickedPiece, position, board);
-      setValidMoves(moves);
+      setSelectedPiece(clickedPiece);
+
+      const allMoves = getPieceMoves(clickedPiece, position, board);
+      const filteredMoves = filterMovesByViewMode(
+        allMoves,
+        clickedPiece,
+        viewMode,
+      );
+      setValidMoves(filteredMoves);
+
+      // If it's a merged piece, reset to merged view
+      if (clickedPiece.merged) {
+        setViewMode("merged");
+      }
     }
   };
 
@@ -126,7 +145,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       } else if (move.capturedPiece) {
         toast.success("Piece captured!");
       }
-    } catch (error) {
+    } catch {
       toast.error("Invalid move");
     }
   };
@@ -136,6 +155,22 @@ export function ChessGame({ gameId }: ChessGameProps) {
     setUnmergeMode(false);
     setValidMoves([]);
     setUnmergePositions([]);
+    setSelectedPiece(null);
+    setViewMode("merged");
+  };
+
+  const handleViewModeChange = (newViewMode: ViewMode) => {
+    setViewMode(newViewMode);
+
+    if (selectedPiece && selectedSquare) {
+      const allMoves = getPieceMoves(selectedPiece, selectedSquare, board);
+      const filteredMoves = filterMovesByViewMode(
+        allMoves,
+        selectedPiece,
+        newViewMode,
+      );
+      setValidMoves(filteredMoves);
+    }
   };
 
   // Convert Move[] to Position[] for ChessBoard component compatibility
@@ -157,6 +192,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
             board={board}
             selectedSquare={selectedSquare}
             validMoves={validPositions}
+            fullMoves={validMoves}
             unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
             onRightClick={handleRightClick}
@@ -165,6 +201,14 @@ export function ChessGame({ gameId }: ChessGameProps) {
             isMyTurn={!!isMyTurn}
             currentTurn={game.currentTurn}
           />
+
+          {selectedPiece?.merged && !unmergeMode && (
+            <UnmergeSelector
+              piece={selectedPiece}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
+            />
+          )}
 
           <div className="mt-4 text-center">
             {unmergeMode && (
