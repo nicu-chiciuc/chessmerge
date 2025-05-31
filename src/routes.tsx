@@ -4,6 +4,13 @@ import { ChessGame } from "./components/ChessGame";
 import { useParams, useNavigate } from "react-router-dom";
 import { Id } from "../convex/_generated/dataModel";
 
+// Helper function to validate if a string is a valid Convex ID
+function isValidConvexId(id: string): id is Id<"games"> {
+  // Convex IDs are typically base64-encoded strings with a specific format
+  // This is a basic check - in practice, you might want more robust validation
+  return typeof id === "string" && id.length > 0 && /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
 function GameRoute() {
   const { gameId } = useParams<{ gameId: string }>();
 
@@ -11,7 +18,11 @@ function GameRoute() {
     return <div>Invalid game ID</div>;
   }
 
-  return <ChessGame gameId={gameId as Id<"games">} />;
+  if (!isValidConvexId(gameId)) {
+    return <div>Invalid game ID format</div>;
+  }
+
+  return <ChessGame gameId={gameId} />;
 }
 
 function LobbyRoute() {

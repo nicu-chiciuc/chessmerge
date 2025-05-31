@@ -1,6 +1,20 @@
 import { Board, Position, Piece } from "../../convex/gameLogic";
 import { useState } from "react";
 
+// Import all chess piece SVGs
+import whiteKingSvg from "../pieces/Chess_klt45.svg";
+import whiteQueenSvg from "../pieces/Chess_qlt45.svg";
+import whiteRookSvg from "../pieces/Chess_rlt45.svg";
+import whiteBishopSvg from "../pieces/Chess_blt45.svg";
+import whiteKnightSvg from "../pieces/Chess_nlt45.svg";
+import whitePawnSvg from "../pieces/Chess_plt45.svg";
+import blackKingSvg from "../pieces/Chess_kdt45.svg";
+import blackQueenSvg from "../pieces/Chess_qdt45.svg";
+import blackRookSvg from "../pieces/Chess_rdt45.svg";
+import blackBishopSvg from "../pieces/Chess_bdt45.svg";
+import blackKnightSvg from "../pieces/Chess_ndt45.svg";
+import blackPawnSvg from "../pieces/Chess_pdt45.svg";
+
 interface ChessBoardProps {
   board: Board;
   selectedSquare: Position | null;
@@ -241,7 +255,33 @@ function ChessPiece({
   onDragStart,
   onDragEnd,
 }: ChessPieceProps) {
+  const getPieceSvg = (type: string, color: string) => {
+    const pieceMap = {
+      white: {
+        king: whiteKingSvg,
+        queen: whiteQueenSvg,
+        rook: whiteRookSvg,
+        bishop: whiteBishopSvg,
+        knight: whiteKnightSvg,
+        pawn: whitePawnSvg,
+      },
+      black: {
+        king: blackKingSvg,
+        queen: blackQueenSvg,
+        rook: blackRookSvg,
+        bishop: blackBishopSvg,
+        knight: blackKnightSvg,
+        pawn: blackPawnSvg,
+      },
+    };
+
+    return pieceMap[color as keyof typeof pieceMap]?.[
+      type as keyof typeof pieceMap.white
+    ];
+  };
+
   const getPieceSymbol = (type: string, color: string) => {
+    // Fallback Unicode symbols (keeping for backwards compatibility)
     const symbols = {
       white: {
         king: "♔",
@@ -267,10 +307,55 @@ function ChessPiece({
     );
   };
 
+  const renderPieceContent = (
+    type: string,
+    color: string,
+    size: "small" | "medium" | "large" = "large",
+  ) => {
+    const svgSrc = getPieceSvg(type, color);
+
+    if (svgSrc) {
+      const sizeClasses = {
+        small: "w-3 h-3",
+        medium: "w-6 h-6",
+        large: "w-8 h-8",
+      };
+
+      return (
+        <img
+          src={svgSrc}
+          alt={`${color} ${type}`}
+          className={`${sizeClasses[size]} object-contain`}
+        />
+      );
+    }
+
+    // Fallback to Unicode symbols if SVG not found
+    const textSizeClasses = {
+      small: "text-xs",
+      medium: "text-lg",
+      large: "text-2xl",
+    };
+
+    return (
+      <div className={`${textSizeClasses[size]} leading-none`}>
+        {getPieceSymbol(type, color)}
+      </div>
+    );
+  };
+
   if (piece.merged) {
     // Display merged piece with both symbols
-    const symbol1 = getPieceSymbol(piece.merged.piece1, piece.color);
-    const symbol2 = getPieceSymbol(piece.merged.piece2, piece.color);
+    const content1 = renderPieceContent(
+      piece.merged.piece1,
+      piece.color,
+      "medium",
+    );
+    const content2 = renderPieceContent(
+      piece.merged.piece2,
+      piece.color,
+      "small",
+    );
 
     return (
       <div
@@ -279,9 +364,9 @@ function ChessPiece({
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="text-2xl leading-none">{symbol1}</div>
-        <div className="absolute -bottom-1 -right-1 text-xs bg-white rounded-full w-4 h-4 flex items-center justify-center border">
-          {symbol2}
+        {content1}
+        <div className="absolute -bottom-1 -right-1 bg-white rounded-full w-4 h-4 flex items-center justify-center border">
+          {content2}
         </div>
       </div>
     );
@@ -289,12 +374,12 @@ function ChessPiece({
 
   return (
     <div
-      className={`text-2xl leading-none ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
+      className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center`}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      {getPieceSymbol(piece.type, piece.color)}
+      {renderPieceContent(piece.type, piece.color)}
     </div>
   );
 }
