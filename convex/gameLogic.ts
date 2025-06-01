@@ -613,6 +613,7 @@ function applyMove(board: Board, move: Move): Board {
 
   const sourceCell = newBoard[move.from.row][move.from.col];
   const targetCell = newBoard[move.to.row][move.to.col];
+  console.log({ move, sourceCell, targetCell });
 
   if (sourceCell.length === 0) {
     throw new Error("No piece found at source position");
@@ -693,15 +694,17 @@ function applyMove(board: Board, move: Move): Board {
       );
     }
 
+    newBoard[move.from.row][move.from.col] = [];
+
     // Move to empty cell
     if (targetCell.length === 0) {
-      newBoard[move.to.row][move.to.col] = [sourceCell[0]];
+      newBoard[move.to.row][move.to.col] = [sourceCell[0], sourceCell[1]];
       return newBoard;
     }
 
     // Capture enemy piece/s
     if (targetCell[0].color !== sourceCell[0].color) {
-      newBoard[move.to.row][move.to.col] = [sourceCell[0]];
+      newBoard[move.to.row][move.to.col] = [sourceCell[0], sourceCell[1]];
       return newBoard;
     }
 

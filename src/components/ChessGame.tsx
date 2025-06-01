@@ -8,6 +8,7 @@ import { MoveHistory } from "./MoveHistory";
 import { useState, useEffect } from "react";
 import {
   Board,
+  MergedPieceTypes,
   Move,
   Position,
   getAllMovesForCell,
@@ -27,7 +28,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Move[]>([]);
   // const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
-  const [_selectedPieceMode, setSelectedPieceMode] = useState<
+  const [selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
   >("both");
 
@@ -104,7 +105,13 @@ export function ChessGame({ gameId }: ChessGameProps) {
       const targetMove = validMoves.find(
         (move) => move.to.row === row && move.to.col === col,
       );
+      const selectedCell = board[selectedSquare.row][selectedSquare.col];
       if (targetMove) {
+        if (selectedPieceMode === "both" && selectedCell.length === 2) {
+          targetMove.piece =
+            `${selectedCell[0].pieceType}${selectedCell[1].pieceType}` as MergedPieceTypes;
+        }
+
         await executeMove(targetMove);
       }
 
