@@ -5,27 +5,28 @@ interface MoveHistoryProps {
 }
 
 export function MoveHistory({ moves }: MoveHistoryProps) {
-  const formatMove = (move: Move, _index: number) => {
-    const fromSquare = `${String.fromCharCode(97 + move.from.col)}${8 - move.from.row}`;
-    const toSquare = `${String.fromCharCode(97 + move.to.col)}${8 - move.to.row}`;
+  const formatMove = (move: Move) => {
+    const from = `${String.fromCharCode(97 + move.from.col)}${8 - move.from.row}`;
+    const to = `${String.fromCharCode(97 + move.to.col)}${8 - move.to.row}`;
 
-    let moveText = "";
+    let moveText = `${from}-${to}`;
+
+    if (move.capturedPieces && move.capturedPieces.length > 0) {
+      moveText += " (capture)";
+    }
 
     if (move.moveType === "merge") {
-      moveText = `${fromSquare}+${toSquare}`;
+      moveText += " (merge)";
     } else if (move.moveType === "unmerge") {
-      moveText = `${fromSquare}÷${toSquare}`;
-    } else {
-      moveText = `${fromSquare}-${toSquare}`;
-      if (move.capturedPiece) {
-        moveText = `${fromSquare}x${toSquare}`;
-      }
+      moveText += " (unmerge)";
+    }
+
+    if (move.isCheck) {
+      moveText += "+";
     }
 
     if (move.isCheckmate) {
       moveText += "#";
-    } else if (move.isCheck) {
-      moveText += "+";
     }
 
     return moveText;
@@ -55,11 +56,11 @@ export function MoveHistory({ moves }: MoveHistoryProps) {
                   {group.moveNumber}.
                 </span>
                 <span className="w-16 font-mono">
-                  {formatMove(group.white, (group.moveNumber - 1) * 2)}
+                  {formatMove(group.white)}
                 </span>
                 {group.black && (
                   <span className="w-16 font-mono">
-                    {formatMove(group.black, (group.moveNumber - 1) * 2 + 1)}
+                    {formatMove(group.black)}
                   </span>
                 )}
               </div>

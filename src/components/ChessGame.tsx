@@ -5,65 +5,19 @@ import { Id } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { MoveHistory } from "./MoveHistory";
-import { UnmergeSelector, ViewMode } from "./UnmergeSelector";
 import { useState, useEffect } from "react";
 import {
   Board,
   Move,
   Position,
-  Piece,
-  PieceType,
+  getAllMovesForCell,
+  getUnmergeMoves,
   getPieceMoves,
-  getUnmergePositions,
-  filterMovesByViewMode,
 } from "../../convex/gameLogic";
 import { toast } from "sonner";
 
 interface ChessGameProps {
   gameId: Id<"games">;
-}
-
-// Migration function to convert old piece format to new discriminated union
-function migratePiece(oldPiece: any): Piece {
-  if (!oldPiece) return oldPiece;
-
-  // If it already has the new format, return as-is
-  if (oldPiece.type === "standard" || oldPiece.type === "merged") {
-    return oldPiece as Piece;
-  }
-
-  // If it has the old format with merged property
-  if (oldPiece.merged) {
-    return {
-      color: oldPiece.color,
-      type: "merged",
-      piece1: oldPiece.merged.piece1,
-      piece2: oldPiece.merged.piece2,
-      hasMoved: oldPiece.hasMoved,
-    } as Piece;
-  }
-
-  // If it has the old format with direct type property
-  if (
-    typeof oldPiece.type === "string" &&
-    oldPiece.type !== "standard" &&
-    oldPiece.type !== "merged"
-  ) {
-    return {
-      color: oldPiece.color,
-      type: "standard",
-      pieceType: oldPiece.type as PieceType,
-      hasMoved: oldPiece.hasMoved,
-    } as Piece;
-  }
-
-  return oldPiece;
-}
-
-function migrateBoard(oldBoard: any[][]): Board {
-  return oldBoard.map((row) =>
-    row.map((piece) => (piece ? migratePiece(piece) : null)),
-  );
 }
 
 export function ChessGame({ gameId }: ChessGameProps) {
@@ -75,23 +29,34 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const [validMoves, setValidMoves] = useState<Move[]>([]);
   const [unmergeMode, setUnmergeMode] = useState(false);
   const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("merged");
-  const [selectedPiece, setSelectedPiece] = useState<Piece | null>(null);
+  const [selectedPieceMode, setSelectedPieceMode] = useState<
+    "both" | "first" | "second"
+  >("both");
 
-  const rawBoard = game ? JSON.parse(game.board) : [];
-  const board: Board = migrateBoard(rawBoard);
+  // Parse board directly - expect new format only
+  const board: Board = game
+    ? JSON.parse(game.board)
+    : Array(8)
+        .fill(null)
+        .map(() =>
+          Array(8)
+            .fill(null)
+            .map(() => []),
+        );
   const moveHistory: Move[] = game
     ? game.moveHistory.map((m) => JSON.parse(m))
     : [];
 
   // Debug logging
+  console.log("=== CHESS GAME DEBUG ===");
   console.log("Game data:", game);
-  console.log("Raw board:", rawBoard);
-  console.log("Migrated board:", board);
-  if (board.length > 0) {
-    console.log("First row pieces:", board[0]);
-    console.log("Last row pieces:", board[7]);
+  console.log("Board:", board);
+  console.log("Board length:", board?.length);
+  if (board?.length > 0) {
+    console.log("Board[0]:", board[0]);
+    console.log("Board[7]:", board[7]);
   }
+  console.log("======================");
 
   const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
   const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
@@ -100,7 +65,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const isMyTurn =
     game &&
     (game.isPracticeGame
-      ? isWhitePlayer || isBlackPlayer // In practice mode, always user's turn if they're a player
+      ? isWhitePlayer || isBlackPlayer
       : (game.currentTurn === "white" && isWhitePlayer) ||
         (game.currentTurn === "black" && isBlackPlayer));
 
@@ -116,15 +81,56 @@ export function ChessGame({ gameId }: ChessGameProps) {
     }
   }, [game?.status, game?.gameEndReason, game?.winner]);
 
+  const handlePieceSelectionChange = (mode: "both" | "first" | "second") => {
+    setSelectedPieceMode(mode);
+
+    // Recalculate valid moves based on selected piece mode
+    if (selectedSquare) {
+      const selectedCell = board[selectedSquare.row][selectedSquare.col];
+      let newValidMoves: Move[] = [];
+
+      if (mode === "both") {
+        // Get moves for all pieces in the cell
+        newValidMoves = getAllMovesForCell(selectedSquare, board);
+      } else if (mode === "first" && selectedCell.length >= 1) {
+        // Get moves only for the first piece
+        const piece = selectedCell[0];
+        newValidMoves = getPieceMoves(piece, 0, selectedSquare, board);
+
+        // Add unmerge moves if applicable (both pieces can unmerge)
+        if (selectedCell.length === 2) {
+          const unmergeMoves = getUnmergeMoves(selectedSquare, board);
+          newValidMoves.push(
+            ...unmergeMoves.filter((move) => move.pieceIndex === 0),
+          );
+        }
+      } else if (mode === "second" && selectedCell.length >= 2) {
+        // Get moves only for the second piece
+        const piece = selectedCell[1];
+        newValidMoves = getPieceMoves(piece, 1, selectedSquare, board);
+
+        // Add unmerge moves if applicable (both pieces can unmerge)
+        const unmergeMoves = getUnmergeMoves(selectedSquare, board);
+        newValidMoves.push(
+          ...unmergeMoves.filter((move) => move.pieceIndex === 1),
+        );
+      }
+
+      setValidMoves(newValidMoves);
+    }
+  };
+
   const handleRightClick = (row: number, col: number) => {
     if (!game || !isMyTurn || game.status !== "active") return;
 
-    const piece = board[row][col];
-    if (piece?.type === "merged" && piece.color === game.currentTurn) {
+    const cell = board[row][col];
+    if (cell.length === 2 && cell[0].color === game.currentTurn) {
       setSelectedSquare({ row, col });
       setUnmergeMode(true);
       setValidMoves([]);
-      setUnmergePositions(getUnmergePositions({ row, col }, board));
+      setSelectedPieceMode("both");
+      const unmergeMoves = getUnmergeMoves({ row, col }, board);
+      setUnmergePositions(unmergeMoves.map((move) => move.to));
       toast.info("Click an empty adjacent square to unmerge");
     }
   };
@@ -132,28 +138,27 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const handleSquareClick = async (row: number, col: number) => {
     if (!game || !isMyTurn || game.status !== "active") return;
 
-    const clickedPiece = board[row][col];
+    const clickedCell = board[row][col];
     const position = { row, col };
 
     if (unmergeMode && selectedSquare) {
       // Handle unmerge
-      const selectedPiece = board[selectedSquare.row][selectedSquare.col];
-      if (selectedPiece?.type === "merged" && !clickedPiece) {
+      const selectedCell = board[selectedSquare.row][selectedSquare.col];
+      if (selectedCell.length === 2 && clickedCell.length === 0) {
         try {
+          // Try unmerging either piece - for now, default to first piece
           const move: Move = {
             from: selectedSquare,
             to: position,
-            piece: selectedPiece,
+            pieceIndex: 0,
             moveType: "unmerge",
-            unmergePositions: [position],
           };
 
           await makeMove({ gameId, move: JSON.stringify(move) });
           setSelectedSquare(null);
           setUnmergeMode(false);
           setUnmergePositions([]);
-          setSelectedPiece(null);
-          setViewMode("merged");
+          setSelectedPieceMode("both");
         } catch {
           toast.error("Invalid unmerge");
         }
@@ -172,25 +177,17 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
       setSelectedSquare(null);
       setValidMoves([]);
-      setSelectedPiece(null);
-      setViewMode("merged");
-    } else if (clickedPiece && clickedPiece.color === game.currentTurn) {
-      // Select piece and get all possible moves
+      setSelectedPieceMode("both");
+    } else if (
+      clickedCell.length > 0 &&
+      clickedCell[0].color === game.currentTurn
+    ) {
+      // Select cell and get all possible moves
       setSelectedSquare(position);
-      setSelectedPiece(clickedPiece);
+      setSelectedPieceMode("both");
 
-      const allMoves = getPieceMoves(clickedPiece, position, board);
-      const filteredMoves = filterMovesByViewMode(
-        allMoves,
-        clickedPiece,
-        viewMode,
-      );
-      setValidMoves(filteredMoves);
-
-      // If it's a merged piece, reset to merged view
-      if (clickedPiece.type === "merged") {
-        setViewMode("merged");
-      }
+      const allMoves = getAllMovesForCell(position, board);
+      setValidMoves(allMoves);
     }
   };
 
@@ -200,7 +197,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
       if (move.moveType === "merge") {
         toast.success("Pieces merged!");
-      } else if (move.capturedPiece) {
+      } else if (move.capturedPieces && move.capturedPieces.length > 0) {
         toast.success("Piece captured!");
       }
     } catch {
@@ -213,22 +210,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
     setUnmergeMode(false);
     setValidMoves([]);
     setUnmergePositions([]);
-    setSelectedPiece(null);
-    setViewMode("merged");
-  };
-
-  const handleViewModeChange = (newViewMode: ViewMode) => {
-    setViewMode(newViewMode);
-
-    if (selectedPiece && selectedSquare) {
-      const allMoves = getPieceMoves(selectedPiece, selectedSquare, board);
-      const filteredMoves = filterMovesByViewMode(
-        allMoves,
-        selectedPiece,
-        newViewMode,
-      );
-      setValidMoves(filteredMoves);
-    }
+    setSelectedPieceMode("both");
   };
 
   // Convert Move[] to Position[] for ChessBoard component compatibility
@@ -254,19 +236,12 @@ export function ChessGame({ gameId }: ChessGameProps) {
             unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
             onRightClick={handleRightClick}
-            flipped={game.isPracticeGame ? false : isBlackPlayer} // Always show from white's perspective in practice mode
+            onPieceSelectionChange={handlePieceSelectionChange}
+            flipped={game.isPracticeGame ? false : isBlackPlayer}
             unmergeMode={unmergeMode}
             isMyTurn={!!isMyTurn}
             currentTurn={game.currentTurn}
           />
-
-          {selectedPiece?.type === "merged" && !unmergeMode && (
-            <UnmergeSelector
-              piece={selectedPiece}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-            />
-          )}
 
           <div className="mt-4 text-center">
             {unmergeMode && (
@@ -279,7 +254,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
             )}
             <div className="text-sm text-gray-600">
               <p>• Move pieces normally or onto same-color pieces to merge</p>
-              <p>• Right-click merged pieces to unmerge them</p>
+              <p>• Right-click cells with 2 pieces to unmerge them</p>
             </div>
           </div>
         </div>

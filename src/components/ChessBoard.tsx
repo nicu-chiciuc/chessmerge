@@ -23,6 +23,7 @@ interface ChessBoardProps {
   unmergePositions: Position[];
   onSquareClick: (row: number, col: number) => void;
   onRightClick?: (row: number, col: number) => void;
+  onPieceSelectionChange?: (mode: "both" | "first" | "second") => void;
   flipped?: boolean;
   unmergeMode?: boolean;
   isMyTurn?: boolean;
@@ -37,6 +38,7 @@ export function ChessBoard({
   unmergePositions,
   onSquareClick,
   onRightClick,
+  onPieceSelectionChange,
   flipped = false,
   unmergeMode = false,
   isMyTurn = false,
@@ -44,54 +46,94 @@ export function ChessBoard({
 }: ChessBoardProps) {
   const [draggedPiece, setDraggedPiece] = useState<{
     piece: Piece;
+    pieceIndex: number;
     position: Position;
   } | null>(null);
   const [dragOverSquare, setDragOverSquare] = useState<Position | null>(null);
+  const [selectedPieceMode, setSelectedPieceMode] = useState<
+    "both" | "first" | "second"
+  >("both");
 
   const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
   const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
 
-  const getPieceSymbol = (type: string, color: string) => {
-    const symbols = {
-      white: {
-        king: "♔",
-        queen: "♕",
-        rook: "♖",
-        bishop: "♗",
-        knight: "♘",
-        pawn: "♙",
-      },
-      black: {
-        king: "♚",
-        queen: "♛",
-        rook: "♜",
-        bishop: "♝",
-        knight: "♞",
-        pawn: "♟",
-      },
-    };
-    return (
-      symbols[color as keyof typeof symbols][
-        type as keyof typeof symbols.white
-      ] || ""
-    );
+  // Get the selected cell and its pieces
+  const selectedCell = selectedSquare
+    ? board[selectedSquare.row][selectedSquare.col]
+    : null;
+  const hasTwoPieces = selectedCell && selectedCell.length === 2;
+
+  // Reset piece selection mode when square changes
+  const resetPieceMode = () => {
+    setSelectedPieceMode("both");
+    onPieceSelectionChange?.("both");
   };
 
-  const handleDragStart = (e: React.DragEvent, row: number, col: number) => {
-    const piece = board[row][col];
+  const handlePieceSelectionChange = (mode: "both" | "first" | "second") => {
+    setSelectedPieceMode(mode);
+    onPieceSelectionChange?.(mode);
+  };
+
+  const handleSquareClick = (row: number, col: number) => {
+    // Reset piece mode when selecting a different square
+    if (
+      !selectedSquare ||
+      selectedSquare.row !== row ||
+      selectedSquare.col !== col
+    ) {
+      resetPieceMode();
+    }
+    onSquareClick(row, col);
+  };
+
+  const handleDragStart = (
+    e: React.DragEvent,
+    row: number,
+    col: number,
+    pieceIndex: number,
+  ) => {
+    const cell = board[row][col];
+    const piece = cell[pieceIndex];
     if (!piece || !isMyTurn || piece.color !== currentTurn) {
       e.preventDefault();
       return;
     }
 
-    setDraggedPiece({ piece, position: { row, col } });
+    setDraggedPiece({ piece, pieceIndex, position: { row, col } });
 
-    // Create a custom drag image
+    // Create a custom drag image using SVG
     const dragImage = document.createElement("div");
-    const pieceTypeForSymbol =
-      piece.type === "standard" ? piece.pieceType : piece.piece1;
-    dragImage.innerHTML = getPieceSymbol(pieceTypeForSymbol, piece.color);
-    dragImage.style.fontSize = "32px";
+    dragImage.className = "w-8 h-8 flex items-center justify-center";
+
+    const img = document.createElement("img");
+    const getPieceSvg = (type: string, color: string) => {
+      const pieceMap = {
+        white: {
+          king: whiteKingSvg,
+          queen: whiteQueenSvg,
+          rook: whiteRookSvg,
+          bishop: whiteBishopSvg,
+          knight: whiteKnightSvg,
+          pawn: whitePawnSvg,
+        },
+        black: {
+          king: blackKingSvg,
+          queen: blackQueenSvg,
+          rook: blackRookSvg,
+          bishop: blackBishopSvg,
+          knight: blackKnightSvg,
+          pawn: blackPawnSvg,
+        },
+      };
+      return pieceMap[color as keyof typeof pieceMap]?.[
+        type as keyof typeof pieceMap.white
+      ];
+    };
+
+    img.src = getPieceSvg(piece.pieceType, piece.color) || "";
+    img.className = "w-8 h-8 object-contain";
+    dragImage.appendChild(img);
+
     dragImage.style.position = "absolute";
     dragImage.style.top = "-1000px";
     document.body.appendChild(dragImage);
@@ -138,7 +180,7 @@ export function ChessBoard({
   };
 
   const renderSquare = (row: number, col: number) => {
-    const piece = board[row][col];
+    const cell = board[row][col];
 
     const isLight = (row + col) % 2 === 0;
     const isSelected =
@@ -167,32 +209,32 @@ export function ChessBoard({
     let squareClass = `
       w-12 h-12 flex items-center justify-center cursor-pointer relative
       ${isLight ? "bg-amber-100" : "bg-amber-800"}
-      ${isSelected ? "ring-4 ring-blue-500" : ""}
-      ${isValidMove && !isUnmergeMove ? "ring-2 ring-green-500" : ""}
-      ${isUnmergeMove ? "ring-2 ring-yellow-500" : ""}
-      ${isUnmergePosition ? "ring-2 ring-purple-500" : ""}
+      ${isSelected ? "ring-4 ring-blue-500 z-20" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
       ${isDragOver ? "bg-blue-200" : ""}
       hover:brightness-110 transition-all
     `;
 
-    // Highlight merged pieces that can be unmerged
+    // Highlight cells that can be unmerged (have 2 pieces)
     if (
-      piece?.type === "merged" &&
-      piece.color === currentTurn &&
+      cell.length === 2 &&
+      cell[0].color === currentTurn &&
       isMyTurn &&
-      !unmergeMode
+      !unmergeMode &&
+      !isSelected
     ) {
-      squareClass += " ring-2 ring-orange-300";
+      squareClass += " ring-2 ring-orange-300 z-10";
     }
 
-    const canDragPiece = !!(piece && isMyTurn && piece.color === currentTurn);
+    const canDragAnyPiece = cell.some(
+      (piece) => piece.color === currentTurn && isMyTurn,
+    );
 
     return (
       <div
         key={`${row}-${col}`}
         className={squareClass}
-        onClick={() => onSquareClick(row, col)}
+        onClick={() => handleSquareClick(row, col)}
         onContextMenu={(e) => {
           e.preventDefault();
           onRightClick?.(row, col);
@@ -201,53 +243,59 @@ export function ChessBoard({
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, row, col)}
       >
-        {piece && (
-          <ChessPiece
-            piece={piece}
-            draggable={canDragPiece}
-            onDragStart={(e) => handleDragStart(e, row, col)}
+        {cell.length > 0 && (
+          <ChessPieceCell
+            pieces={cell}
+            canDrag={canDragAnyPiece}
+            onDragStart={(e, pieceIndex) =>
+              handleDragStart(e, row, col, pieceIndex)
+            }
             onDragEnd={handleDragEnd}
+            selectedPieceMode={isSelected ? selectedPieceMode : "both"}
           />
         )}
 
         {/* Coordinate labels */}
         {col === 0 && (
-          <div className="absolute left-1 top-1 text-xs font-bold opacity-60">
+          <div
+            className={`absolute left-1 top-1 text-sm font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
+          >
             {ranks[row]}
           </div>
         )}
         {row === 7 && (
-          <div className="absolute right-1 bottom-1 text-xs font-bold opacity-60">
+          <div
+            className={`absolute right-1 bottom-1 text-sm font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
+          >
             {files[col]}
           </div>
         )}
 
         {/* Move indicators */}
-        {isValidMove && !piece && !isUnmergeMove && (
-          <div className="w-3 h-3 bg-green-500 rounded-full opacity-60" />
+        {isValidMove && cell.length === 0 && !isUnmergeMove && (
+          <div className="absolute inset-0 border-2 border-green-500 rounded opacity-60 pointer-events-none" />
         )}
-        {isValidMove && piece && !isUnmergeMove && (
-          <div className="absolute inset-0 border-4 border-green-500 rounded opacity-60" />
+        {isValidMove && cell.length > 0 && !isUnmergeMove && (
+          <div className="absolute inset-0 border-2 border-green-500 rounded opacity-60 pointer-events-none" />
         )}
         {/* Unmerge move indicator */}
-        {isUnmergeMove && !piece && (
+        {isUnmergeMove && cell.length === 0 && (
           <div className="relative">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full opacity-80" />
-            <div className="absolute -top-1 -right-1 text-xs font-bold text-yellow-600">
+            <div className="absolute inset-0 border-2 border-yellow-500 rounded opacity-80 pointer-events-none" />
+            <div className="absolute top-0 right-0 text-xs font-bold text-yellow-600">
               ⚡
             </div>
           </div>
         )}
-        {isUnmergeMove && piece && (
-          <div className="absolute inset-0">
-            <div className="absolute inset-0 border-4 border-yellow-500 rounded opacity-60" />
+        {isUnmergeMove && cell.length > 0 && (
+          <div className="absolute inset-0 border-2 border-yellow-500 rounded opacity-80 pointer-events-none">
             <div className="absolute top-0 right-0 text-xs font-bold text-yellow-600 bg-white rounded-full w-4 h-4 flex items-center justify-center">
               ⚡
             </div>
           </div>
         )}
         {isUnmergePosition && (
-          <div className="w-3 h-3 bg-purple-500 rounded-full opacity-60" />
+          <div className="absolute inset-0 border-2 border-purple-500 rounded opacity-60 pointer-events-none" />
         )}
       </div>
     );
@@ -269,9 +317,56 @@ export function ChessBoard({
         {JSON.stringify({ selectedSquare, validMoves }, null, 2)}
       </textarea>
 
+      {/* Piece selection buttons for merged pieces */}
+      {hasTwoPieces && selectedCell && isMyTurn && (
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg border">
+          <div className="text-sm font-medium text-gray-700 mb-2">
+            Choose which piece(s) to move:
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handlePieceSelectionChange("first")}
+              className={`px-3 py-2 rounded border text-sm flex items-center gap-2 ${
+                selectedPieceMode === "first"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <ChessPieceContent piece={selectedCell[0]} size="small" />
+              <span>Only {selectedCell[0].pieceType}</span>
+            </button>
+            <button
+              onClick={() => handlePieceSelectionChange("second")}
+              className={`px-3 py-2 rounded border text-sm flex items-center gap-2 ${
+                selectedPieceMode === "second"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <ChessPieceContent piece={selectedCell[1]} size="small" />
+              <span>Only {selectedCell[1].pieceType}</span>
+            </button>
+            <button
+              onClick={() => handlePieceSelectionChange("both")}
+              className={`px-3 py-2 rounded border text-sm flex items-center gap-2 ${
+                selectedPieceMode === "both"
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex -space-x-1">
+                <ChessPieceContent piece={selectedCell[0]} size="small" />
+                <ChessPieceContent piece={selectedCell[1]} size="small" />
+              </div>
+              <span>Both pieces</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {unmergeMode && (
         <div className="mt-2 text-center text-sm text-gray-600">
-          Click an empty adjacent square to unmerge the selected piece
+          Click an empty adjacent square to unmerge the selected pieces
         </div>
       )}
 
@@ -286,12 +381,95 @@ export function ChessBoard({
             {fullMoves.some((m) => m.moveType === "unmerge") && (
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full opacity-80"></div>
-                <span>⚡ Unmerge & move (leaves piece behind)</span>
+                <span>⚡ Unmerge move</span>
               </div>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface ChessPieceCellProps {
+  pieces: Piece[];
+  canDrag?: boolean;
+  onDragStart?: (e: React.DragEvent, pieceIndex: number) => void;
+  onDragEnd?: () => void;
+  selectedPieceMode?: "both" | "first" | "second";
+}
+
+function ChessPieceCell({
+  pieces,
+  canDrag = false,
+  onDragStart,
+  onDragEnd,
+  selectedPieceMode = "both",
+}: ChessPieceCellProps) {
+  if (pieces.length === 0) return null;
+
+  if (pieces.length === 1) {
+    // Single piece
+    return (
+      <ChessPiece
+        piece={pieces[0]}
+        draggable={canDrag}
+        onDragStart={(e) => onDragStart?.(e, 0)}
+        onDragEnd={onDragEnd}
+      />
+    );
+  }
+
+  if (pieces.length === 2) {
+    // Two pieces merged - display both with each piece cut in half
+    // Arrange pieces so that knights are on the left (head visible)
+    const [leftPiece, rightPiece] = pieces.some((p) => p.pieceType === "knight")
+      ? [
+          pieces.find((p) => p.pieceType === "knight")!,
+          pieces.find((p) => p.pieceType !== "knight")!,
+        ]
+      : pieces;
+
+    // Apply visual highlighting based on selected piece mode
+    const getOpacity = (pieceIndex: number) => {
+      if (selectedPieceMode === "both") return "";
+      if (selectedPieceMode === "first" && pieceIndex === 0) return "";
+      if (selectedPieceMode === "second" && pieceIndex === 1) return "";
+      return "opacity-30";
+    };
+
+    return (
+      <div className="relative w-8 h-8 flex">
+        {/* Left half - show right side of piece */}
+        <div
+          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-4 h-8 overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
+          draggable={canDrag}
+          onDragStart={(e) => onDragStart?.(e, pieces.indexOf(leftPiece))}
+          onDragEnd={onDragEnd}
+        >
+          <div className="absolute left-0 top-0 w-8 h-8 flex items-center justify-center">
+            <ChessPieceContent piece={leftPiece} size="large" />
+          </div>
+        </div>
+        {/* Right half - show left side of piece */}
+        <div
+          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-4 h-8 overflow-hidden relative ${getOpacity(pieces.indexOf(rightPiece))}`}
+          draggable={canDrag}
+          onDragStart={(e) => onDragStart?.(e, pieces.indexOf(rightPiece))}
+          onDragEnd={onDragEnd}
+        >
+          <div className="absolute right-0 top-0 w-8 h-8 flex items-center justify-center">
+            <ChessPieceContent piece={rightPiece} size="large" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // This shouldn't happen in chess, but provide a fallback
+  return (
+    <div className="w-8 h-8 bg-red-500 flex items-center justify-center text-white text-xs font-bold">
+      {pieces.length}
     </div>
   );
 }
@@ -309,6 +487,24 @@ function ChessPiece({
   onDragStart,
   onDragEnd,
 }: ChessPieceProps) {
+  return (
+    <div
+      className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center`}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
+      <ChessPieceContent piece={piece} size="large" />
+    </div>
+  );
+}
+
+interface ChessPieceContentProps {
+  piece: Piece;
+  size: "small" | "medium" | "large";
+}
+
+function ChessPieceContent({ piece, size }: ChessPieceContentProps) {
   const getPieceSvg = (type: string, color: string) => {
     const pieceMap = {
       white: {
@@ -334,109 +530,19 @@ function ChessPiece({
     ];
   };
 
-  const getPieceSymbol = (type: string, color: string) => {
-    // Fallback Unicode symbols (keeping for backwards compatibility)
-    const symbols = {
-      white: {
-        king: "♔",
-        queen: "♕",
-        rook: "♖",
-        bishop: "♗",
-        knight: "♘",
-        pawn: "♙",
-      },
-      black: {
-        king: "♚",
-        queen: "♛",
-        rook: "♜",
-        bishop: "♝",
-        knight: "♞",
-        pawn: "♟",
-      },
-    };
-    return (
-      symbols[color as keyof typeof symbols][
-        type as keyof typeof symbols.white
-      ] || ""
-    );
+  const svgSrc = getPieceSvg(piece.pieceType, piece.color);
+
+  const sizeClasses = {
+    small: "w-3 h-3",
+    medium: "w-6 h-6",
+    large: "w-8 h-8",
   };
 
-  const renderPieceContent = (
-    type: string,
-    color: string,
-    size: "small" | "medium" | "large" = "large",
-  ) => {
-    const svgSrc = getPieceSvg(type, color);
-
-    if (svgSrc) {
-      const sizeClasses = {
-        small: "w-3 h-3",
-        medium: "w-6 h-6",
-        large: "w-8 h-8",
-      };
-
-      return (
-        <img
-          src={svgSrc}
-          alt={`${color} ${type}`}
-          className={`${sizeClasses[size]} object-contain`}
-        />
-      );
-    }
-
-    // Fallback to Unicode symbols if SVG not found
-    const textSizeClasses = {
-      small: "text-xs",
-      medium: "text-lg",
-      large: "text-2xl",
-    };
-
-    return (
-      <div className={`${textSizeClasses[size]} leading-none`}>
-        {getPieceSymbol(type, color)}
-      </div>
-    );
-  };
-
-  if (piece.type === "merged") {
-    // Display merged piece with both symbols
-    const content1 = renderPieceContent(piece.piece1, piece.color, "medium");
-    const content2 = renderPieceContent(piece.piece2, piece.color, "small");
-
-    return (
-      <div
-        className={`relative ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
-        draggable={draggable}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-      >
-        {content1}
-        <div className="absolute -bottom-1 -right-1 bg-white rounded-full w-4 h-4 flex items-center justify-center border">
-          {content2}
-        </div>
-      </div>
-    );
-  }
-
-  // Standard piece - must be type "standard"
-  if (piece.type === "standard") {
-    return (
-      <div
-        className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center`}
-        draggable={draggable}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-      >
-        {renderPieceContent(piece.pieceType, piece.color)}
-      </div>
-    );
-  }
-
-  // This should never happen after migration, but provide a helpful fallback
-  console.error("Unknown piece type after migration:", piece);
   return (
-    <div className="w-8 h-8 bg-red-500 flex items-center justify-center text-white text-xs font-bold">
-      ERR
-    </div>
+    <img
+      src={svgSrc}
+      alt={`${piece.color} ${piece.pieceType}`}
+      className={`${sizeClasses[size]} object-contain`}
+    />
   );
 }
