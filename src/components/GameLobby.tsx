@@ -13,7 +13,6 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
   const createGame = useMutation(api.gameLogic.createGame);
   const createPracticeGame = useMutation(api.gameLogic.createPracticeGame);
   const joinGame = useMutation(api.gameLogic.joinGame);
-  const deleteAllGames = useMutation(api.gameLogic.deleteAllGames);
 
   const handleCreateGame = async () => {
     try {
@@ -45,26 +44,6 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
     }
   };
 
-  const handleDeleteAllGames = async () => {
-    if (myGames.length === 0) {
-      toast.info("No games to delete");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Are you sure you want to delete all ${myGames.length} games? This action cannot be undone.`,
-    );
-
-    if (confirmed) {
-      try {
-        const result = await deleteAllGames();
-        toast.success(`Deleted ${result.deletedCount} games successfully!`);
-      } catch (error) {
-        toast.error("Failed to delete games");
-      }
-    }
-  };
-
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -87,14 +66,6 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
           >
             Practice Game
           </button>
-          {myGames.length > 0 && (
-            <button
-              onClick={() => void handleDeleteAllGames()}
-              className="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-sm hover:shadow"
-            >
-              🗑️ Delete All Games
-            </button>
-          )}
         </div>
       </div>
 

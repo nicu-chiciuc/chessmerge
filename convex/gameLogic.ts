@@ -792,29 +792,3 @@ export function getAllMovesForCell(pos: Position, board: Board): Move[] {
 
   return moves;
 }
-
-export const deleteAllGames = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-
-    // Get all games for this user
-    const games = await ctx.db
-      .query("games")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("whitePlayerId"), userId),
-          q.eq(q.field("blackPlayerId"), userId),
-        ),
-      )
-      .collect();
-
-    // Delete all games
-    for (const game of games) {
-      await ctx.db.delete(game._id);
-    }
-
-    return { deletedCount: games.length };
-  },
-});
