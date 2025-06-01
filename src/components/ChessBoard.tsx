@@ -88,7 +88,9 @@ export function ChessBoard({
 
     // Create a custom drag image
     const dragImage = document.createElement("div");
-    dragImage.innerHTML = getPieceSymbol(piece.type, piece.color);
+    const pieceTypeForSymbol =
+      piece.type === "standard" ? piece.pieceType : piece.piece1;
+    dragImage.innerHTML = getPieceSymbol(pieceTypeForSymbol, piece.color);
     dragImage.style.fontSize = "32px";
     dragImage.style.position = "absolute";
     dragImage.style.top = "-1000px";
@@ -176,7 +178,7 @@ export function ChessBoard({
 
     // Highlight merged pieces that can be unmerged
     if (
-      piece?.merged &&
+      piece?.type === "merged" &&
       piece.color === currentTurn &&
       isMyTurn &&
       !unmergeMode
@@ -396,18 +398,10 @@ function ChessPiece({
     );
   };
 
-  if (piece.merged) {
+  if (piece.type === "merged") {
     // Display merged piece with both symbols
-    const content1 = renderPieceContent(
-      piece.merged.piece1,
-      piece.color,
-      "medium",
-    );
-    const content2 = renderPieceContent(
-      piece.merged.piece2,
-      piece.color,
-      "small",
-    );
+    const content1 = renderPieceContent(piece.piece1, piece.color, "medium");
+    const content2 = renderPieceContent(piece.piece2, piece.color, "small");
 
     return (
       <div
@@ -424,14 +418,25 @@ function ChessPiece({
     );
   }
 
+  // Standard piece - must be type "standard"
+  if (piece.type === "standard") {
+    return (
+      <div
+        className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center`}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      >
+        {renderPieceContent(piece.pieceType, piece.color)}
+      </div>
+    );
+  }
+
+  // This should never happen after migration, but provide a helpful fallback
+  console.error("Unknown piece type after migration:", piece);
   return (
-    <div
-      className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center`}
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-    >
-      {renderPieceContent(piece.type, piece.color)}
+    <div className="w-8 h-8 bg-red-500 flex items-center justify-center text-white text-xs font-bold">
+      ERR
     </div>
   );
 }

@@ -10,6 +10,8 @@
     "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" ",
     "build": "tsc -b && vite build",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "type-check": "tsc -b",
+    "type-check:convex": "tsc --project convex/tsconfig.json --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {

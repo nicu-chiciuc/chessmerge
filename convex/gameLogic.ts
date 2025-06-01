@@ -13,15 +13,13 @@ export type PieceType =
 export type PieceColor = "white" | "black";
 
 // Single piece or merged piece
-export interface Piece {
+export type Piece = {
   color: PieceColor;
-  type: PieceType;
-  merged?: {
-    piece1: PieceType;
-    piece2: PieceType;
-  };
   hasMoved?: boolean;
-}
+} & (
+  | { type: "standard"; pieceType: PieceType }
+  | { type: "merged"; piece1: PieceType; piece2: PieceType }
+);
 
 export interface Position {
   row: number;
@@ -58,34 +56,34 @@ export function createInitialBoard(): Board {
 
   // White pieces
   board[7] = [
-    { color: "white", type: "rook" },
-    { color: "white", type: "knight" },
-    { color: "white", type: "bishop" },
-    { color: "white", type: "queen" },
-    { color: "white", type: "king" },
-    { color: "white", type: "bishop" },
-    { color: "white", type: "knight" },
-    { color: "white", type: "rook" },
+    { color: "white", type: "standard", pieceType: "rook" },
+    { color: "white", type: "standard", pieceType: "knight" },
+    { color: "white", type: "standard", pieceType: "bishop" },
+    { color: "white", type: "standard", pieceType: "queen" },
+    { color: "white", type: "standard", pieceType: "king" },
+    { color: "white", type: "standard", pieceType: "bishop" },
+    { color: "white", type: "standard", pieceType: "knight" },
+    { color: "white", type: "standard", pieceType: "rook" },
   ];
 
   for (let col = 0; col < 8; col++) {
-    board[6][col] = { color: "white", type: "pawn" };
+    board[6][col] = { color: "white", type: "standard", pieceType: "pawn" };
   }
 
   // Black pieces
   board[0] = [
-    { color: "black", type: "rook" },
-    { color: "black", type: "knight" },
-    { color: "black", type: "bishop" },
-    { color: "black", type: "queen" },
-    { color: "black", type: "king" },
-    { color: "black", type: "bishop" },
-    { color: "black", type: "knight" },
-    { color: "black", type: "rook" },
+    { color: "black", type: "standard", pieceType: "rook" },
+    { color: "black", type: "standard", pieceType: "knight" },
+    { color: "black", type: "standard", pieceType: "bishop" },
+    { color: "black", type: "standard", pieceType: "queen" },
+    { color: "black", type: "standard", pieceType: "king" },
+    { color: "black", type: "standard", pieceType: "bishop" },
+    { color: "black", type: "standard", pieceType: "knight" },
+    { color: "black", type: "standard", pieceType: "rook" },
   ];
 
   for (let col = 0; col < 8; col++) {
-    board[1][col] = { color: "black", type: "pawn" };
+    board[1][col] = { color: "black", type: "standard", pieceType: "pawn" };
   }
 
   return board;
@@ -102,28 +100,28 @@ export function getPieceMoves(
   pos: Position,
   board: Board,
 ): Move[] {
-  if (piece.merged) {
+  if (piece.type === "merged") {
     // Get moves for each constituent piece and tag them appropriately
     const moves1 = getSinglePieceMoves(
-      piece.merged.piece1,
+      piece.piece1,
       piece.color,
       pos,
       board,
       piece,
     ).map((move) => ({
       ...move,
-      validForPieceTypes: [piece.merged!.piece1],
+      validForPieceTypes: [piece.piece1],
     }));
 
     const moves2 = getSinglePieceMoves(
-      piece.merged.piece2,
+      piece.piece2,
       piece.color,
       pos,
       board,
       piece,
     ).map((move) => ({
       ...move,
-      validForPieceTypes: [piece.merged!.piece2],
+      validForPieceTypes: [piece.piece2],
     }));
 
     // Combine moves and merge duplicates
@@ -158,7 +156,7 @@ export function getPieceMoves(
     return [...mergedMoves, ...unmergeThenMoveMoves, ...simpleUnmergeMoves];
   }
 
-  return getSinglePieceMoves(piece.type, piece.color, pos, board, piece);
+  return getSinglePieceMoves(piece.pieceType, piece.color, pos, board, piece);
 }
 
 function getSinglePieceMoves(
@@ -421,8 +419,8 @@ export function canMerge(
 ): boolean {
   // Same color and adjacent positions
   if (piece1.color !== piece2.color) return false;
-  if (piece1.merged || piece2.merged) return false; // Can't merge already merged pieces
-  if (piece1.type === "king" || piece2.type === "king") return false; // Kings can't merge
+  if (piece1.type === "merged" || piece2.type === "merged") return false; // Can't merge already merged pieces
+  if (piece1.pieceType === "king" || piece2.pieceType === "king") return false; // Kings can't merge
 
   const rowDiff = Math.abs(pos1.row - pos2.row);
   const colDiff = Math.abs(pos1.col - pos2.col);
@@ -453,17 +451,21 @@ function getUnmergeThenMoveMoves(
   pos: Position,
   board: Board,
 ): Move[] {
-  if (!mergedPiece.merged) return [];
+  if (mergedPiece.type !== "merged") return [];
 
   const moves: Move[] = [];
 
   // Get moves for piece1 moving out while piece2 stays
   const piece1Moves = getSinglePieceMoves(
-    mergedPiece.merged.piece1,
+    mergedPiece.piece1,
     mergedPiece.color,
     pos,
     board,
-    { color: mergedPiece.color, type: mergedPiece.merged.piece1 },
+    {
+      color: mergedPiece.color,
+      type: "standard",
+      pieceType: mergedPiece.piece1,
+    },
   ).filter((move) => {
     // Don't include moves to the current position
     return !(move.to.row === pos.row && move.to.col === pos.col);
@@ -471,11 +473,15 @@ function getUnmergeThenMoveMoves(
 
   // Get moves for piece2 moving out while piece1 stays
   const piece2Moves = getSinglePieceMoves(
-    mergedPiece.merged.piece2,
+    mergedPiece.piece2,
     mergedPiece.color,
     pos,
     board,
-    { color: mergedPiece.color, type: mergedPiece.merged.piece2 },
+    {
+      color: mergedPiece.color,
+      type: "standard",
+      pieceType: mergedPiece.piece2,
+    },
   ).filter((move) => {
     // Don't include moves to the current position
     return !(move.to.row === pos.row && move.to.col === pos.col);
@@ -492,9 +498,9 @@ function getUnmergeThenMoveMoves(
       mergeWith: move.mergeWith,
       unmergeDetails: {
         remainingPiecePosition: pos,
-        movingPieceType: mergedPiece.merged.piece1,
+        movingPieceType: mergedPiece.piece1,
       },
-      validForPieceTypes: [mergedPiece.merged.piece1],
+      validForPieceTypes: [mergedPiece.piece1],
     });
   }
 
@@ -509,9 +515,9 @@ function getUnmergeThenMoveMoves(
       mergeWith: move.mergeWith,
       unmergeDetails: {
         remainingPiecePosition: pos,
-        movingPieceType: mergedPiece.merged.piece2,
+        movingPieceType: mergedPiece.piece2,
       },
-      validForPieceTypes: [mergedPiece.merged.piece2],
+      validForPieceTypes: [mergedPiece.piece2],
     });
   }
 
@@ -524,7 +530,7 @@ function getSimpleUnmergeMoves(
   pos: Position,
   board: Board,
 ): Move[] {
-  if (!mergedPiece.merged) return [];
+  if (mergedPiece.type !== "merged") return [];
 
   const moves: Move[] = [];
   const unmergePositions = getUnmergePositions(pos, board);
@@ -550,7 +556,12 @@ export function isInCheck(board: Board, color: PieceColor): boolean {
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col];
-      if (piece?.color === color && piece.type === "king") {
+      if (
+        piece?.color === color &&
+        ((piece.type === "standard" && piece.pieceType === "king") ||
+          (piece.type === "merged" &&
+            (piece.piece1 === "king" || piece.piece2 === "king")))
+      ) {
         kingPos = { row, col };
         break;
       }
@@ -708,14 +719,17 @@ function applyMove(board: Board, move: Move): Board {
     const piece1 = newBoard[move.from.row][move.from.col];
     const piece2 = newBoard[move.to.row][move.to.col];
 
-    if (piece1 && piece2) {
+    if (
+      piece1 &&
+      piece2 &&
+      piece1.type === "standard" &&
+      piece2.type === "standard"
+    ) {
       const mergedPiece: Piece = {
         color: piece1.color,
-        type: piece1.type, // Primary type
-        merged: {
-          piece1: piece1.type,
-          piece2: piece2.type,
-        },
+        type: "merged",
+        piece1: piece1.pieceType,
+        piece2: piece2.pieceType,
       };
 
       newBoard[move.to.row][move.to.col] = mergedPiece;
@@ -724,28 +738,28 @@ function applyMove(board: Board, move: Move): Board {
   } else if (move.moveType === "unmerge") {
     const piece = newBoard[move.from.row][move.from.col];
 
-    if (piece?.merged) {
+    if (piece?.type === "merged") {
       if (move.unmergeDetails) {
         // Unmerge-then-move scenario
         const { remainingPiecePosition, movingPieceType } = move.unmergeDetails;
 
         // Determine which piece types go where
-        const isMovingPiece1 = movingPieceType === piece.merged.piece1;
+        const isMovingPiece1 = movingPieceType === piece.piece1;
         const movingType = movingPieceType;
-        const stayingType = isMovingPiece1
-          ? piece.merged.piece2
-          : piece.merged.piece1;
+        const stayingType = isMovingPiece1 ? piece.piece2 : piece.piece1;
 
         // Place the staying piece
         newBoard[remainingPiecePosition.row][remainingPiecePosition.col] = {
           color: piece.color,
-          type: stayingType,
+          type: "standard",
+          pieceType: stayingType,
         };
 
         // Place the moving piece at destination
         const movingPiece: Piece = {
           color: piece.color,
-          type: movingType,
+          type: "standard",
+          pieceType: movingType,
           hasMoved: true,
         };
 
@@ -753,14 +767,12 @@ function applyMove(board: Board, move: Move): Board {
         newBoard[move.from.row][move.from.col] = null;
 
         // Handle merging at destination if specified
-        if (move.mergeWith) {
+        if (move.mergeWith && move.mergeWith.type === "standard") {
           const mergedPiece: Piece = {
             color: movingPiece.color,
-            type: movingPiece.type,
-            merged: {
-              piece1: movingPiece.type,
-              piece2: move.mergeWith.type,
-            },
+            type: "merged",
+            piece1: movingPiece.pieceType,
+            piece2: move.mergeWith.pieceType,
           };
           newBoard[move.to.row][move.to.col] = mergedPiece;
         }
@@ -771,13 +783,15 @@ function applyMove(board: Board, move: Move): Board {
         // Place first piece at original position
         newBoard[move.from.row][move.from.col] = {
           color: piece.color,
-          type: piece.merged.piece1,
+          type: "standard",
+          pieceType: piece.piece1,
         };
 
         // Place second piece at unmerge position
         newBoard[unmergePos.row][unmergePos.col] = {
           color: piece.color,
-          type: piece.merged.piece2,
+          type: "standard",
+          pieceType: piece.piece2,
         };
       }
     }
@@ -861,12 +875,11 @@ export function filterMovesByViewMode(
   piece: Piece,
   viewMode: ViewMode,
 ): Move[] {
-  if (!piece.merged || viewMode === "merged") {
+  if (piece.type !== "merged" || viewMode === "merged") {
     return moves;
   }
 
-  const targetPieceType =
-    viewMode === "piece1" ? piece.merged.piece1 : piece.merged.piece2;
+  const targetPieceType = viewMode === "piece1" ? piece.piece1 : piece.piece2;
 
   return moves.filter((move) => {
     if (move.moveType === "unmerge" && move.unmergeDetails) {
@@ -886,7 +899,7 @@ export function getAvailableUnmergeOptions(
   pos: Position,
   board: Board,
 ): { hasUnmergeOptions: boolean; canMoveAfterUnmerge: boolean } {
-  if (!piece.merged) {
+  if (piece.type !== "merged") {
     return { hasUnmergeOptions: false, canMoveAfterUnmerge: false };
   }
 

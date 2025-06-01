@@ -13,7 +13,7 @@ export function UnmergeSelector({
   viewMode,
   onViewModeChange,
 }: UnmergeSelectorProps) {
-  if (!piece.merged) return null;
+  if (piece.type !== "merged") return null;
 
   const renderPieceButton = (
     type: PieceType,
@@ -68,7 +68,7 @@ export function UnmergeSelector({
   };
 
   const renderMergedButton = (isSelected: boolean, onClick: () => void) => {
-    if (!piece.merged) return null;
+    if (piece.type !== "merged") return null;
 
     const getPieceSymbol = (pieceType: string, pieceColor: string) => {
       const symbols = {
@@ -111,10 +111,10 @@ export function UnmergeSelector({
       >
         <div className="relative">
           <div className="text-xl">
-            {getPieceSymbol(piece.merged.piece1, piece.color)}
+            {getPieceSymbol(piece.piece1, piece.color)}
           </div>
           <div className="absolute -bottom-1 -right-1 text-sm bg-white rounded-full w-5 h-5 flex items-center justify-center border">
-            {getPieceSymbol(piece.merged.piece2, piece.color)}
+            {getPieceSymbol(piece.piece2, piece.color)}
           </div>
         </div>
         <div className="text-xs text-gray-600 mt-1">Merged</div>
@@ -126,26 +126,26 @@ export function UnmergeSelector({
     <div className="flex justify-center items-center space-x-4 mt-4 p-4 bg-gray-50 rounded-lg">
       <div className="text-sm text-gray-600 mr-2">View moves for:</div>
 
-      {piece.merged &&
+      {piece.type === "merged" &&
         renderPieceButton(
-          piece.merged.piece1,
+          piece.piece1,
           piece.color,
           viewMode === "piece1",
           () => onViewModeChange("piece1"),
-          piece.merged.piece1,
+          piece.piece1,
         )}
 
       {renderMergedButton(viewMode === "merged", () =>
         onViewModeChange("merged"),
       )}
 
-      {piece.merged &&
+      {piece.type === "merged" &&
         renderPieceButton(
-          piece.merged.piece2,
+          piece.piece2,
           piece.color,
           viewMode === "piece2",
           () => onViewModeChange("piece2"),
-          piece.merged.piece2,
+          piece.piece2,
         )}
     </div>
   );
