@@ -123,10 +123,24 @@ function getSinglePieceMoves(
       const direction = color === "w" ? -1 : 1;
       const startRow = color === "w" ? 6 : 1;
 
+      function isEmptyOrSameCanMerge(targetCell: Piece[]) {
+        if (targetCell.length === 0) return true;
+
+        if (
+          targetCell.length === 1 &&
+          canMerge(type, targetCell[0].pieceType) &&
+          targetCell[0].color === color
+        ) {
+          return true;
+        }
+
+        return false;
+      }
+
       // Forward moves
       if (
         isValidPosition({ row: row + direction, col }) &&
-        board[row + direction][col].length === 0
+        isEmptyOrSameCanMerge(board[row + direction][col])
       ) {
         moves.push({
           from: pos,
@@ -135,7 +149,12 @@ function getSinglePieceMoves(
         });
 
         // Double move from start
-        if (row === startRow && board[row + 2 * direction][col].length === 0) {
+        if (
+          row === startRow &&
+          isEmptyOrSameCanMerge(board[row + 2 * direction][col]) &&
+          // but there's no piece in the way
+          board[row + direction][col].length === 0
+        ) {
           moves.push({
             from: pos,
             to: { row: row + 2 * direction, col },
@@ -144,11 +163,12 @@ function getSinglePieceMoves(
         }
       }
 
-      // Captures and merges
+      // Captures
       for (const dcol of [-1, 1]) {
         const newPos = { row: row + direction, col: col + dcol };
         if (isValidPosition(newPos)) {
           const targetCell = board[newPos.row][newPos.col];
+
           if (targetCell.length > 0) {
             const firstTargetPiece = targetCell[0];
             if (firstTargetPiece.color !== color) {
@@ -158,16 +178,6 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "p",
                 capturedPieces: [...targetCell],
-              });
-            } else if (
-              targetCell.length === 1 &&
-              canMerge(type, firstTargetPiece.pieceType)
-            ) {
-              // Merge with friendly piece (only if target has 1 piece)
-              moves.push({
-                from: pos,
-                to: newPos,
-                piece: "p",
               });
             }
           }
