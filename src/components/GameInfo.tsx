@@ -15,12 +15,12 @@ export function GameInfo({
     if (game.isPracticeGame) {
       switch (game.status) {
         case "active":
-          return `${game.currentTurn === "white" ? "White" : "Black"}'s turn`;
+          return `${game.currentTurn === "w" ? "White" : "Black"}'s turn`;
         case "completed": {
           if (game.winner === "draw") {
             return "Practice game ended in a draw";
           }
-          const winnerText = game.winner === "white" ? "White" : "Black";
+          const winnerText = game.winner === "w" ? "White" : "Black";
           return `Practice game complete - ${winnerText} wins!`;
         }
         default:
@@ -32,7 +32,7 @@ export function GameInfo({
       case "waiting":
         return "Waiting for opponent";
       case "active": {
-        if (game.currentTurn === "white") {
+        if (game.currentTurn === "w") {
           return isWhitePlayer ? "Your turn" : "Opponent's turn";
         } else {
           return isBlackPlayer ? "Your turn" : "Opponent's turn";
@@ -42,10 +42,10 @@ export function GameInfo({
         if (game.winner === "draw") {
           return "Game ended in a draw";
         }
-        const winnerText = game.winner === "white" ? "White" : "Black";
+        const winnerText = game.winner === "w" ? "White" : "Black";
         const youWon =
-          (game.winner === "white" && isWhitePlayer) ||
-          (game.winner === "black" && isBlackPlayer);
+          (game.winner === "w" && isWhitePlayer) ||
+          (game.winner === "b" && isBlackPlayer);
         return `${winnerText} wins! ${youWon ? "You won!" : "You lost."}`;
       }
       default:
@@ -58,8 +58,8 @@ export function GameInfo({
       if (game.winner === "draw") return "text-yellow-600";
       if (game.isPracticeGame) return "text-blue-600"; // Neutral color for practice games
       const youWon =
-        (game.winner === "white" && isWhitePlayer) ||
-        (game.winner === "black" && isBlackPlayer);
+        (game.winner === "w" && isWhitePlayer) ||
+        (game.winner === "b" && isBlackPlayer);
       return youWon ? "text-green-600" : "text-red-600";
     }
     return "text-blue-600";

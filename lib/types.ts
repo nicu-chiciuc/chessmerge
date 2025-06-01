@@ -9,8 +9,8 @@ export interface GameMove {
 
 export interface GameState {
   status: "waiting" | "active" | "completed" | "abandoned";
-  currentTurn: "white" | "black";
-  winner?: "white" | "black" | "draw";
+  currentTurn: "w" | "b";
+  winner?: "w" | "b" | "draw";
 }
 
 export interface UserProfile {

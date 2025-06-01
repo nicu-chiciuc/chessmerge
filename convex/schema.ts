@@ -13,9 +13,9 @@ const applicationTables = {
       v.literal("completed"),
       v.literal("abandoned"),
     ),
-    currentTurn: v.union(v.literal("white"), v.literal("black")),
+    currentTurn: v.union(v.literal("w"), v.literal("b")),
     winner: v.optional(
-      v.union(v.literal("white"), v.literal("black"), v.literal("draw")),
+      v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
     ),
     board: v.string(), // JSON serialized board state
     moveHistory: v.array(v.string()), // JSON serialized moves

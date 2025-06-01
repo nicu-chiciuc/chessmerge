@@ -4,13 +4,30 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 // Piece types and colors
 export type PieceType = "p" | "r" | "n" | "b" | "q" | "k";
-export type PieceColor = "white" | "black";
+export type PieceColor = "w" | "b";
+
+type MergeablePieceType = "p" | "r" | "n" | "b" | "q";
+export type MergedPieceTypes =
+  | "pp"
+  | "pr"
+  | "pn"
+  | "pb"
+  | "pq"
+  | "rr"
+  | "rn"
+  | "rb"
+  | "rq"
+  | "nn"
+  | "nb"
+  | "nq"
+  | "bb"
+  | "bq"
+  | "qq";
 
 // Simplified piece representation
 export type Piece = {
   color: PieceColor;
   pieceType: PieceType;
-  hasMoved?: boolean;
 };
 
 type Col = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h";
@@ -39,7 +56,9 @@ export interface Move {
   from: Position;
   to: Position;
 
-  pieceIndex: number; // Which piece in the source cell is moving (0 or 1)
+  piece: PieceType | MergedPieceTypes;
+
+  // pieceIndex: number; // Which piece in the source cell is moving (0 or 1)
   capturedPieces?: Piece[]; // Pieces captured at destination
   isCheck?: boolean;
   isCheckmate?: boolean;
@@ -70,15 +89,15 @@ export function createInitialBoard(): Board {
   // White pieces
   const whiteBackRow: PieceType[] = ["r", "n", "b", "q", "k", "b", "n", "r"];
   for (let col = 0; col < 8; col++) {
-    board[7][col] = [{ color: "white", pieceType: whiteBackRow[col] }];
-    board[6][col] = [{ color: "white", pieceType: "p" }];
+    board[7][col] = [{ color: "w", pieceType: whiteBackRow[col] }];
+    board[6][col] = [{ color: "w", pieceType: "p" }];
   }
 
   // Black pieces
   const blackBackRow: PieceType[] = ["r", "n", "b", "q", "k", "b", "n", "r"];
   for (let col = 0; col < 8; col++) {
-    board[0][col] = [{ color: "black", pieceType: blackBackRow[col] }];
-    board[1][col] = [{ color: "black", pieceType: "p" }];
+    board[0][col] = [{ color: "b", pieceType: blackBackRow[col] }];
+    board[1][col] = [{ color: "b", pieceType: "p" }];
   }
 
   return board;
@@ -92,23 +111,15 @@ export function isValidPosition(pos: Position): boolean {
 // Get piece moves for a specific piece at a position
 export function getPieceMoves(
   piece: Piece,
-  pieceIndex: number,
   pos: Position,
   board: Board,
 ): Move[] {
-  return getSinglePieceMoves(
-    piece.pieceType,
-    piece.color,
-    pieceIndex,
-    pos,
-    board,
-  );
+  return getSinglePieceMoves(piece.pieceType, piece.color, pos, board);
 }
 
 function getSinglePieceMoves(
   type: PieceType,
   color: PieceColor,
-  pieceIndex: number,
   pos: Position,
   board: Board,
 ): Move[] {
@@ -117,8 +128,8 @@ function getSinglePieceMoves(
 
   switch (type) {
     case "p": {
-      const direction = color === "white" ? -1 : 1;
-      const startRow = color === "white" ? 6 : 1;
+      const direction = color === "w" ? -1 : 1;
+      const startRow = color === "w" ? 6 : 1;
 
       // Forward moves
       if (
@@ -128,7 +139,7 @@ function getSinglePieceMoves(
         moves.push({
           from: pos,
           to: { row: row + direction, col },
-          pieceIndex,
+          piece: "p",
           moveType: "normal",
         });
 
@@ -137,7 +148,7 @@ function getSinglePieceMoves(
           moves.push({
             from: pos,
             to: { row: row + 2 * direction, col },
-            pieceIndex,
+            piece: "p",
             moveType: "normal",
           });
         }
@@ -155,7 +166,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "p",
                 capturedPieces: [...targetCell],
                 moveType: "normal",
               });
@@ -167,7 +178,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "p",
                 moveType: "merge",
               });
             }
@@ -194,7 +205,7 @@ function getSinglePieceMoves(
             moves.push({
               from: pos,
               to: newPos,
-              pieceIndex,
+              piece: "r",
               moveType: "normal",
             });
           } else {
@@ -204,7 +215,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "r",
                 capturedPieces: [...targetCell],
                 moveType: "normal",
               });
@@ -216,7 +227,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "r",
                 moveType: "merge",
               });
             }
@@ -246,7 +257,7 @@ function getSinglePieceMoves(
             moves.push({
               from: pos,
               to: newPos,
-              pieceIndex,
+              piece: "n",
               moveType: "normal",
             });
           } else {
@@ -256,7 +267,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "n",
                 capturedPieces: [...targetCell],
                 moveType: "normal",
               });
@@ -268,7 +279,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "n",
                 moveType: "merge",
               });
             }
@@ -295,7 +306,7 @@ function getSinglePieceMoves(
             moves.push({
               from: pos,
               to: newPos,
-              pieceIndex,
+              piece: "b",
               moveType: "normal",
             });
           } else {
@@ -305,7 +316,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "b",
                 capturedPieces: [...targetCell],
                 moveType: "normal",
               });
@@ -317,7 +328,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "b",
                 moveType: "merge",
               });
             }
@@ -330,8 +341,8 @@ function getSinglePieceMoves(
 
     case "q": {
       // Combination of rook and bishop
-      moves.push(...getSinglePieceMoves("r", color, pieceIndex, pos, board));
-      moves.push(...getSinglePieceMoves("b", color, pieceIndex, pos, board));
+      moves.push(...getSinglePieceMoves("r", color, pos, board));
+      moves.push(...getSinglePieceMoves("b", color, pos, board));
       break;
     }
 
@@ -346,7 +357,7 @@ function getSinglePieceMoves(
               moves.push({
                 from: pos,
                 to: newPos,
-                pieceIndex,
+                piece: "k",
                 moveType: "normal",
               });
             } else {
@@ -356,7 +367,7 @@ function getSinglePieceMoves(
                 moves.push({
                   from: pos,
                   to: newPos,
-                  pieceIndex,
+                  piece: "k",
                   capturedPieces: [...targetCell],
                   moveType: "normal",
                 });
@@ -403,14 +414,14 @@ export function isInCheck(board: Board, color: PieceColor): boolean {
   if (!kingPos) return false;
 
   // Check if any opponent piece can attack the king
-  const opponentColor = color === "white" ? "black" : "white";
+  const opponentColor = color === "w" ? "b" : "w";
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const cell = board[row][col];
       for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
         const piece = cell[pieceIndex];
         if (piece.color === opponentColor) {
-          const moves = getPieceMoves(piece, pieceIndex, { row, col }, board);
+          const moves = getPieceMoves(piece, { row, col }, board);
           if (
             moves.some(
               (move) =>
@@ -438,7 +449,7 @@ export const createGame = mutation({
     return await ctx.db.insert("games", {
       whitePlayerId: userId,
       status: "waiting",
-      currentTurn: "white",
+      currentTurn: "w",
       board: JSON.stringify(board),
       moveHistory: [],
       lastMoveAt: Date.now(),
@@ -459,7 +470,7 @@ export const createPracticeGame = mutation({
       blackPlayerId: userId, // Same user plays both sides
       isPracticeGame: true,
       status: "active", // Start immediately, no need to wait
-      currentTurn: "white",
+      currentTurn: "w",
       board: JSON.stringify(board),
       moveHistory: [],
       lastMoveAt: Date.now(),
@@ -513,7 +524,7 @@ export const makeMove = mutation({
       // In practice mode, user can make moves for either side
     } else {
       // For regular games, enforce turn order
-      if (game.currentTurn !== (isWhitePlayer ? "white" : "black")) {
+      if (game.currentTurn !== (isWhitePlayer ? "w" : "b")) {
         throw new Error("Not your turn");
       }
     }
@@ -523,12 +534,12 @@ export const makeMove = mutation({
 
     // Validate and apply move
     const newBoard = applyMove(board, move);
-    const nextTurn = game.currentTurn === "white" ? "black" : "white";
+    const nextTurn = game.currentTurn === "w" ? "b" : "w";
 
     // Check for game end conditions
     const isCheck = isInCheck(newBoard, nextTurn);
     let status: "waiting" | "active" | "completed" | "abandoned" = game.status;
-    let winner: "white" | "black" | "draw" | undefined = game.winner;
+    let winner: "w" | "b" | "draw" | undefined = game.winner;
     let gameEndReason:
       | "checkmate"
       | "stalemate"
@@ -573,34 +584,52 @@ export const makeMove = mutation({
   },
 });
 
+export function boardToString(board: Board): string {
+  return board
+    .map((row) =>
+      row
+        .map((cell) => {
+          if (cell.length === 0) {
+            return ".  ";
+          }
+          if (cell.length === 1) {
+            return cell[0].color + cell[0].pieceType + " ";
+          }
+          if (cell.length === 2) {
+            return cell[0].color + cell[0].pieceType + cell[1].pieceType;
+          }
+          throw new Error("Invalid board state");
+        })
+        .join(" "),
+    )
+    .join("\n");
+}
+
 function applyMove(board: Board, move: Move): Board {
   const newBoard = board.map((row) => row.map((cell) => [...cell]));
 
   const sourceCell = newBoard[move.from.row][move.from.col];
-  const movingPiece = sourceCell[move.pieceIndex];
 
-  if (!movingPiece) {
+  if (sourceCell.length === 0) {
     throw new Error("No piece found at source position");
   }
 
-  // Remove the moving piece from source
-  sourceCell.splice(move.pieceIndex, 1);
+  if (move.piece.length === 2 && sourceCell.length !== 2) {
+    throw new Error("Trying to move 2 pieces but source cell has only 1 piece");
+  }
 
-  if (move.moveType === "merge") {
-    // Add the piece to the target cell (merging)
-    const targetCell = newBoard[move.to.row][move.to.col];
-    targetCell.push({ ...movingPiece, hasMoved: true });
-  } else if (move.moveType === "unmerge") {
-    // Move one piece out, leaving the other behind
-    newBoard[move.to.row][move.to.col] = [{ ...movingPiece, hasMoved: true }];
-  } else {
-    // Normal move or capture
-    if (move.capturedPieces) {
-      // Clear captured pieces
-      newBoard[move.to.row][move.to.col] = [];
+  // Basic move
+  if (move.piece.length === 1) {
+    if (
+      (sourceCell[0].pieceType !== move.piece && sourceCell[1].pieceType,
+      move.piece)
+    ) {
+      throw new Error("Trying to move a piece that is not in the source cell");
     }
-    // Place the moving piece
-    newBoard[move.to.row][move.to.col] = [{ ...movingPiece, hasMoved: true }];
+
+    if (move.capturedPieces) {
+      throw new Error("Trying to move a piece that is not the same type");
+    }
   }
 
   return newBoard;

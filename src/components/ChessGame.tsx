@@ -66,14 +66,14 @@ export function ChessGame({ gameId }: ChessGameProps) {
     game &&
     (game.isPracticeGame
       ? isWhitePlayer || isBlackPlayer
-      : (game.currentTurn === "white" && isWhitePlayer) ||
-        (game.currentTurn === "black" && isBlackPlayer));
+      : (game.currentTurn === "w" && isWhitePlayer) ||
+        (game.currentTurn === "b" && isBlackPlayer));
 
   useEffect(() => {
     if (game?.status === "completed") {
       if (game.gameEndReason === "checkmate") {
         toast.success(
-          `Checkmate! ${game.winner === "white" ? "White" : "Black"} wins!`,
+          `Checkmate! ${game.winner === "w" ? "White" : "Black"} wins!`,
         );
       } else if (game.gameEndReason === "stalemate") {
         toast.info("Stalemate! Game is a draw.");

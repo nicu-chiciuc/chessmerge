@@ -27,7 +27,7 @@ interface ChessBoardProps {
   flipped?: boolean;
   unmergeMode?: boolean;
   isMyTurn?: boolean;
-  currentTurn?: "white" | "black";
+  currentTurn?: "w" | "b";
 }
 
 export function ChessBoard({
@@ -42,7 +42,7 @@ export function ChessBoard({
   flipped = false,
   unmergeMode = false,
   isMyTurn = false,
-  currentTurn = "white",
+  currentTurn = "w",
 }: ChessBoardProps) {
   const [draggedPiece, setDraggedPiece] = useState<{
     piece: Piece;
