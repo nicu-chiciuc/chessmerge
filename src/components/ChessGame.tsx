@@ -170,9 +170,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
     try {
       await makeMove({ gameId, move: JSON.stringify(move) });
 
-      if (move.moveType === "merge") {
-        toast.success("Pieces merged!");
-      } else if (move.capturedPieces && move.capturedPieces.length > 0) {
+      if (move.capturedPieces && move.capturedPieces.length > 0) {
         toast.success("Piece captured!");
       }
     } catch {

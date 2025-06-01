@@ -56,8 +56,6 @@ export function ChessBoard({
   board,
   selectedSquare,
   validMoves,
-  fullMoves = [],
-  // unmergePositions,
   onSquareClick,
   onRightClick,
   onPieceSelectionChange,
@@ -189,18 +187,6 @@ export function ChessBoard({
       (move) => move.row === row && move.col === col,
     );
 
-    // Check if this is an unmerge move
-    const unmergeMove = fullMoves.find(
-      (move) =>
-        move.to.row === row &&
-        move.to.col === col &&
-        move.moveType === "unmerge",
-    );
-    const isUnmergeMove = !!unmergeMove;
-
-    // const isUnmergePosition = unmergePositions.some(
-    //   (pos) => pos.row === row && pos.col === col,
-    // );
     const isDraggedSquare =
       draggedPiece?.position.row === row && draggedPiece?.position.col === col;
     const isDragOver =
@@ -272,31 +258,12 @@ export function ChessBoard({
         )}
 
         {/* Move indicators */}
-        {isValidMove && cell.length === 0 && !isUnmergeMove && (
+        {isValidMove && cell.length === 0 && (
           <div className="absolute inset-0 border-4 border-green-500 rounded pointer-events-none" />
         )}
-        {isValidMove && cell.length > 0 && !isUnmergeMove && (
+        {isValidMove && cell.length > 0 && (
           <div className="absolute inset-0 border-4 border-green-500 rounded pointer-events-none" />
         )}
-        {/* Unmerge move indicator */}
-        {isUnmergeMove && cell.length === 0 && (
-          <div className="relative">
-            <div className="absolute inset-0 border-2 border-yellow-500 rounded opacity-80 pointer-events-none" />
-            <div className="absolute top-0 right-0 text-xs font-bold text-yellow-600">
-              ⚡
-            </div>
-          </div>
-        )}
-        {isUnmergeMove && cell.length > 0 && (
-          <div className="absolute inset-0 border-2 border-yellow-500 rounded opacity-80 pointer-events-none">
-            <div className="absolute top-0 right-0 text-xs font-bold text-yellow-600 bg-white rounded-full w-4 h-4 flex items-center justify-center">
-              ⚡
-            </div>
-          </div>
-        )}
-        {/* {isUnmergePosition && (
-          <div className="absolute inset-0 border-2 border-purple-500 rounded opacity-60 pointer-events-none" />
-        )} */}
       </div>
     );
   };
@@ -376,14 +343,8 @@ export function ChessBoard({
           <div className="flex items-center justify-center gap-4">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 bg-green-500 rounded-full opacity-60"></div>
-              <span>Normal move</span>
+              <span>Move</span>
             </div>
-            {fullMoves.some((m) => m.moveType === "unmerge") && (
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full opacity-80"></div>
-                <span>⚡ Unmerge move</span>
-              </div>
-            )}
           </div>
         </div>
       )}

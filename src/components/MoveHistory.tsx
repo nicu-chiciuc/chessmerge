@@ -15,12 +15,6 @@ export function MoveHistory({ moves }: MoveHistoryProps) {
       moveText += " (capture)";
     }
 
-    if (move.moveType === "merge") {
-      moveText += " (merge)";
-    } else if (move.moveType === "unmerge") {
-      moveText += " (unmerge)";
-    }
-
     if (move.isCheck) {
       moveText += "+";
     }

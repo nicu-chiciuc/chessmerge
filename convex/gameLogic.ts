@@ -63,14 +63,6 @@ export interface Move {
   isCheck?: boolean;
   isCheckmate?: boolean;
   isStalemate?: boolean;
-
-  moveType?:
-    | "normal"
-    | "merge"
-    | "unmerge"
-    | "unmerge+merge"
-    | "castle"
-    | "enpassant";
 }
 
 // Board where each cell can contain 0-2 pieces of the same color
@@ -140,7 +132,6 @@ function getSinglePieceMoves(
           from: pos,
           to: { row: row + direction, col },
           piece: "p",
-          moveType: "normal",
         });
 
         // Double move from start
@@ -149,7 +140,6 @@ function getSinglePieceMoves(
             from: pos,
             to: { row: row + 2 * direction, col },
             piece: "p",
-            moveType: "normal",
           });
         }
       }
@@ -168,7 +158,6 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "p",
                 capturedPieces: [...targetCell],
-                moveType: "normal",
               });
             } else if (
               targetCell.length === 1 &&
@@ -179,7 +168,6 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "p",
-                moveType: "merge",
               });
             }
           }
@@ -206,7 +194,6 @@ function getSinglePieceMoves(
               from: pos,
               to: newPos,
               piece: "r",
-              moveType: "normal",
             });
           } else {
             const firstTargetPiece = targetCell[0];
@@ -217,7 +204,6 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "r",
                 capturedPieces: [...targetCell],
-                moveType: "normal",
               });
             } else if (
               targetCell.length === 1 &&
@@ -228,7 +214,6 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "r",
-                moveType: "merge",
               });
             }
             break;
@@ -258,7 +243,6 @@ function getSinglePieceMoves(
               from: pos,
               to: newPos,
               piece: "n",
-              moveType: "normal",
             });
           } else {
             const firstTargetPiece = targetCell[0];
@@ -269,7 +253,6 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "n",
                 capturedPieces: [...targetCell],
-                moveType: "normal",
               });
             } else if (
               targetCell.length === 1 &&
@@ -280,7 +263,6 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "n",
-                moveType: "merge",
               });
             }
           }
@@ -307,7 +289,6 @@ function getSinglePieceMoves(
               from: pos,
               to: newPos,
               piece: "b",
-              moveType: "normal",
             });
           } else {
             const firstTargetPiece = targetCell[0];
@@ -318,7 +299,6 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "b",
                 capturedPieces: [...targetCell],
-                moveType: "normal",
               });
             } else if (
               targetCell.length === 1 &&
@@ -329,7 +309,6 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "b",
-                moveType: "merge",
               });
             }
             break;
@@ -358,7 +337,6 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "k",
-                moveType: "normal",
               });
             } else {
               const firstTargetPiece = targetCell[0];
@@ -369,7 +347,6 @@ function getSinglePieceMoves(
                   to: newPos,
                   piece: "k",
                   capturedPieces: [...targetCell],
-                  moveType: "normal",
                 });
               }
               // Note: Kings cannot merge as per the canMerge function

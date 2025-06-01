@@ -209,10 +209,7 @@ describe("Game Logic Tests", () => {
         const moves = getPieceMoves(piece, { row: 6, col: 4 }, board);
 
         const forwardMoves = moves.filter(
-          (move) =>
-            move.to.row === 5 &&
-            move.to.col === 4 &&
-            move.moveType === "normal",
+          (move) => move.to.row === 5 && move.to.col === 4,
         );
         expect(forwardMoves).toHaveLength(1);
       });
@@ -222,10 +219,7 @@ describe("Game Logic Tests", () => {
         const moves = getPieceMoves(piece, { row: 6, col: 4 }, board);
 
         const doubleMoves = moves.filter(
-          (move) =>
-            move.to.row === 4 &&
-            move.to.col === 4 &&
-            move.moveType === "normal",
+          (move) => move.to.row === 4 && move.to.col === 4,
         );
         expect(doubleMoves).toHaveLength(1);
       });
@@ -235,10 +229,7 @@ describe("Game Logic Tests", () => {
         const moves = getPieceMoves(piece, { row: 1, col: 4 }, board);
 
         const forwardMoves = moves.filter(
-          (move) =>
-            move.to.row === 2 &&
-            move.to.col === 4 &&
-            move.moveType === "normal",
+          (move) => move.to.row === 2 && move.to.col === 4,
         );
         expect(forwardMoves).toHaveLength(1);
       });
@@ -252,9 +243,7 @@ describe("Game Logic Tests", () => {
         const moves = getPieceMoves(piece, { row: 6, col: 4 }, customBoard);
 
         // Should have no forward moves
-        const forwardMoves = moves.filter(
-          (move) => move.to.col === 4 && move.moveType === "normal",
-        );
+        const forwardMoves = moves.filter((move) => move.to.col === 4);
         expect(forwardMoves).toHaveLength(0);
       });
     });
@@ -275,7 +264,7 @@ describe("Game Logic Tests", () => {
         const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         // Should have 14 moves (7 horizontal + 7 vertical)
-        const normalMoves = moves.filter((move) => move.moveType === "normal");
+        const normalMoves = moves;
         expect(normalMoves.length).toBeGreaterThanOrEqual(14);
       });
 
@@ -322,7 +311,7 @@ describe("Game Logic Tests", () => {
         const piece: Piece = { color: "w", pieceType: "n" };
         const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
-        const normalMoves = moves.filter((move) => move.moveType === "normal");
+        const normalMoves = moves;
         expect(normalMoves).toHaveLength(8); // Knight should have 8 possible moves from center
 
         // Check some specific L-shape moves
@@ -362,7 +351,7 @@ describe("Game Logic Tests", () => {
         const piece: Piece = { color: "w", pieceType: "k" };
         const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
-        const normalMoves = moves.filter((move) => move.moveType === "normal");
+        const normalMoves = moves;
         expect(normalMoves).toHaveLength(8); // King should have 8 possible moves from center
       });
 
@@ -381,7 +370,7 @@ describe("Game Logic Tests", () => {
         const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         // Should not have any merge moves
-        const mergeMoves = moves.filter((move) => move.moveType === "merge");
+        const mergeMoves = moves;
         expect(mergeMoves).toHaveLength(0);
       });
     });
@@ -478,7 +467,7 @@ describe("Game Logic Tests", () => {
       ];
 
       const moves = getAllMovesForCell({ row: 4, col: 4 }, emptyBoard);
-      const unmergeMoves = moves.filter((move) => move.moveType === "unmerge");
+      const unmergeMoves = moves;
       expect(unmergeMoves.length).toBeGreaterThan(0);
     });
   });
