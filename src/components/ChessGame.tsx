@@ -115,6 +115,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
     const clickedCell = board[row][col];
     const position = { row, col };
 
+    console.log({ clickedCell, selectedSquare, validMoves });
+
     if (unmergeMode && selectedSquare) {
       // Handle unmerge
       const selectedCell = board[selectedSquare.row][selectedSquare.col];
@@ -146,6 +148,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       const targetMove = validMoves.find(
         (move) => move.to.row === row && move.to.col === col,
       );
+      console.log({ targetMove });
       if (targetMove) {
         await executeMove(targetMove);
       }
@@ -162,6 +165,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       setSelectedPieceMode("both");
 
       const allMoves = getAllMovesForCell(position, board);
+      console.log({ allMoves });
       setValidMoves(allMoves);
     }
   };

@@ -320,8 +320,17 @@ function getSinglePieceMoves(
 
     case "q": {
       // Combination of rook and bishop
-      moves.push(...getSinglePieceMoves("r", color, pos, board));
-      moves.push(...getSinglePieceMoves("b", color, pos, board));
+      moves.push(
+        ...[
+          ...getSinglePieceMoves("r", color, pos, board),
+          ...getSinglePieceMoves("b", color, pos, board),
+        ].map(
+          (move): Move => ({
+            ...move,
+            piece: "q",
+          }),
+        ),
+      );
       break;
     }
 
