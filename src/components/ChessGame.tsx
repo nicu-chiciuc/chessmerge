@@ -165,7 +165,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
       setSelectedPieceMode("both");
 
       const allMoves = getAllMovesForCell(position, board);
-      console.log({ allMoves });
       setValidMoves(allMoves);
     }
   };
@@ -209,7 +208,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
             board={board}
             selectedSquare={selectedSquare}
             validMoves={validPositions}
-            fullMoves={validMoves}
+            // fullMoves={validMoves}
             // unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
             onRightClick={handleRightClick}

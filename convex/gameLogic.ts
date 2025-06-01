@@ -58,6 +58,9 @@ export interface Move {
 
   piece: PieceType | MergedPieceTypes;
 
+  // Means that the target cell already contains a single piece of same color
+  mergesTarget?: boolean;
+
   // pieceIndex: number; // Which piece in the source cell is moving (0 or 1)
   capturedPieces?: Piece[]; // Pieces captured at destination
   isCheck?: boolean;
@@ -146,6 +149,7 @@ function getSinglePieceMoves(
           from: pos,
           to: { row: row + direction, col },
           piece: "p",
+          mergesTarget: board[row + direction][col].length === 1,
         });
 
         // Double move from start
@@ -159,6 +163,7 @@ function getSinglePieceMoves(
             from: pos,
             to: { row: row + 2 * direction, col },
             piece: "p",
+            mergesTarget: board[row + 2 * direction][col].length === 1,
           });
         }
       }
@@ -224,6 +229,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "r",
+                mergesTarget: true,
               });
             }
             break;
@@ -273,6 +279,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "n",
+                mergesTarget: true,
               });
             }
           }
@@ -319,6 +326,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "b",
+                mergesTarget: true,
               });
             }
             break;
@@ -776,6 +784,11 @@ export function getAllMovesForCell(pos: Position, board: Board): Move[] {
     const piece = cell[pieceIndex];
     const pieceMoves = getPieceMoves(piece, pos, board);
     moves.push(...pieceMoves);
+  }
+
+  if (cell.length === 2) {
+    // filter out moves that would merge with the target cell
+    return moves.filter((move) => !move.mergesTarget);
   }
 
   return moves;
