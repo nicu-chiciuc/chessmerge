@@ -613,7 +613,6 @@ function applyMove(board: Board, move: Move): Board {
 
   const sourceCell = newBoard[move.from.row][move.from.col];
   const targetCell = newBoard[move.to.row][move.to.col];
-  console.log({ move, sourceCell, targetCell });
 
   if (sourceCell.length === 0) {
     throw new Error("No piece found at source position");
