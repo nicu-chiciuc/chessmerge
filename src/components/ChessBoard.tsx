@@ -20,7 +20,7 @@ interface ChessBoardProps {
   selectedSquare: Position | null;
   validMoves: Position[];
   fullMoves?: Move[];
-  unmergePositions: Position[];
+  // unmergePositions: Position[];
   onSquareClick: (row: number, col: number) => void;
   onRightClick?: (row: number, col: number) => void;
   onPieceSelectionChange?: (mode: "both" | "first" | "second") => void;
@@ -30,12 +30,34 @@ interface ChessBoardProps {
   currentTurn?: "w" | "b";
 }
 
+const getPieceSvg = (piece: Piece) => {
+  const pieceMap = {
+    w: {
+      k: whiteKingSvg,
+      q: whiteQueenSvg,
+      r: whiteRookSvg,
+      b: whiteBishopSvg,
+      n: whiteKnightSvg,
+      p: whitePawnSvg,
+    },
+    b: {
+      k: blackKingSvg,
+      q: blackQueenSvg,
+      r: blackRookSvg,
+      b: blackBishopSvg,
+      n: blackKnightSvg,
+      p: blackPawnSvg,
+    },
+  };
+  return pieceMap[piece.color][piece.pieceType];
+};
+
 export function ChessBoard({
   board,
   selectedSquare,
   validMoves,
   fullMoves = [],
-  unmergePositions,
+  // unmergePositions,
   onSquareClick,
   onRightClick,
   onPieceSelectionChange,
@@ -106,31 +128,9 @@ export function ChessBoard({
     dragImage.className = "w-8 h-8 flex items-center justify-center";
 
     const img = document.createElement("img");
-    const getPieceSvg = (type: string, color: string) => {
-      const pieceMap = {
-        white: {
-          king: whiteKingSvg,
-          queen: whiteQueenSvg,
-          rook: whiteRookSvg,
-          bishop: whiteBishopSvg,
-          knight: whiteKnightSvg,
-          pawn: whitePawnSvg,
-        },
-        black: {
-          king: blackKingSvg,
-          queen: blackQueenSvg,
-          rook: blackRookSvg,
-          bishop: blackBishopSvg,
-          knight: blackKnightSvg,
-          pawn: blackPawnSvg,
-        },
-      };
-      return pieceMap[color as keyof typeof pieceMap]?.[
-        type as keyof typeof pieceMap.white
-      ];
-    };
 
-    img.src = getPieceSvg(piece.pieceType, piece.color) || "";
+    img.src = getPieceSvg(piece);
+    console.log("img src", piece, img.src);
     img.className = "w-8 h-8 object-contain";
     dragImage.appendChild(img);
 
@@ -198,9 +198,9 @@ export function ChessBoard({
     );
     const isUnmergeMove = !!unmergeMove;
 
-    const isUnmergePosition = unmergePositions.some(
-      (pos) => pos.row === row && pos.col === col,
-    );
+    // const isUnmergePosition = unmergePositions.some(
+    //   (pos) => pos.row === row && pos.col === col,
+    // );
     const isDraggedSquare =
       draggedPiece?.position.row === row && draggedPiece?.position.col === col;
     const isDragOver =
@@ -294,9 +294,9 @@ export function ChessBoard({
             </div>
           </div>
         )}
-        {isUnmergePosition && (
+        {/* {isUnmergePosition && (
           <div className="absolute inset-0 border-2 border-purple-500 rounded opacity-60 pointer-events-none" />
-        )}
+        )} */}
       </div>
     );
   };
@@ -505,32 +505,7 @@ interface ChessPieceContentProps {
 }
 
 function ChessPieceContent({ piece, size }: ChessPieceContentProps) {
-  const getPieceSvg = (type: string, color: string) => {
-    const pieceMap = {
-      white: {
-        king: whiteKingSvg,
-        queen: whiteQueenSvg,
-        rook: whiteRookSvg,
-        bishop: whiteBishopSvg,
-        knight: whiteKnightSvg,
-        pawn: whitePawnSvg,
-      },
-      black: {
-        king: blackKingSvg,
-        queen: blackQueenSvg,
-        rook: blackRookSvg,
-        bishop: blackBishopSvg,
-        knight: blackKnightSvg,
-        pawn: blackPawnSvg,
-      },
-    };
-
-    return pieceMap[color as keyof typeof pieceMap]?.[
-      type as keyof typeof pieceMap.white
-    ];
-  };
-
-  const svgSrc = getPieceSvg(piece.pieceType, piece.color);
+  const svgSrc = getPieceSvg(piece);
 
   const sizeClasses = {
     small: "w-3 h-3",

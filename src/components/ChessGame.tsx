@@ -11,7 +11,6 @@ import {
   Move,
   Position,
   getAllMovesForCell,
-  getUnmergeMoves,
   getPieceMoves,
 } from "../../convex/gameLogic";
 import { toast } from "sonner";
@@ -28,7 +27,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Move[]>([]);
   const [unmergeMode, setUnmergeMode] = useState(false);
-  const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
+  // const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
   const [selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
   >("both");
@@ -95,25 +94,11 @@ export function ChessGame({ gameId }: ChessGameProps) {
       } else if (mode === "first" && selectedCell.length >= 1) {
         // Get moves only for the first piece
         const piece = selectedCell[0];
-        newValidMoves = getPieceMoves(piece, 0, selectedSquare, board);
-
-        // Add unmerge moves if applicable (both pieces can unmerge)
-        if (selectedCell.length === 2) {
-          const unmergeMoves = getUnmergeMoves(selectedSquare, board);
-          newValidMoves.push(
-            ...unmergeMoves.filter((move) => move.pieceIndex === 0),
-          );
-        }
+        newValidMoves = getPieceMoves(piece, selectedSquare, board);
       } else if (mode === "second" && selectedCell.length >= 2) {
         // Get moves only for the second piece
         const piece = selectedCell[1];
-        newValidMoves = getPieceMoves(piece, 1, selectedSquare, board);
-
-        // Add unmerge moves if applicable (both pieces can unmerge)
-        const unmergeMoves = getUnmergeMoves(selectedSquare, board);
-        newValidMoves.push(
-          ...unmergeMoves.filter((move) => move.pieceIndex === 1),
-        );
+        newValidMoves = getPieceMoves(piece, selectedSquare, board);
       }
 
       setValidMoves(newValidMoves);
@@ -129,8 +114,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
       setUnmergeMode(true);
       setValidMoves([]);
       setSelectedPieceMode("both");
-      const unmergeMoves = getUnmergeMoves({ row, col }, board);
-      setUnmergePositions(unmergeMoves.map((move) => move.to));
+      // const unmergeMoves = getUnmergeMoves({ row, col }, board);
+      // setUnmergePositions(unmergeMoves.map((move) => move.to));
       toast.info("Click an empty adjacent square to unmerge");
     }
   };
@@ -150,14 +135,15 @@ export function ChessGame({ gameId }: ChessGameProps) {
           const move: Move = {
             from: selectedSquare,
             to: position,
-            pieceIndex: 0,
+            // @ts-expect-error TODO: fix this
+            piece: selectedCell[0].pieceType + selectedCell[1].pieceType,
             moveType: "unmerge",
           };
 
           await makeMove({ gameId, move: JSON.stringify(move) });
           setSelectedSquare(null);
           setUnmergeMode(false);
-          setUnmergePositions([]);
+          // setUnmergePositions([]);
           setSelectedPieceMode("both");
         } catch {
           toast.error("Invalid unmerge");
@@ -209,7 +195,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
     setSelectedSquare(null);
     setUnmergeMode(false);
     setValidMoves([]);
-    setUnmergePositions([]);
+    // setUnmergePositions([]);
     setSelectedPieceMode("both");
   };
 
@@ -233,7 +219,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
             selectedSquare={selectedSquare}
             validMoves={validPositions}
             fullMoves={validMoves}
-            unmergePositions={unmergePositions}
+            // unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
             onRightClick={handleRightClick}
             onPieceSelectionChange={handlePieceSelectionChange}
