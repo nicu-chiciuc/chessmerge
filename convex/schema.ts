@@ -6,6 +6,7 @@ const applicationTables = {
   games: defineTable({
     whitePlayerId: v.id("users"),
     blackPlayerId: v.optional(v.id("users")),
+    isPracticeGame: v.optional(v.boolean()),
     status: v.union(
       v.literal("waiting"),
       v.literal("active"),

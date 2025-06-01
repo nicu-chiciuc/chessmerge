@@ -11,6 +11,7 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
   const myGames = useQuery(api.gameLogic.listGames) || [];
   const waitingGames = useQuery(api.gameLogic.getWaitingGames) || [];
   const createGame = useMutation(api.gameLogic.createGame);
+  const createPracticeGame = useMutation(api.gameLogic.createPracticeGame);
   const joinGame = useMutation(api.gameLogic.joinGame);
 
   const handleCreateGame = async () => {
@@ -20,6 +21,16 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
       toast.success("Game created! Waiting for opponent...");
     } catch (error) {
       toast.error("Failed to create game");
+    }
+  };
+
+  const handleCreatePracticeGame = async () => {
+    try {
+      const gameId = await createPracticeGame();
+      onJoinGame(gameId);
+      toast.success("Practice game started! You can play both sides.");
+    } catch (error) {
+      toast.error("Failed to create practice game");
     }
   };
 
@@ -38,15 +49,24 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary mb-4">Game Lobby</h1>
         <p className="text-gray-600 mb-6">
-          Welcome to ChessMerge! Create a new game or join an existing one.
+          Welcome to ChessMerge! Create a new game, practice, or join an
+          existing one.
         </p>
-        
-        <button
-          onClick={handleCreateGame}
-          className="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm hover:shadow"
-        >
-          Create New Game
-        </button>
+
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={() => void handleCreateGame()}
+            className="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm hover:shadow"
+          >
+            Create New Game
+          </button>
+          <button
+            onClick={() => void handleCreatePracticeGame()}
+            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm hover:shadow"
+          >
+            Practice Game
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -54,7 +74,9 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h2 className="text-xl font-semibold mb-4">My Games</h2>
           {myGames.length === 0 ? (
-            <p className="text-gray-500">No games yet. Create one to get started!</p>
+            <p className="text-gray-500">
+              No games yet. Create one to get started!
+            </p>
           ) : (
             <div className="space-y-3">
               {myGames.map((game) => (
@@ -65,19 +87,33 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                 >
                   <div>
                     <div className="font-medium">
-                      {game.status === "waiting" ? "Waiting for opponent" : 
-                       game.status === "active" ? "Active game" : "Completed"}
+                      {game.isPracticeGame
+                        ? "Practice Game"
+                        : game.status === "waiting"
+                          ? "Waiting for opponent"
+                          : game.status === "active"
+                            ? "Active game"
+                            : "Completed"}
                     </div>
                     <div className="text-sm text-gray-500">
                       {new Date(game.lastMoveAt).toLocaleDateString()}
                     </div>
                   </div>
-                  <div className="text-sm">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      game.status === "waiting" ? "bg-yellow-100 text-yellow-800" :
-                      game.status === "active" ? "bg-green-100 text-green-800" :
-                      "bg-gray-100 text-gray-800"
-                    }`}>
+                  <div className="flex items-center gap-2">
+                    {game.isPracticeGame && (
+                      <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                        Practice
+                      </span>
+                    )}
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        game.status === "waiting"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : game.status === "active"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {game.status}
                     </span>
                   </div>
@@ -102,11 +138,12 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                   <div>
                     <div className="font-medium">Waiting for opponent</div>
                     <div className="text-sm text-gray-500">
-                      Created {new Date(game._creationTime).toLocaleDateString()}
+                      Created{" "}
+                      {new Date(game._creationTime).toLocaleDateString()}
                     </div>
                   </div>
                   <button
-                    onClick={() => handleJoinGame(game._id)}
+                    onClick={() => void handleJoinGame(game._id)}
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
                   >
                     Join
@@ -138,6 +175,15 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
               <li>• Unmerge back to original pieces</li>
               <li>• Merged pieces cannot merge again</li>
               <li>• Unmerge requires adjacent empty square</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-medium mb-2">Practice Mode</h3>
+            <ul className="space-y-1 text-gray-600">
+              <li>• Play both white and black pieces</li>
+              <li>• Perfect for learning ChessMerge mechanics</li>
+              <li>• No opponent needed</li>
+              <li>• Switch sides each turn</li>
             </ul>
           </div>
         </div>

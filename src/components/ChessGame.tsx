@@ -95,10 +95,14 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
   const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
   const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
+
+  // For practice games, user can play both sides, otherwise enforce turn order
   const isMyTurn =
     game &&
-    ((game.currentTurn === "white" && isWhitePlayer) ||
-      (game.currentTurn === "black" && isBlackPlayer));
+    (game.isPracticeGame
+      ? isWhitePlayer || isBlackPlayer // In practice mode, always user's turn if they're a player
+      : (game.currentTurn === "white" && isWhitePlayer) ||
+        (game.currentTurn === "black" && isBlackPlayer));
 
   useEffect(() => {
     if (game?.status === "completed") {
@@ -250,7 +254,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
             unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
             onRightClick={handleRightClick}
-            flipped={isBlackPlayer}
+            flipped={game.isPracticeGame ? false : isBlackPlayer} // Always show from white's perspective in practice mode
             unmergeMode={unmergeMode}
             isMyTurn={!!isMyTurn}
             currentTurn={game.currentTurn}

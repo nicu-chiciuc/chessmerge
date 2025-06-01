@@ -612,6 +612,27 @@ export const createGame = mutation({
   },
 });
 
+export const createPracticeGame = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const board = createInitialBoard();
+
+    return await ctx.db.insert("games", {
+      whitePlayerId: userId,
+      blackPlayerId: userId, // Same user plays both sides
+      isPracticeGame: true,
+      status: "active", // Start immediately, no need to wait
+      currentTurn: "white",
+      board: JSON.stringify(board),
+      moveHistory: [],
+      lastMoveAt: Date.now(),
+    });
+  },
+});
+
 export const joinGame = mutation({
   args: { gameId: v.id("games") },
   handler: async (ctx, args) => {
@@ -653,8 +674,15 @@ export const makeMove = mutation({
     if (!isWhitePlayer && !isBlackPlayer)
       throw new Error("Not a player in this game");
 
-    const playerColor = isWhitePlayer ? "white" : "black";
-    if (game.currentTurn !== playerColor) throw new Error("Not your turn");
+    // For practice games, allow the same user to play both sides
+    if (game.isPracticeGame) {
+      // In practice mode, user can make moves for either side
+      const playerColor = game.currentTurn;
+    } else {
+      // For regular games, enforce turn order
+      const playerColor = isWhitePlayer ? "white" : "black";
+      if (game.currentTurn !== playerColor) throw new Error("Not your turn");
+    }
 
     const move: Move = JSON.parse(args.move);
     const board: Board = JSON.parse(game.board);
