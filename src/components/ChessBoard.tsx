@@ -1,4 +1,4 @@
-import { Board, Position, Piece } from "../../convex/gameLogic";
+import { Board, Position, Piece, PieceType } from "../../convex/gameLogic";
 import { useState } from "react";
 
 // Import all chess piece SVGs
@@ -14,6 +14,26 @@ import blackRookSvg from "../pieces/Chess_rdt45.svg";
 import blackBishopSvg from "../pieces/Chess_bdt45.svg";
 import blackKnightSvg from "../pieces/Chess_ndt45.svg";
 import blackPawnSvg from "../pieces/Chess_pdt45.svg";
+
+function mapToName(piece: PieceType) {
+  switch (piece) {
+    case "k":
+      return "King";
+    case "q":
+      return "Queen";
+    case "r":
+      return "Rook";
+    case "b":
+      return "Bishop";
+    case "n":
+      return "Knight";
+    case "p":
+      return "Pawn";
+    default:
+      piece satisfies never;
+      return "Unknown";
+  }
+}
 
 interface ChessBoardProps {
   board: Board;
@@ -290,7 +310,7 @@ export function ChessBoard({
               }`}
             >
               <ChessPieceContent piece={selectedCell[0]} size="small" />
-              <span>Only {selectedCell[0].pieceType}</span>
+              <span>Only {mapToName(selectedCell[0].pieceType)}</span>
             </button>
             <button
               onClick={() => handlePieceSelectionChange("second")}
@@ -301,7 +321,7 @@ export function ChessBoard({
               }`}
             >
               <ChessPieceContent piece={selectedCell[1]} size="small" />
-              <span>Only {selectedCell[1].pieceType}</span>
+              <span>Only {mapToName(selectedCell[1].pieceType)}</span>
             </button>
             <button
               onClick={() => handlePieceSelectionChange("both")}
@@ -317,18 +337,6 @@ export function ChessBoard({
               </div>
               <span>Both pieces</span>
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Move indicator legend */}
-      {selectedSquare && validMoves.length > 0 && (
-        <div className="mt-4 text-xs text-gray-600 space-y-1">
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-green-500 rounded-full opacity-60"></div>
-              <span>Move</span>
-            </div>
           </div>
         </div>
       )}
