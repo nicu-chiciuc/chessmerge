@@ -144,7 +144,6 @@ export function ChessBoard({
     const img = document.createElement("img");
 
     img.src = getPieceSvg(piece);
-    console.log("img src", piece, img.src);
     img.className = "w-8 h-8 object-contain";
     dragImage.appendChild(img);
 

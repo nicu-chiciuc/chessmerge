@@ -609,7 +609,6 @@ export function boardToString(board: Board): string {
 }
 
 function applyMove(board: Board, move: Move): Board {
-  console.log("Applying move", move);
   const newBoard = board.map((row) => row.map((cell) => [...cell]));
 
   const sourceCell = newBoard[move.from.row][move.from.col];
@@ -646,8 +645,6 @@ function applyMove(board: Board, move: Move): Board {
         pieceToMove = sourceCell[1];
       }
     }
-
-    console.log({ pieceToMove });
 
     // Move to empty cell
     if (targetCell.length === 0) {

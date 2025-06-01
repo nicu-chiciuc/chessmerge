@@ -99,14 +99,11 @@ export function ChessGame({ gameId }: ChessGameProps) {
     const clickedCell = board[row][col];
     const position = { row, col };
 
-    console.log({ clickedCell, selectedSquare, validMoves });
-
     if (selectedSquare) {
       // Try to make a move
       const targetMove = validMoves.find(
         (move) => move.to.row === row && move.to.col === col,
       );
-      console.log({ targetMove });
       if (targetMove) {
         await executeMove(targetMove);
       }
