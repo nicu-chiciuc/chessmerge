@@ -273,10 +273,10 @@ export function ChessBoard({
 
         {/* Move indicators */}
         {isValidMove && cell.length === 0 && !isUnmergeMove && (
-          <div className="absolute inset-0 border-2 border-green-500 rounded opacity-60 pointer-events-none" />
+          <div className="absolute inset-0 border-4 border-green-500 rounded pointer-events-none" />
         )}
         {isValidMove && cell.length > 0 && !isUnmergeMove && (
-          <div className="absolute inset-0 border-2 border-green-500 rounded opacity-60 pointer-events-none" />
+          <div className="absolute inset-0 border-4 border-green-500 rounded pointer-events-none" />
         )}
         {/* Unmerge move indicator */}
         {isUnmergeMove && cell.length === 0 && (
@@ -423,10 +423,10 @@ function ChessPieceCell({
   if (pieces.length === 2) {
     // Two pieces merged - display both with each piece cut in half
     // Arrange pieces so that knights are on the left (head visible)
-    const [leftPiece, rightPiece] = pieces.some((p) => p.pieceType === "knight")
+    const [leftPiece, rightPiece] = pieces.some((p) => p.pieceType === "n")
       ? [
-          pieces.find((p) => p.pieceType === "knight")!,
-          pieces.find((p) => p.pieceType !== "knight")!,
+          pieces.find((p) => p.pieceType === "n")!,
+          pieces.find((p) => p.pieceType !== "n")!,
         ]
       : pieces;
 

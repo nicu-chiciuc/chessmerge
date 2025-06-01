@@ -3,13 +3,7 @@ import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 // Piece types and colors
-export type PieceType =
-  | "pawn"
-  | "rook"
-  | "knight"
-  | "bishop"
-  | "queen"
-  | "king";
+export type PieceType = "p" | "r" | "n" | "b" | "q" | "k";
 export type PieceColor = "white" | "black";
 
 // Simplified piece representation
@@ -19,20 +13,45 @@ export type Piece = {
   hasMoved?: boolean;
 };
 
+type Col = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h";
+type Row = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8";
+
+type Pos = `${Col}${Row}`;
+
 export interface Position {
   row: number;
   col: number;
 }
 
+export function parsePosition(pos: Pos): Position {
+  const col = pos[0] as Col;
+  const row = pos[1] as Row;
+
+  return { row: 8 - parseInt(row), col: col.charCodeAt(0) - "a".charCodeAt(0) };
+}
+
+export function formatPosition(pos: Position): Pos {
+  const from = `${String.fromCharCode(97 + pos.col)}${8 - pos.row}`;
+  return from as Pos;
+}
+
 export interface Move {
   from: Position;
   to: Position;
+
   pieceIndex: number; // Which piece in the source cell is moving (0 or 1)
   capturedPieces?: Piece[]; // Pieces captured at destination
   isCheck?: boolean;
   isCheckmate?: boolean;
   isStalemate?: boolean;
-  moveType?: "normal" | "merge" | "unmerge" | "castle" | "enpassant";
+
+  moveType?:
+    | "normal"
+    | "merge"
+    | "unmerge"
+    | "unmerge+merge"
+    | "castle"
+    | "enpassant";
 }
 
 // Board where each cell can contain 0-2 pieces of the same color
@@ -49,35 +68,17 @@ export function createInitialBoard(): Board {
     );
 
   // White pieces
-  const whiteBackRow: PieceType[] = [
-    "rook",
-    "knight",
-    "bishop",
-    "queen",
-    "king",
-    "bishop",
-    "knight",
-    "rook",
-  ];
+  const whiteBackRow: PieceType[] = ["r", "n", "b", "q", "k", "b", "n", "r"];
   for (let col = 0; col < 8; col++) {
     board[7][col] = [{ color: "white", pieceType: whiteBackRow[col] }];
-    board[6][col] = [{ color: "white", pieceType: "pawn" }];
+    board[6][col] = [{ color: "white", pieceType: "p" }];
   }
 
   // Black pieces
-  const blackBackRow: PieceType[] = [
-    "rook",
-    "knight",
-    "bishop",
-    "queen",
-    "king",
-    "bishop",
-    "knight",
-    "rook",
-  ];
+  const blackBackRow: PieceType[] = ["r", "n", "b", "q", "k", "b", "n", "r"];
   for (let col = 0; col < 8; col++) {
     board[0][col] = [{ color: "black", pieceType: blackBackRow[col] }];
-    board[1][col] = [{ color: "black", pieceType: "pawn" }];
+    board[1][col] = [{ color: "black", pieceType: "p" }];
   }
 
   return board;
@@ -115,7 +116,7 @@ function getSinglePieceMoves(
   const { row, col } = pos;
 
   switch (type) {
-    case "pawn": {
+    case "p": {
       const direction = color === "white" ? -1 : 1;
       const startRow = color === "white" ? 6 : 1;
 
@@ -176,7 +177,7 @@ function getSinglePieceMoves(
       break;
     }
 
-    case "rook": {
+    case "r": {
       // Horizontal and vertical moves
       for (const [dr, dc] of [
         [0, 1],
@@ -226,7 +227,7 @@ function getSinglePieceMoves(
       break;
     }
 
-    case "knight": {
+    case "n": {
       const knightMoves = [
         [-2, -1],
         [-2, 1],
@@ -277,7 +278,7 @@ function getSinglePieceMoves(
       break;
     }
 
-    case "bishop": {
+    case "b": {
       // Diagonal moves
       for (const [dr, dc] of [
         [1, 1],
@@ -327,16 +328,14 @@ function getSinglePieceMoves(
       break;
     }
 
-    case "queen": {
+    case "q": {
       // Combination of rook and bishop
-      moves.push(...getSinglePieceMoves("rook", color, pieceIndex, pos, board));
-      moves.push(
-        ...getSinglePieceMoves("bishop", color, pieceIndex, pos, board),
-      );
+      moves.push(...getSinglePieceMoves("r", color, pieceIndex, pos, board));
+      moves.push(...getSinglePieceMoves("b", color, pieceIndex, pos, board));
       break;
     }
 
-    case "king": {
+    case "k": {
       for (const dr of [-1, 0, 1]) {
         for (const dc of [-1, 0, 1]) {
           if (dr === 0 && dc === 0) continue;
@@ -380,44 +379,7 @@ export function canMerge(
   pieceType2: PieceType,
 ): boolean {
   // Kings can't merge, otherwise all same-color pieces can merge
-  return pieceType1 !== "king" && pieceType2 !== "king";
-}
-
-// Get valid unmerge moves for pieces in a cell
-export function getUnmergeMoves(pos: Position, board: Board): Move[] {
-  const moves: Move[] = [];
-  const cell = board[pos.row][pos.col];
-
-  // Only cells with 2 pieces can unmerge
-  if (cell.length !== 2) return moves;
-
-  // Find adjacent empty squares
-  for (const dr of [-1, 0, 1]) {
-    for (const dc of [-1, 0, 1]) {
-      if (dr === 0 && dc === 0) continue;
-      const newPos = { row: pos.row + dr, col: pos.col + dc };
-      if (
-        isValidPosition(newPos) &&
-        board[newPos.row][newPos.col].length === 0
-      ) {
-        // Either piece can move to the empty square
-        moves.push({
-          from: pos,
-          to: newPos,
-          pieceIndex: 0, // First piece moves
-          moveType: "unmerge",
-        });
-        moves.push({
-          from: pos,
-          to: newPos,
-          pieceIndex: 1, // Second piece moves
-          moveType: "unmerge",
-        });
-      }
-    }
-  }
-
-  return moves;
+  return pieceType1 !== "k" && pieceType2 !== "k";
 }
 
 // Check if king is in check
@@ -428,7 +390,7 @@ export function isInCheck(board: Board, color: PieceColor): boolean {
     for (let col = 0; col < 8; col++) {
       const cell = board[row][col];
       for (const piece of cell) {
-        if (piece.color === color && piece.pieceType === "king") {
+        if (piece.color === color && piece.pieceType === "k") {
           kingPos = { row, col };
           break;
         }
@@ -715,18 +677,7 @@ export function getAllMovesForCell(pos: Position, board: Board): Move[] {
     moves.push(...pieceMoves);
   }
 
-  // Add unmerge moves if cell has 2 pieces
-  if (cell.length === 2) {
-    const unmergeMoves = getUnmergeMoves(pos, board);
-    moves.push(...unmergeMoves);
-  }
-
   return moves;
-}
-
-export function canCellUnmerge(pos: Position, board: Board): boolean {
-  const cell = board[pos.row][pos.col];
-  return cell.length === 2 && getUnmergeMoves(pos, board).length > 0;
 }
 
 export const deleteAllGames = mutation({

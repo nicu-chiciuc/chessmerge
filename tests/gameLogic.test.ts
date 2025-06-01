@@ -7,7 +7,8 @@ import {
   getPieceMoves,
   isInCheck,
   getAllMovesForCell,
-  canCellUnmerge,
+  parsePosition,
+  formatPosition,
   type Board,
   type Position,
   type Piece,
@@ -16,6 +17,59 @@ import {
 } from "../convex/gameLogic";
 
 describe("Game Logic Tests", () => {
+  describe("parsePosition", () => {
+    it("all possible positions should be valid", () => {
+      expect(parsePosition("a1")).toEqual({ row: 7, col: 0 });
+      expect(parsePosition("a2")).toEqual({ row: 6, col: 0 });
+      expect(parsePosition("a3")).toEqual({ row: 5, col: 0 });
+      expect(parsePosition("a4")).toEqual({ row: 4, col: 0 });
+      expect(parsePosition("a5")).toEqual({ row: 3, col: 0 });
+      expect(parsePosition("a6")).toEqual({ row: 2, col: 0 });
+      expect(parsePosition("a7")).toEqual({ row: 1, col: 0 });
+      expect(parsePosition("a8")).toEqual({ row: 0, col: 0 });
+
+      expect(parsePosition("b1")).toEqual({ row: 7, col: 1 });
+      expect(parsePosition("b2")).toEqual({ row: 6, col: 1 });
+      expect(parsePosition("b3")).toEqual({ row: 5, col: 1 });
+      expect(parsePosition("b4")).toEqual({ row: 4, col: 1 });
+      expect(parsePosition("b5")).toEqual({ row: 3, col: 1 });
+      expect(parsePosition("b6")).toEqual({ row: 2, col: 1 });
+      expect(parsePosition("b7")).toEqual({ row: 1, col: 1 });
+      expect(parsePosition("b8")).toEqual({ row: 0, col: 1 });
+
+      expect(parsePosition("c1")).toEqual({ row: 7, col: 2 });
+      expect(parsePosition("c2")).toEqual({ row: 6, col: 2 });
+      expect(parsePosition("c3")).toEqual({ row: 5, col: 2 });
+      expect(parsePosition("c4")).toEqual({ row: 4, col: 2 });
+      expect(parsePosition("c5")).toEqual({ row: 3, col: 2 });
+      expect(parsePosition("c6")).toEqual({ row: 2, col: 2 });
+      expect(parsePosition("c7")).toEqual({ row: 1, col: 2 });
+      expect(parsePosition("c8")).toEqual({ row: 0, col: 2 });
+
+      expect(parsePosition("d1")).toEqual({ row: 7, col: 3 });
+      expect(parsePosition("d2")).toEqual({ row: 6, col: 3 });
+      expect(parsePosition("d3")).toEqual({ row: 5, col: 3 });
+      expect(parsePosition("d4")).toEqual({ row: 4, col: 3 });
+      expect(parsePosition("d5")).toEqual({ row: 3, col: 3 });
+      expect(parsePosition("d6")).toEqual({ row: 2, col: 3 });
+      expect(parsePosition("d7")).toEqual({ row: 1, col: 3 });
+      expect(parsePosition("d8")).toEqual({ row: 0, col: 3 });
+    });
+  });
+
+  describe("parse+formatPosition", () => {
+    it("should roundtrip positions correctly", () => {
+      for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+          expect(parsePosition(formatPosition({ row, col }))).toEqual({
+            row,
+            col,
+          });
+        }
+      }
+    });
+  });
+
   describe("createInitialBoard", () => {
     it("should create a standard 8x8 chess board", () => {
       const board = createInitialBoard();
@@ -39,20 +93,20 @@ describe("Game Logic Tests", () => {
         expect(board[6][col]).toHaveLength(1);
         expect(board[6][col][0]).toEqual({
           color: "white",
-          pieceType: "pawn",
+          pieceType: "p",
         });
       }
 
       // Check white back row on row 7
       const expectedBackRow: PieceType[] = [
-        "rook",
-        "knight",
-        "bishop",
-        "queen",
-        "king",
-        "bishop",
-        "knight",
-        "rook",
+        "r",
+        "n",
+        "b",
+        "q",
+        "k",
+        "b",
+        "n",
+        "r",
       ];
       for (let col = 0; col < 8; col++) {
         expect(board[7][col]).toHaveLength(1);
@@ -68,14 +122,14 @@ describe("Game Logic Tests", () => {
 
       // Check black back row on row 0
       const expectedBackRow: PieceType[] = [
-        "rook",
-        "knight",
-        "bishop",
-        "queen",
-        "king",
-        "bishop",
-        "knight",
-        "rook",
+        "r",
+        "n",
+        "b",
+        "q",
+        "k",
+        "b",
+        "n",
+        "r",
       ];
       for (let col = 0; col < 8; col++) {
         expect(board[0][col]).toHaveLength(1);
@@ -90,7 +144,7 @@ describe("Game Logic Tests", () => {
         expect(board[1][col]).toHaveLength(1);
         expect(board[1][col][0]).toEqual({
           color: "black",
-          pieceType: "pawn",
+          pieceType: "p",
         });
       }
     });
@@ -125,19 +179,19 @@ describe("Game Logic Tests", () => {
 
   describe("canMerge", () => {
     it("should allow merging of non-king pieces", () => {
-      expect(canMerge("pawn", "rook")).toBe(true);
-      expect(canMerge("queen", "bishop")).toBe(true);
-      expect(canMerge("knight", "pawn")).toBe(true);
-      expect(canMerge("rook", "queen")).toBe(true);
-      expect(canMerge("bishop", "knight")).toBe(true);
+      expect(canMerge("p", "r")).toBe(true);
+      expect(canMerge("q", "b")).toBe(true);
+      expect(canMerge("n", "p")).toBe(true);
+      expect(canMerge("r", "q")).toBe(true);
+      expect(canMerge("b", "n")).toBe(true);
     });
 
     it("should not allow merging with kings", () => {
-      expect(canMerge("king", "pawn")).toBe(false);
-      expect(canMerge("pawn", "king")).toBe(false);
-      expect(canMerge("king", "queen")).toBe(false);
-      expect(canMerge("queen", "king")).toBe(false);
-      expect(canMerge("king", "king")).toBe(false);
+      expect(canMerge("k", "p")).toBe(false);
+      expect(canMerge("p", "k")).toBe(false);
+      expect(canMerge("k", "q")).toBe(false);
+      expect(canMerge("q", "k")).toBe(false);
+      expect(canMerge("k", "k")).toBe(false);
     });
   });
 
@@ -150,7 +204,7 @@ describe("Game Logic Tests", () => {
 
     describe("Pawn moves", () => {
       it("should allow white pawn to move forward one square", () => {
-        const piece: Piece = { color: "white", pieceType: "pawn" };
+        const piece: Piece = { color: "white", pieceType: "p" };
         const moves = getPieceMoves(piece, 0, { row: 6, col: 4 }, board);
 
         const forwardMoves = moves.filter(
@@ -163,7 +217,7 @@ describe("Game Logic Tests", () => {
       });
 
       it("should allow white pawn to move forward two squares from starting position", () => {
-        const piece: Piece = { color: "white", pieceType: "pawn" };
+        const piece: Piece = { color: "white", pieceType: "p" };
         const moves = getPieceMoves(piece, 0, { row: 6, col: 4 }, board);
 
         const doubleMoves = moves.filter(
@@ -176,7 +230,7 @@ describe("Game Logic Tests", () => {
       });
 
       it("should allow black pawn to move forward one square", () => {
-        const piece: Piece = { color: "black", pieceType: "pawn" };
+        const piece: Piece = { color: "black", pieceType: "p" };
         const moves = getPieceMoves(piece, 0, { row: 1, col: 4 }, board);
 
         const forwardMoves = moves.filter(
@@ -191,9 +245,9 @@ describe("Game Logic Tests", () => {
       it("should not allow pawn to move forward if path is blocked", () => {
         // Create custom board with a piece blocking the pawn
         const customBoard = createInitialBoard();
-        customBoard[5][4] = [{ color: "black", pieceType: "pawn" }];
+        customBoard[5][4] = [{ color: "black", pieceType: "p" }];
 
-        const piece: Piece = { color: "white", pieceType: "pawn" };
+        const piece: Piece = { color: "white", pieceType: "p" };
         const moves = getPieceMoves(piece, 0, { row: 6, col: 4 }, customBoard);
 
         // Should have no forward moves
@@ -214,9 +268,9 @@ describe("Game Logic Tests", () => {
               .fill(null)
               .map(() => []),
           );
-        emptyBoard[4][4] = [{ color: "white", pieceType: "rook" }];
+        emptyBoard[4][4] = [{ color: "white", pieceType: "r" }];
 
-        const piece: Piece = { color: "white", pieceType: "rook" };
+        const piece: Piece = { color: "white", pieceType: "r" };
         const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
 
         // Should have 14 moves (7 horizontal + 7 vertical)
@@ -232,10 +286,10 @@ describe("Game Logic Tests", () => {
               .fill(null)
               .map(() => []),
           );
-        emptyBoard[4][4] = [{ color: "white", pieceType: "rook" }];
-        emptyBoard[4][6] = [{ color: "black", pieceType: "pawn" }]; // Block path
+        emptyBoard[4][4] = [{ color: "white", pieceType: "r" }];
+        emptyBoard[4][6] = [{ color: "black", pieceType: "p" }]; // Block path
 
-        const piece: Piece = { color: "white", pieceType: "rook" };
+        const piece: Piece = { color: "white", pieceType: "r" };
         const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
 
         // Should not be able to move to column 7 (blocked by piece at column 6)
@@ -262,9 +316,9 @@ describe("Game Logic Tests", () => {
               .fill(null)
               .map(() => []),
           );
-        emptyBoard[4][4] = [{ color: "white", pieceType: "knight" }];
+        emptyBoard[4][4] = [{ color: "white", pieceType: "n" }];
 
-        const piece: Piece = { color: "white", pieceType: "knight" };
+        const piece: Piece = { color: "white", pieceType: "n" };
         const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
 
         const normalMoves = moves.filter((move) => move.moveType === "normal");
@@ -302,9 +356,9 @@ describe("Game Logic Tests", () => {
               .fill(null)
               .map(() => []),
           );
-        emptyBoard[4][4] = [{ color: "white", pieceType: "king" }];
+        emptyBoard[4][4] = [{ color: "white", pieceType: "k" }];
 
-        const piece: Piece = { color: "white", pieceType: "king" };
+        const piece: Piece = { color: "white", pieceType: "k" };
         const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
 
         const normalMoves = moves.filter((move) => move.moveType === "normal");
@@ -319,10 +373,10 @@ describe("Game Logic Tests", () => {
               .fill(null)
               .map(() => []),
           );
-        emptyBoard[4][4] = [{ color: "white", pieceType: "king" }];
-        emptyBoard[4][5] = [{ color: "white", pieceType: "pawn" }]; // Friendly piece
+        emptyBoard[4][4] = [{ color: "white", pieceType: "k" }];
+        emptyBoard[4][5] = [{ color: "white", pieceType: "p" }]; // Friendly piece
 
-        const piece: Piece = { color: "white", pieceType: "king" };
+        const piece: Piece = { color: "white", pieceType: "k" };
         const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
 
         // Should not have any merge moves
@@ -349,8 +403,8 @@ describe("Game Logic Tests", () => {
         );
 
       // Place white king and black rook that attacks it
-      emptyBoard[4][4] = [{ color: "white", pieceType: "king" }];
-      emptyBoard[4][7] = [{ color: "black", pieceType: "rook" }];
+      emptyBoard[4][4] = [{ color: "white", pieceType: "k" }];
+      emptyBoard[4][7] = [{ color: "black", pieceType: "r" }];
 
       expect(isInCheck(emptyBoard, "white")).toBe(true);
       expect(isInCheck(emptyBoard, "black")).toBe(false);
@@ -366,8 +420,8 @@ describe("Game Logic Tests", () => {
         );
 
       // Place white king and black rook that doesn't attack it
-      emptyBoard[4][4] = [{ color: "white", pieceType: "king" }];
-      emptyBoard[6][7] = [{ color: "black", pieceType: "rook" }];
+      emptyBoard[4][4] = [{ color: "white", pieceType: "k" }];
+      emptyBoard[6][7] = [{ color: "black", pieceType: "r" }];
 
       expect(isInCheck(emptyBoard, "white")).toBe(false);
       expect(isInCheck(emptyBoard, "black")).toBe(false);
@@ -387,7 +441,7 @@ describe("Game Logic Tests", () => {
       expect(moves.length).toBeGreaterThan(0);
     });
 
-    it("should include unmerge moves for cell with two pieces", () => {
+    it.skip("should include unmerge moves for cell with two pieces", () => {
       const emptyBoard: Board = Array(8)
         .fill(null)
         .map(() =>
@@ -398,61 +452,13 @@ describe("Game Logic Tests", () => {
 
       // Place two pieces in the same cell
       emptyBoard[4][4] = [
-        { color: "white", pieceType: "pawn" },
-        { color: "white", pieceType: "rook" },
+        { color: "white", pieceType: "p" },
+        { color: "white", pieceType: "r" },
       ];
 
       const moves = getAllMovesForCell({ row: 4, col: 4 }, emptyBoard);
       const unmergeMoves = moves.filter((move) => move.moveType === "unmerge");
       expect(unmergeMoves.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe("canCellUnmerge", () => {
-    it("should return false for empty cell", () => {
-      const board = createInitialBoard();
-      expect(canCellUnmerge({ row: 3, col: 3 }, board)).toBe(false);
-    });
-
-    it("should return false for cell with one piece", () => {
-      const board = createInitialBoard();
-      expect(canCellUnmerge({ row: 6, col: 4 }, board)).toBe(false);
-    });
-
-    it("should return true for cell with two pieces that can unmerge", () => {
-      const emptyBoard: Board = Array(8)
-        .fill(null)
-        .map(() =>
-          Array(8)
-            .fill(null)
-            .map(() => []),
-        );
-
-      // Place two pieces in the same cell with empty adjacent squares
-      emptyBoard[4][4] = [
-        { color: "white", pieceType: "pawn" },
-        { color: "white", pieceType: "rook" },
-      ];
-
-      expect(canCellUnmerge({ row: 4, col: 4 }, emptyBoard)).toBe(true);
-    });
-
-    it("should return false for cell with two pieces but no empty adjacent squares", () => {
-      const fullBoard: Board = Array(8)
-        .fill(null)
-        .map(() =>
-          Array(8)
-            .fill(null)
-            .map(() => [{ color: "black", pieceType: "pawn" }]),
-        );
-
-      // Place two pieces in the same cell
-      fullBoard[4][4] = [
-        { color: "white", pieceType: "pawn" },
-        { color: "white", pieceType: "rook" },
-      ];
-
-      expect(canCellUnmerge({ row: 4, col: 4 }, fullBoard)).toBe(false);
     });
   });
 });
