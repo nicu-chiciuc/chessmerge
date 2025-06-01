@@ -1,4 +1,4 @@
-import { Board, Position, Piece, Move } from "../../convex/gameLogic";
+import { Board, Position, Piece } from "../../convex/gameLogic";
 import { useState } from "react";
 
 // Import all chess piece SVGs
@@ -19,7 +19,7 @@ interface ChessBoardProps {
   board: Board;
   selectedSquare: Position | null;
   validMoves: Position[];
-  fullMoves?: Move[];
+  // fullMoves?: Move[];
   // unmergePositions: Position[];
   onSquareClick: (row: number, col: number) => void;
   onRightClick?: (row: number, col: number) => void;

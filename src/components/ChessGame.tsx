@@ -28,7 +28,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const [validMoves, setValidMoves] = useState<Move[]>([]);
   const [unmergeMode, setUnmergeMode] = useState(false);
   // const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
-  const [selectedPieceMode, setSelectedPieceMode] = useState<
+  const [_selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
   >("both");
 

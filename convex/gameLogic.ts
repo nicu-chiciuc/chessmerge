@@ -6,7 +6,6 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 export type PieceType = "p" | "r" | "n" | "b" | "q" | "k";
 export type PieceColor = "w" | "b";
 
-type MergeablePieceType = "p" | "r" | "n" | "b" | "q";
 export type MergedPieceTypes =
   | "pp"
   | "pr"
