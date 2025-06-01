@@ -46,17 +46,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     ? game.moveHistory.map((m) => JSON.parse(m))
     : [];
 
-  // Debug logging
-  console.log("=== CHESS GAME DEBUG ===");
-  console.log("Game data:", game);
-  console.log("Board:", board);
-  console.log("Board length:", board?.length);
-  if (board?.length > 0) {
-    console.log("Board[0]:", board[0]);
-    console.log("Board[7]:", board[7]);
-  }
-  console.log("======================");
-
   const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
   const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
 

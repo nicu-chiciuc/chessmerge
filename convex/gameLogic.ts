@@ -606,9 +606,11 @@ export function boardToString(board: Board): string {
 }
 
 function applyMove(board: Board, move: Move): Board {
+  console.log("Applying move", move);
   const newBoard = board.map((row) => row.map((cell) => [...cell]));
 
   const sourceCell = newBoard[move.from.row][move.from.col];
+  const targetCell = newBoard[move.to.row][move.to.col];
 
   if (sourceCell.length === 0) {
     throw new Error("No piece found at source position");
@@ -621,15 +623,89 @@ function applyMove(board: Board, move: Move): Board {
   // Basic move
   if (move.piece.length === 1) {
     if (
-      (sourceCell[0].pieceType !== move.piece && sourceCell[1].pieceType,
-      move.piece)
+      sourceCell[0].pieceType !== move.piece &&
+      sourceCell[1].pieceType !== move.piece
     ) {
       throw new Error("Trying to move a piece that is not in the source cell");
     }
 
-    if (move.capturedPieces) {
-      throw new Error("Trying to move a piece that is not the same type");
+    let pieceToMove = sourceCell[0];
+
+    // This is incorrect since the source can have 2
+    if (sourceCell.length === 1) {
+      newBoard[move.from.row][move.from.col] = [];
+    } else {
+      if (sourceCell[0].pieceType === move.piece) {
+        newBoard[move.from.row][move.from.col] = [sourceCell[1]];
+        pieceToMove = sourceCell[0];
+      } else {
+        newBoard[move.from.row][move.from.col] = [sourceCell[0]];
+        pieceToMove = sourceCell[1];
+      }
     }
+
+    console.log({ pieceToMove });
+
+    // Move to empty cell
+    if (targetCell.length === 0) {
+      newBoard[move.to.row][move.to.col] = [pieceToMove];
+      return newBoard;
+    }
+
+    // Capture enemy piece/s
+    if (targetCell[0].color !== pieceToMove.color) {
+      newBoard[move.to.row][move.to.col] = [pieceToMove];
+      return newBoard;
+    }
+
+    if (targetCell.length > 1) {
+      throw new Error("Trying to move to a cell with 2 pieces");
+    }
+
+    // Here we merge
+    if (!canMerge(pieceToMove.pieceType, targetCell[0].pieceType)) {
+      throw new Error(
+        `Trying to merge pieces that cannot merge: ${pieceToMove.pieceType} and ${targetCell[0].pieceType}`,
+      );
+    }
+
+    newBoard[move.to.row][move.to.col] = [targetCell[0], pieceToMove];
+    return newBoard;
+  }
+
+  if (move.piece.length === 2) {
+    // both pieces should be in the source cell
+    if (sourceCell.length !== 2) {
+      throw new Error(
+        "Trying to move 2 pieces but source cell has only 1 piece",
+      );
+    }
+
+    const bothPiecesAreInSourceCell =
+      (sourceCell[0].pieceType === move.piece[0] &&
+        sourceCell[1].pieceType === move.piece[1]) ||
+      (sourceCell[0].pieceType === move.piece[1] &&
+        sourceCell[1].pieceType === move.piece[0]);
+
+    if (!bothPiecesAreInSourceCell) {
+      throw new Error(
+        "The pieces that are being moved are not in the source cell",
+      );
+    }
+
+    // Move to empty cell
+    if (targetCell.length === 0) {
+      newBoard[move.to.row][move.to.col] = [sourceCell[0]];
+      return newBoard;
+    }
+
+    // Capture enemy piece/s
+    if (targetCell[0].color !== sourceCell[0].color) {
+      newBoard[move.to.row][move.to.col] = [sourceCell[0]];
+      return newBoard;
+    }
+
+    throw new Error("Trying to move 2 pieces to a cell with at least 1 piece");
   }
 
   return newBoard;
