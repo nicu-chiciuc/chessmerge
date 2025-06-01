@@ -642,7 +642,7 @@ function hasAnyValidMoves(board: Board, color: PieceColor): boolean {
       for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
         const piece = cell[pieceIndex];
         if (piece.color === color) {
-          const moves = getPieceMoves(piece, pieceIndex, { row, col }, board);
+          const moves = getPieceMoves(piece, { row, col }, board);
           if (moves.length > 0) return true;
         }
       }
@@ -702,7 +702,7 @@ export function getAllMovesForCell(pos: Position, board: Board): Move[] {
   // Get moves for each piece in the cell
   for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
     const piece = cell[pieceIndex];
-    const pieceMoves = getPieceMoves(piece, pieceIndex, pos, board);
+    const pieceMoves = getPieceMoves(piece, pos, board);
     moves.push(...pieceMoves);
   }
 

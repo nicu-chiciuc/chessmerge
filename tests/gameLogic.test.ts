@@ -206,7 +206,7 @@ describe("Game Logic Tests", () => {
     describe("Pawn moves", () => {
       it("should allow white pawn to move forward one square", () => {
         const piece: Piece = { color: "w", pieceType: "p" };
-        const moves = getPieceMoves(piece, 0, { row: 6, col: 4 }, board);
+        const moves = getPieceMoves(piece, { row: 6, col: 4 }, board);
 
         const forwardMoves = moves.filter(
           (move) =>
@@ -219,7 +219,7 @@ describe("Game Logic Tests", () => {
 
       it("should allow white pawn to move forward two squares from starting position", () => {
         const piece: Piece = { color: "w", pieceType: "p" };
-        const moves = getPieceMoves(piece, 0, { row: 6, col: 4 }, board);
+        const moves = getPieceMoves(piece, { row: 6, col: 4 }, board);
 
         const doubleMoves = moves.filter(
           (move) =>
@@ -232,7 +232,7 @@ describe("Game Logic Tests", () => {
 
       it("should allow black pawn to move forward one square", () => {
         const piece: Piece = { color: "b", pieceType: "p" };
-        const moves = getPieceMoves(piece, 0, { row: 1, col: 4 }, board);
+        const moves = getPieceMoves(piece, { row: 1, col: 4 }, board);
 
         const forwardMoves = moves.filter(
           (move) =>
@@ -249,7 +249,7 @@ describe("Game Logic Tests", () => {
         customBoard[5][4] = [{ color: "b", pieceType: "p" }];
 
         const piece: Piece = { color: "w", pieceType: "p" };
-        const moves = getPieceMoves(piece, 0, { row: 6, col: 4 }, customBoard);
+        const moves = getPieceMoves(piece, { row: 6, col: 4 }, customBoard);
 
         // Should have no forward moves
         const forwardMoves = moves.filter(
@@ -272,7 +272,7 @@ describe("Game Logic Tests", () => {
         emptyBoard[4][4] = [{ color: "w", pieceType: "r" }];
 
         const piece: Piece = { color: "w", pieceType: "r" };
-        const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
+        const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         // Should have 14 moves (7 horizontal + 7 vertical)
         const normalMoves = moves.filter((move) => move.moveType === "normal");
@@ -291,7 +291,7 @@ describe("Game Logic Tests", () => {
         emptyBoard[4][6] = [{ color: "b", pieceType: "p" }]; // Block path
 
         const piece: Piece = { color: "w", pieceType: "r" };
-        const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
+        const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         // Should not be able to move to column 7 (blocked by piece at column 6)
         const blockedMoves = moves.filter(
@@ -320,7 +320,7 @@ describe("Game Logic Tests", () => {
         emptyBoard[4][4] = [{ color: "w", pieceType: "n" }];
 
         const piece: Piece = { color: "w", pieceType: "n" };
-        const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
+        const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         const normalMoves = moves.filter((move) => move.moveType === "normal");
         expect(normalMoves).toHaveLength(8); // Knight should have 8 possible moves from center
@@ -360,7 +360,7 @@ describe("Game Logic Tests", () => {
         emptyBoard[4][4] = [{ color: "w", pieceType: "k" }];
 
         const piece: Piece = { color: "w", pieceType: "k" };
-        const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
+        const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         const normalMoves = moves.filter((move) => move.moveType === "normal");
         expect(normalMoves).toHaveLength(8); // King should have 8 possible moves from center
@@ -378,7 +378,7 @@ describe("Game Logic Tests", () => {
         emptyBoard[4][5] = [{ color: "w", pieceType: "p" }]; // Friendly piece
 
         const piece: Piece = { color: "w", pieceType: "k" };
-        const moves = getPieceMoves(piece, 0, { row: 4, col: 4 }, emptyBoard);
+        const moves = getPieceMoves(piece, { row: 4, col: 4 }, emptyBoard);
 
         // Should not have any merge moves
         const mergeMoves = moves.filter((move) => move.moveType === "merge");
@@ -429,7 +429,7 @@ describe("Game Logic Tests", () => {
     });
   });
 
-  describe.only("boardToString", () => {
+  describe("boardToString", () => {
     it("should convert board to string", () => {
       const board = createInitialBoard();
       const string = boardToString(board);
