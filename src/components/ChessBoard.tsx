@@ -22,10 +22,8 @@ interface ChessBoardProps {
   // fullMoves?: Move[];
   // unmergePositions: Position[];
   onSquareClick: (row: number, col: number) => void;
-  onRightClick?: (row: number, col: number) => void;
   onPieceSelectionChange?: (mode: "both" | "first" | "second") => void;
   flipped?: boolean;
-  unmergeMode?: boolean;
   isMyTurn?: boolean;
   currentTurn?: "w" | "b";
 }
@@ -57,10 +55,8 @@ export function ChessBoard({
   selectedSquare,
   validMoves,
   onSquareClick,
-  onRightClick,
   onPieceSelectionChange,
   flipped = false,
-  unmergeMode = false,
   isMyTurn = false,
   currentTurn = "w",
 }: ChessBoardProps) {
@@ -206,7 +202,6 @@ export function ChessBoard({
       cell.length === 2 &&
       cell[0].color === currentTurn &&
       isMyTurn &&
-      !unmergeMode &&
       !isSelected
     ) {
       squareClass += " ring-2 ring-orange-300 z-10";
@@ -223,7 +218,6 @@ export function ChessBoard({
         onClick={() => handleSquareClick(row, col)}
         onContextMenu={(e) => {
           e.preventDefault();
-          onRightClick?.(row, col);
         }}
         onDragOver={(e) => handleDragOver(e, row, col)}
         onDragLeave={handleDragLeave}
@@ -280,10 +274,6 @@ export function ChessBoard({
         )}
       </div>
 
-      <textarea className="text-sm text-gray-600 h-40">
-        {JSON.stringify({ selectedSquare, validMoves }, null, 2)}
-      </textarea>
-
       {/* Piece selection buttons for merged pieces */}
       {hasTwoPieces && selectedCell && isMyTurn && (
         <div className="mt-4 p-4 bg-gray-100 rounded-lg border">
@@ -328,12 +318,6 @@ export function ChessBoard({
               <span>Both pieces</span>
             </button>
           </div>
-        </div>
-      )}
-
-      {unmergeMode && (
-        <div className="mt-2 text-center text-sm text-gray-600">
-          Click an empty adjacent square to unmerge the selected pieces
         </div>
       )}
 

@@ -26,7 +26,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Move[]>([]);
-  const [unmergeMode, setUnmergeMode] = useState(false);
   // const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
   const [_selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
@@ -94,21 +93,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     }
   };
 
-  const handleRightClick = (row: number, col: number) => {
-    if (!game || !isMyTurn || game.status !== "active") return;
-
-    const cell = board[row][col];
-    if (cell.length === 2 && cell[0].color === game.currentTurn) {
-      setSelectedSquare({ row, col });
-      setUnmergeMode(true);
-      setValidMoves([]);
-      setSelectedPieceMode("both");
-      // const unmergeMoves = getUnmergeMoves({ row, col }, board);
-      // setUnmergePositions(unmergeMoves.map((move) => move.to));
-      toast.info("Click an empty adjacent square to unmerge");
-    }
-  };
-
   const handleSquareClick = async (row: number, col: number) => {
     if (!game || !isMyTurn || game.status !== "active") return;
 
@@ -116,32 +100,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     const position = { row, col };
 
     console.log({ clickedCell, selectedSquare, validMoves });
-
-    if (unmergeMode && selectedSquare) {
-      // Handle unmerge
-      const selectedCell = board[selectedSquare.row][selectedSquare.col];
-      if (selectedCell.length === 2 && clickedCell.length === 0) {
-        try {
-          // Try unmerging either piece - for now, default to first piece
-          const move: Move = {
-            from: selectedSquare,
-            to: position,
-            // @ts-expect-error TODO: fix this
-            piece: selectedCell[0].pieceType + selectedCell[1].pieceType,
-            moveType: "unmerge",
-          };
-
-          await makeMove({ gameId, move: JSON.stringify(move) });
-          setSelectedSquare(null);
-          setUnmergeMode(false);
-          // setUnmergePositions([]);
-          setSelectedPieceMode("both");
-        } catch {
-          toast.error("Invalid unmerge");
-        }
-      }
-      return;
-    }
 
     if (selectedSquare) {
       // Try to make a move
@@ -181,14 +139,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     }
   };
 
-  const cancelAction = () => {
-    setSelectedSquare(null);
-    setUnmergeMode(false);
-    setValidMoves([]);
-    // setUnmergePositions([]);
-    setSelectedPieceMode("both");
-  };
-
   // Convert Move[] to Position[] for ChessBoard component compatibility
   const validPositions: Position[] = validMoves.map((move) => move.to);
 
@@ -211,28 +161,11 @@ export function ChessGame({ gameId }: ChessGameProps) {
             // fullMoves={validMoves}
             // unmergePositions={unmergePositions}
             onSquareClick={handleSquareClick}
-            onRightClick={handleRightClick}
             onPieceSelectionChange={handlePieceSelectionChange}
             flipped={game.isPracticeGame ? false : isBlackPlayer}
-            unmergeMode={unmergeMode}
             isMyTurn={!!isMyTurn}
             currentTurn={game.currentTurn}
           />
-
-          <div className="mt-4 text-center">
-            {unmergeMode && (
-              <button
-                onClick={cancelAction}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 mb-2"
-              >
-                Cancel Unmerge
-              </button>
-            )}
-            <div className="text-sm text-gray-600">
-              <p>• Move pieces normally or onto same-color pieces to merge</p>
-              <p>• Right-click cells with 2 pieces to unmerge them</p>
-            </div>
-          </div>
         </div>
       </div>
 
