@@ -163,27 +163,17 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
             <h3 className="font-medium mb-2">Basic Rules</h3>
             <ul className="space-y-1 text-gray-600">
               <li>• Standard chess rules apply</li>
-              <li>• Same win conditions (checkmate, stalemate)</li>
-              <li>• Kings cannot be merged</li>
-              <li>• Merged pieces move like both constituent pieces</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-medium mb-2">Merge Mechanics</h3>
-            <ul className="space-y-1 text-gray-600">
-              <li>• Merge two adjacent pieces of same color</li>
-              <li>• Unmerge back to original pieces</li>
-              <li>• Merged pieces cannot merge again</li>
-              <li>• Unmerge requires adjacent empty square</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-medium mb-2">Practice Mode</h3>
-            <ul className="space-y-1 text-gray-600">
-              <li>• Play both white and black pieces</li>
-              <li>• Perfect for learning ChessMerge mechanics</li>
-              <li>• No opponent needed</li>
-              <li>• Switch sides each turn</li>
+              <li>• But pieces can merge or unmerge</li>
+              <li>• Merged pieces can move as both types of pieces</li>
+              <li>
+                • One of the pieces can split at any time, that also means that
+                it can split from one piece then merge into another one in the
+                same move
+              </li>
+              <li>
+                • Merged pieces can be promoted if it contains a pawn, be
+                careful, this replaces both pieces.
+              </li>
             </ul>
           </div>
         </div>
