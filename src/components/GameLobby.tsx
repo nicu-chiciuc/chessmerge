@@ -94,7 +94,13 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                           : game.status === "active"
                             ? "Active game"
                             : "Completed"}
+
+                      <span className="text-gray-500">
+                        {" "}
+                        ({game._id.slice(0, 6)})
+                      </span>
                     </div>
+
                     <div className="text-sm text-gray-500">
                       {new Date(game.lastMoveAt).toLocaleDateString()}
                     </div>
