@@ -40,7 +40,7 @@ export const subscribe = mutation({
       Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     // Add subscriber
-    const _subscriberId = await ctx.db.insert("emailSubscribers", {
+    await ctx.db.insert("emailSubscribers", {
       email: args.email,
       subscribedAt: Date.now(),
       confirmed: true, // Setting to true since we're sending a welcome email
