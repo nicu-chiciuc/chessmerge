@@ -67,6 +67,32 @@ export type GameState = {
   options: Options;
 };
 
+export function createEmptyBoard(): GameState {
+  return {
+    board: Array(8)
+      .fill(null)
+      .map(() =>
+        Array(8)
+          .fill(null)
+          .map(() => []),
+      ),
+    options: {
+      castlingRights: {
+        w: {
+          short: true,
+          long: true,
+        },
+        b: {
+          short: true,
+          long: true,
+        },
+      },
+      halfMoveClock: 0,
+      enPassantTarget: undefined,
+    },
+  };
+}
+
 // Initialize standard chess board
 export function createInitialBoard(): GameState {
   const board: Board = Array(8)
@@ -95,11 +121,11 @@ export function createInitialBoard(): GameState {
     board,
     options: {
       castlingRights: {
-        white: {
+        w: {
           short: true,
           long: true,
         },
-        black: {
+        b: {
           short: true,
           long: true,
         },
@@ -134,11 +160,11 @@ export function getPieceMoves(
 // Similar to Forsyth–Edwards Notation
 type Options = {
   castlingRights: {
-    white: {
+    w: {
       short: boolean;
       long: boolean;
     };
-    black: {
+    b: {
       short: boolean;
       long: boolean;
     };
@@ -435,6 +461,7 @@ function getSinglePieceMoves(
       const spaceToCloseRookNotInCheck = false; // TODO: Implement this
 
       if (
+        options.castlingRights[color].short &&
         !kingMovedPreviously &&
         !closeRookMovedPreviously &&
         spaceEmptyToCloseRook &&
