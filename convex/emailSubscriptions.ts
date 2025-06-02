@@ -186,6 +186,14 @@ export const sendWelcomeEmail = internalAction({
         `,
       });
 
+      // Send email to me when new user subscribes
+      await resend.emails.send({
+        from: "ChessMerge <contact@chessmerge.com>",
+        to: "nicuchiciuc@gmail.com",
+        subject: "New user subscribed to ChessMerge",
+        html: `New user subscribed: ${args.email}`,
+      });
+
       console.log("Welcome email sent successfully:", result);
     } catch (error) {
       console.error("Failed to send welcome email:", error);
