@@ -60,11 +60,7 @@ export interface Move {
   // Means that the target cell already contains a single piece of same color
   mergesTarget?: boolean;
 
-  // pieceIndex: number; // Which piece in the source cell is moving (0 or 1)
   capturedPieces?: Piece[]; // Pieces captured at destination
-  isCheck?: boolean;
-  isCheckmate?: boolean;
-  isStalemate?: boolean;
 }
 
 // Board where each cell can contain 0-2 pieces of the same color

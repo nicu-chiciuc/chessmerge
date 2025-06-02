@@ -15,14 +15,6 @@ export function MoveHistory({ moves }: MoveHistoryProps) {
       moveText += " (capture)";
     }
 
-    if (move.isCheck) {
-      moveText += "+";
-    }
-
-    if (move.isCheckmate) {
-      moveText += "#";
-    }
-
     return moveText;
   };
 
