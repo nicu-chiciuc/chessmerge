@@ -84,11 +84,11 @@ export function ChessGame({ gameId }: ChessGameProps) {
       } else if (mode === "first" && selectedCell.length >= 1) {
         // Get moves only for the first piece
         const piece = selectedCell[0];
-        newValidMoves = getPieceMoves(piece, selectedSquare, board);
+        newValidMoves = getPieceMoves(piece, selectedSquare, board, true);
       } else if (mode === "second" && selectedCell.length >= 2) {
         // Get moves only for the second piece
         const piece = selectedCell[1];
-        newValidMoves = getPieceMoves(piece, selectedSquare, board);
+        newValidMoves = getPieceMoves(piece, selectedSquare, board, true);
       }
 
       setValidMoves(newValidMoves);

@@ -99,8 +99,15 @@ export function getPieceMoves(
   piece: Piece,
   pos: Position,
   board: Board,
+  filterCheckMoves: boolean = false,
 ): Move[] {
-  return getSinglePieceMoves(piece.pieceType, piece.color, pos, board);
+  return getSinglePieceMoves(
+    piece.pieceType,
+    piece.color,
+    pos,
+    board,
+    filterCheckMoves,
+  );
 }
 
 function getSinglePieceMoves(
@@ -108,6 +115,7 @@ function getSinglePieceMoves(
   color: PieceColor,
   pos: Position,
   board: Board,
+  filterCheckMoves: boolean = false,
 ): Move[] {
   const moves: Move[] = [];
   const { row, col } = pos;
@@ -376,6 +384,14 @@ function getSinglePieceMoves(
     }
   }
 
+  // Filter out moves that result in check
+  if (filterCheckMoves) {
+    return moves.filter((move) => {
+      const newBoard = applyMove(board, move);
+      return !isInCheck(newBoard, color);
+    });
+  }
+
   return moves;
 }
 
@@ -388,7 +404,7 @@ export function canMerge(
   return pieceType1 !== "k" && pieceType2 !== "k";
 }
 
-export function isInCheck(board: Board, color: PieceColor): boolean {
+function findKingPosition(board: Board, color: PieceColor): Position {
   // Find king position
   let kingPos: Position | null = null;
   for (let row = 0; row < 8; row++) {
@@ -405,10 +421,17 @@ export function isInCheck(board: Board, color: PieceColor): boolean {
     if (kingPos) break;
   }
 
-  if (!kingPos) return false;
+  if (!kingPos)
+    throw new Error("No king found on the board for the given color");
+
+  return kingPos;
+}
+
+export function isInCheck(board: Board, color: PieceColor): boolean {
+  const kingPos = findKingPosition(board, color);
 
   // Check if any opponent piece can attack the king
-  const opponentColor = color === "w" ? "b" : "w";
+  const opponentColor = otherColor(color);
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const cell = board[row][col];
@@ -537,19 +560,37 @@ export function applyMove(board: Board, move: Move): Board {
   return newBoard;
 }
 
-export function hasAnyValidMoves(board: Board, color: PieceColor): boolean {
+function otherColor(color: PieceColor): PieceColor {
+  return color === "w" ? "b" : "w";
+}
+
+/**
+ * Check if there is any move that can be made so
+ * that the king is not in check after the move
+ */
+export function canAnyMoveCombatCheck(
+  board: Board,
+  color: PieceColor,
+): boolean {
+  // For each piece of the color, check if any move would combat the check
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const cell = board[row][col];
-      for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
-        const piece = cell[pieceIndex];
+      for (const piece of cell) {
         if (piece.color === color) {
           const moves = getPieceMoves(piece, { row, col }, board);
-          if (moves.length > 0) return true;
+
+          for (const move of moves) {
+            const newBoard = applyMove(board, move);
+            const isCheck = isInCheck(newBoard, color);
+
+            if (!isCheck) return true;
+          }
         }
       }
     }
   }
+
   return false;
 }
 
@@ -561,7 +602,7 @@ export function getAllMovesForCell(pos: Position, board: Board): Move[] {
   // Get moves for each piece in the cell
   for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
     const piece = cell[pieceIndex];
-    const pieceMoves = getPieceMoves(piece, pos, board);
+    const pieceMoves = getPieceMoves(piece, pos, board, true);
     moves.push(...pieceMoves);
   }
 

@@ -6,8 +6,8 @@ import {
   createInitialBoard,
   Move,
   isInCheck,
-  hasAnyValidMoves,
   applyMove,
+  canAnyMoveCombatCheck,
 } from "../lib/chessmerge";
 
 // Check if king is in check
@@ -124,16 +124,17 @@ export const makeMove = mutation({
 
     if (isCheck) {
       // Check for checkmate
-      const hasValidMoves = hasAnyValidMoves(newBoard, nextTurn);
-      if (!hasValidMoves) {
+      const canMoveCombatCheck = canAnyMoveCombatCheck(newBoard, nextTurn);
+      console.log("canMoveCombatCheck", canMoveCombatCheck);
+      if (!canMoveCombatCheck) {
         status = "completed";
         winner = game.currentTurn;
         gameEndReason = "checkmate";
       }
     } else {
       // Check for stalemate
-      const hasValidMoves = hasAnyValidMoves(newBoard, nextTurn);
-      if (!hasValidMoves) {
+      const canMoveCombatCheck = canAnyMoveCombatCheck(newBoard, nextTurn);
+      if (!canMoveCombatCheck) {
         status = "completed";
         winner = "draw";
         gameEndReason = "stalemate";
