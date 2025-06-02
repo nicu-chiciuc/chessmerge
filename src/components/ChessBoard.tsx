@@ -397,7 +397,7 @@ function ChessPieceCell({
     };
 
     return (
-      <div className="relative w-full h-full flex">
+      <div className="relative w-full h-full flex p-[10%]">
         {/* Left half - show right side of piece */}
         <div
           className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
@@ -447,7 +447,7 @@ function ChessPiece({
 }: ChessPieceProps) {
   return (
     <div
-      className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center`}
+      className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center w-full h-full p-[10%]`}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -469,7 +469,7 @@ function ChessPieceContent({ piece, size }: ChessPieceContentProps) {
     small: "w-3 h-3 sm:w-4 sm:h-4",
     medium: "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6",
     large: "w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8",
-    responsive: "w-[80%] h-[80%]",
+    responsive: "w-full h-full",
   };
 
   return (
