@@ -155,9 +155,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
   }
 
   return (
-    <div className="grid lg:grid-cols-4 gap-6">
-      <div className="lg:col-span-3">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+    <div className="flex flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-6">
+      <div className="xl:col-span-3">
+        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 md:p-6">
           <ChessBoard
             board={board}
             selectedSquare={selectedSquare}
@@ -173,13 +173,17 @@ export function ChessGame({ gameId }: ChessGameProps) {
         </div>
       </div>
 
-      <div className="space-y-6">
-        <GameInfo
-          game={game}
-          isWhitePlayer={isWhitePlayer}
-          isBlackPlayer={isBlackPlayer}
-        />
-        <MoveHistory moves={moveHistory} />
+      <div className="flex flex-col sm:flex-row xl:flex-col gap-4 xl:gap-6">
+        <div className="flex-1">
+          <GameInfo
+            game={game}
+            isWhitePlayer={isWhitePlayer}
+            isBlackPlayer={isBlackPlayer}
+          />
+        </div>
+        <div className="flex-1">
+          <MoveHistory moves={moveHistory} />
+        </div>
       </div>
     </div>
   );

@@ -208,9 +208,9 @@ export function ChessBoard({
       dragOverSquare?.row === row && dragOverSquare?.col === col;
 
     let squareClass = `
-      w-12 h-12 flex items-center justify-center cursor-pointer relative
+      aspect-square flex items-center justify-center cursor-pointer relative
       ${isLight ? "bg-amber-100" : "bg-amber-800"}
-      ${isSelected ? "ring-4 ring-blue-500 z-20" : ""}
+      ${isSelected ? "ring-2 sm:ring-4 ring-blue-500 z-20" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
       ${isDragOver ? "bg-blue-200" : ""}
       hover:brightness-110 transition-all
@@ -257,14 +257,14 @@ export function ChessBoard({
         {/* Coordinate labels */}
         {col === 0 && (
           <div
-            className={`absolute left-1 top-1 text-sm font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
+            className={`absolute left-[5%] top-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
           >
             {ranks[row]}
           </div>
         )}
         {row === 7 && (
           <div
-            className={`absolute right-1 bottom-1 text-sm font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
+            className={`absolute right-[5%] bottom-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
           >
             {files[col]}
           </div>
@@ -272,59 +272,65 @@ export function ChessBoard({
 
         {/* Move indicators */}
         {isValidMove && cell.length === 0 && (
-          <div className="absolute inset-0 border-4 border-green-500 rounded pointer-events-none" />
+          <div className="absolute inset-[10%] border-[0.2em] border-green-500 rounded-full pointer-events-none" />
         )}
         {isValidMove && cell.length > 0 && (
-          <div className="absolute inset-0 border-4 border-green-500 rounded pointer-events-none" />
+          <div className="absolute inset-0 border-[0.3em] border-green-500 rounded pointer-events-none" />
         )}
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col items-center justify-center ">
-      <div className="grid grid-cols-8 border-2 border-gray-800">
-        {Array.from({ length: 8 }, (_, row) =>
-          Array.from({ length: 8 }, (_, col) => {
-            const actualRow = flipped ? 7 - row : row;
-            const actualCol = flipped ? 7 - col : col;
-            return renderSquare(actualRow, actualCol);
-          }),
-        )}
+    <div className="flex flex-col items-center justify-center w-full">
+      <div className="w-full max-w-[min(90vw,90vh)] mx-auto">
+        <div className="grid grid-cols-8 border-2 border-gray-800 w-full">
+          {Array.from({ length: 8 }, (_, row) =>
+            Array.from({ length: 8 }, (_, col) => {
+              const actualRow = flipped ? 7 - row : row;
+              const actualCol = flipped ? 7 - col : col;
+              return renderSquare(actualRow, actualCol);
+            }),
+          )}
+        </div>
       </div>
 
       {/* Piece selection buttons for merged pieces */}
       {hasTwoPieces && selectedCell && isMyTurn && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-lg border">
-          <div className="text-sm font-medium text-gray-700 mb-2">
+        <div className="mt-4 p-3 sm:p-4 bg-gray-100 rounded-lg border max-w-xs sm:max-w-sm md:max-w-md mx-auto w-full">
+          <div className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
             Choose which piece(s) to move:
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2 flex-wrap">
             <button
               onClick={() => handlePieceSelectionChange("first")}
-              className={`px-3 py-2 rounded border text-sm flex items-center gap-2 ${
+              className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-1 min-w-0 ${
                 selectedPieceMode === "first"
                   ? "bg-blue-500 text-white border-blue-500"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
               <ChessPieceContent piece={selectedCell[0]} size="small" />
-              <span>Only {mapToName(selectedCell[0].pieceType)}</span>
+              <span className="truncate">
+                Only {mapToName(selectedCell[0].pieceType)}
+              </span>
             </button>
             <button
               onClick={() => handlePieceSelectionChange("second")}
-              className={`px-3 py-2 rounded border text-sm flex items-center gap-2 ${
+              className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-1 min-w-0 ${
                 selectedPieceMode === "second"
                   ? "bg-blue-500 text-white border-blue-500"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
               }`}
             >
               <ChessPieceContent piece={selectedCell[1]} size="small" />
-              <span>Only {mapToName(selectedCell[1].pieceType)}</span>
+              <span className="truncate">
+                Only {mapToName(selectedCell[1].pieceType)}
+              </span>
             </button>
             <button
               onClick={() => handlePieceSelectionChange("both")}
-              className={`px-3 py-2 rounded border text-sm flex items-center gap-2 ${
+              className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-1 min-w-0 ${
                 selectedPieceMode === "both"
                   ? "bg-blue-500 text-white border-blue-500"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -334,7 +340,7 @@ export function ChessBoard({
                 <ChessPieceContent piece={selectedCell[0]} size="small" />
                 <ChessPieceContent piece={selectedCell[1]} size="small" />
               </div>
-              <span>Both pieces</span>
+              <span className="truncate">Both pieces</span>
             </button>
           </div>
         </div>
@@ -391,27 +397,27 @@ function ChessPieceCell({
     };
 
     return (
-      <div className="relative w-8 h-8 flex">
+      <div className="relative w-full h-full flex">
         {/* Left half - show right side of piece */}
         <div
-          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-4 h-8 overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
+          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
           draggable={canDrag}
           onDragStart={(e) => onDragStart?.(e, pieces.indexOf(leftPiece))}
           onDragEnd={onDragEnd}
         >
-          <div className="absolute left-0 top-0 w-8 h-8 flex items-center justify-center">
-            <ChessPieceContent piece={leftPiece} size="large" />
+          <div className="absolute left-0 top-0 w-[200%] h-full flex items-center justify-center">
+            <ChessPieceContent piece={leftPiece} size="responsive" />
           </div>
         </div>
         {/* Right half - show left side of piece */}
         <div
-          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-4 h-8 overflow-hidden relative ${getOpacity(pieces.indexOf(rightPiece))}`}
+          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(rightPiece))}`}
           draggable={canDrag}
           onDragStart={(e) => onDragStart?.(e, pieces.indexOf(rightPiece))}
           onDragEnd={onDragEnd}
         >
-          <div className="absolute right-0 top-0 w-8 h-8 flex items-center justify-center">
-            <ChessPieceContent piece={rightPiece} size="large" />
+          <div className="absolute right-0 top-0 w-[200%] h-full flex items-center justify-center">
+            <ChessPieceContent piece={rightPiece} size="responsive" />
           </div>
         </div>
       </div>
@@ -420,7 +426,7 @@ function ChessPieceCell({
 
   // This shouldn't happen in chess, but provide a fallback
   return (
-    <div className="w-8 h-8 bg-red-500 flex items-center justify-center text-white text-xs font-bold">
+    <div className="w-full h-full bg-red-500 flex items-center justify-center text-white text-[0.5em] font-bold">
       {pieces.length}
     </div>
   );
@@ -446,23 +452,24 @@ function ChessPiece({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      <ChessPieceContent piece={piece} size="large" />
+      <ChessPieceContent piece={piece} size="responsive" />
     </div>
   );
 }
 
 interface ChessPieceContentProps {
   piece: Piece;
-  size: "small" | "medium" | "large";
+  size: "small" | "medium" | "large" | "responsive";
 }
 
 function ChessPieceContent({ piece, size }: ChessPieceContentProps) {
   const svgSrc = getPieceSvg(piece);
 
   const sizeClasses = {
-    small: "w-3 h-3",
-    medium: "w-6 h-6",
-    large: "w-8 h-8",
+    small: "w-3 h-3 sm:w-4 sm:h-4",
+    medium: "w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6",
+    large: "w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8",
+    responsive: "w-[80%] h-[80%]",
   };
 
   return (
