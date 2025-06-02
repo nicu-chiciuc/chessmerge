@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { GameLobby } from "./components/GameLobby";
 import { ChessGame } from "./components/ChessGame";
+import { UnsubscribePage } from "./components/UnsubscribePage";
 import { useParams, useNavigate } from "react-router-dom";
 import { Id } from "../convex/_generated/dataModel";
 
@@ -40,6 +41,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<LobbyRoute />} />
       <Route path="/game/:gameId" element={<GameRoute />} />
+      <Route path="/unsubscribe" element={<UnsubscribePage />} />
     </Routes>
   );
 }

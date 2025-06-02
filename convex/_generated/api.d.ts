@@ -14,6 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth from "../auth.js";
+import type * as emailSubscriptions from "../emailSubscriptions.js";
+import type * as emails from "../emails.js";
 import type * as gameLogic from "../gameLogic.js";
 import type * as http from "../http.js";
 import type * as router from "../router.js";
@@ -28,6 +30,8 @@ import type * as router from "../router.js";
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  emailSubscriptions: typeof emailSubscriptions;
+  emails: typeof emails;
   gameLogic: typeof gameLogic;
   http: typeof http;
   router: typeof router;

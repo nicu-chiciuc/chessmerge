@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { EmailSubscribe } from "./EmailSubscribe";
 
 interface GameLobbyProps {
   onJoinGame: (gameId: Id<"games">) => void;
@@ -183,6 +184,11 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
             </ul>
           </div>
         </div>
+      </div>
+
+      {/* Email Subscription */}
+      <div className="max-w-md mx-auto">
+        <EmailSubscribe />
       </div>
     </div>
   );

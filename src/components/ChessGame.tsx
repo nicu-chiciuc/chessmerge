@@ -5,6 +5,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { MoveHistory } from "./MoveHistory";
+import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect } from "react";
 import {
   Board,
@@ -183,6 +184,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
         </div>
         <div className="flex-1">
           <MoveHistory moves={moveHistory} />
+        </div>
+        <div className="w-full">
+          <EmailSubscribe compact />
         </div>
       </div>
     </div>

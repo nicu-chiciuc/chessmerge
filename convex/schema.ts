@@ -47,6 +47,17 @@ const applicationTables = {
     name: v.string(),
     description: v.optional(v.string()),
   }).index("by_user", ["userId"]),
+
+  emailSubscribers: defineTable({
+    email: v.string(),
+    subscribedAt: v.number(),
+    confirmed: v.boolean(),
+    confirmationToken: v.optional(v.string()),
+    unsubscribeToken: v.string(),
+  })
+    .index("by_email", ["email"])
+    .index("by_confirmation_token", ["confirmationToken"])
+    .index("by_unsubscribe_token", ["unsubscribeToken"]),
 };
 
 export default defineSchema({

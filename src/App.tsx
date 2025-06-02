@@ -5,6 +5,7 @@ import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
 import { AppRoutes } from "./routes";
 import { useLocation, useNavigate } from "react-router-dom";
+import { EmailSubscribe } from "./components/EmailSubscribe";
 
 export default function App() {
   const location = useLocation();
@@ -64,6 +65,9 @@ function Content() {
             </p>
           </div>
           <SignInForm />
+          <div className="w-full max-w-md">
+            <EmailSubscribe />
+          </div>
         </div>
       </Unauthenticated>
     </div>
