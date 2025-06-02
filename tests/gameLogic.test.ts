@@ -12,7 +12,7 @@ import {
   type Piece,
   type PieceType,
   boardToString,
-} from "../convex/gameLogic";
+} from "../lib/chessmerge";
 
 describe("Game Logic Tests", () => {
   describe("parsePosition", () => {

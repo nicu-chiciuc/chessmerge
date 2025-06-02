@@ -1,4 +1,4 @@
-import { Board, Position, Piece, PieceType } from "../../convex/gameLogic";
+import { Board, Position, Piece, PieceType } from "../../lib/chessmerge";
 import { useState } from "react";
 
 // Import all chess piece SVGs

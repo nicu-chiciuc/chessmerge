@@ -1,4 +1,4 @@
-import { Move } from "../../convex/gameLogic";
+import { Move } from "../../lib/chessmerge";
 
 interface MoveHistoryProps {
   moves: Move[];

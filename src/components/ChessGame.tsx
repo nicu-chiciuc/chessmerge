@@ -14,7 +14,7 @@ import {
   Position,
   getAllMovesForCell,
   getPieceMoves,
-} from "../../convex/gameLogic";
+} from "../../lib/chessmerge";
 import { toast } from "sonner";
 
 interface ChessGameProps {
