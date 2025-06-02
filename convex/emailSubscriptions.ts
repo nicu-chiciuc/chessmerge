@@ -137,12 +137,23 @@ export const sendWelcomeEmail = internalAction({
       return null;
     }
 
+    // Check if FRONTEND_URL is configured
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+      console.warn(
+        "⚠️ FRONTEND_URL not configured. Unsubscribe links won't work properly.",
+        "Please set FRONTEND_URL in your Convex dashboard environment variables.",
+      );
+    }
+
     try {
       // Dynamic import to avoid errors when Resend is not configured
       const { Resend } = await import("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
 
-      const unsubscribeUrl = `${process.env.CONVEX_SITE_URL || "https://yoursite.com"}/unsubscribe?token=${args.unsubscribeToken}`;
+      const unsubscribeUrl = frontendUrl
+        ? `${frontendUrl}/unsubscribe?token=${args.unsubscribeToken}`
+        : `[UNSUBSCRIBE_URL_NOT_CONFIGURED - Set FRONTEND_URL environment variable]`;
 
       const result = await resend.emails.send({
         from: "ChessMerge <onboarding@resend.dev>", // Use Resend's test domain if you haven't set up your own
@@ -165,8 +176,11 @@ export const sendWelcomeEmail = internalAction({
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="font-size: 12px; color: #999; text-align: center;">
-              If you no longer wish to receive these emails, you can 
-              <a href="${unsubscribeUrl}" style="color: #666;">unsubscribe here</a>.
+              ${
+                frontendUrl
+                  ? `If you no longer wish to receive these emails, you can <a href="${unsubscribeUrl}" style="color: #666;">unsubscribe here</a>.`
+                  : `To unsubscribe, please contact support (unsubscribe link not configured).`
+              }
             </p>
           </div>
         `,

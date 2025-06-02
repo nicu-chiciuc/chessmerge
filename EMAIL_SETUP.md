@@ -2,7 +2,7 @@
 
 This guide explains how to set up and test the email subscription feature in ChessMerge.
 
-## Setup Steps
+## Required Setup Steps
 
 ### 1. Add your Resend API Key to Convex
 
@@ -13,7 +13,17 @@ This guide explains how to set up and test the email subscription feature in Che
    - Name: `RESEND_API_KEY`
    - Value: Your Resend API key from [resend.com/api-keys](https://resend.com/api-keys)
 
-### 2. Configure Email Domain (Optional)
+### 2. Set Site URL for Unsubscribe Links (REQUIRED)
+
+Add another environment variable in Convex:
+- Name: `FRONTEND_URL`
+- Value: Your frontend site's URL
+  - For development: `http://localhost:5173`
+  - For production: `https://your-app.vercel.app` or your custom domain
+
+⚠️ **Important**: Without this environment variable, unsubscribe links in emails will not work!
+
+### 3. Configure Email Domain (Optional)
 
 By default, the system uses Resend's test domain (`onboarding@resend.dev`) which is perfect for testing.
 
@@ -23,12 +33,6 @@ To use your own domain:
    ```typescript
    from: "ChessMerge <updates@yourdomain.com>",
    ```
-
-### 3. Set Site URL for Unsubscribe Links
-
-Add another environment variable in Convex:
-- Name: `CONVEX_SITE_URL`
-- Value: Your site URL (e.g., `https://chessmerge.vercel.app`)
 
 ## Testing the Integration
 
@@ -76,4 +80,4 @@ The email subscription form is now available in three places:
 
 - **"RESEND_API_KEY not configured"** - Add the API key to Convex environment variables
 - **Email not received** - Check spam folder, verify Resend API key is valid
-- **Invalid unsubscribe link** - Ensure CONVEX_SITE_URL is set correctly 
+- **Invalid unsubscribe link** - Ensure FRONTEND_URL is set correctly 

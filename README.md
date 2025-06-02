@@ -66,3 +66,32 @@ Join thousands of developers building full-stack apps with Convex:
 
 - Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
 - Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
+
+## Development Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up Convex:
+   ```bash
+   npm run setup
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+### Environment Variables
+
+For the email unsubscribe functionality to work properly, you need to set the following environment variable in your [Convex Dashboard](https://dashboard.convex.dev):
+
+- **`FRONTEND_URL`**: Your frontend site's URL (e.g., `http://localhost:5173` for development or `https://your-app.vercel.app` for production)
+
+To set this:
+1. Go to your Convex Dashboard
+2. Navigate to Settings > Environment Variables
+3. Add `FRONTEND_URL` with your frontend site's URL
+
+Without this, unsubscribe links in emails will point to a placeholder URL and won't work.
