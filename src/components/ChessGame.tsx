@@ -8,7 +8,6 @@ import { MoveHistory } from "./MoveHistory";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect } from "react";
 import {
-  Board,
   GameState,
   MergedPieceTypes,
   Move,

@@ -8,7 +8,6 @@ import {
   getAllMovesForCell,
   parsePosition,
   formatPosition,
-  type Board,
   type Piece,
   type PieceType,
   boardToString,
