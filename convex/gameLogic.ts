@@ -8,6 +8,7 @@ import {
   isInCheck,
   applyMove,
   canAnyMoveCombatCheck,
+  GameState,
 } from "../lib/chessmerge";
 
 // Check if king is in check
@@ -24,7 +25,7 @@ export const createGame = mutation({
       whitePlayerId: userId,
       status: "waiting",
       currentTurn: "w",
-      board: JSON.stringify(board),
+      gameState: JSON.stringify(board),
       moveHistory: [],
       lastMoveAt: Date.now(),
     });
@@ -45,7 +46,7 @@ export const createPracticeGame = mutation({
       isPracticeGame: true,
       status: "active", // Start immediately, no need to wait
       currentTurn: "w",
-      board: JSON.stringify(board),
+      gameState: JSON.stringify(board),
       moveHistory: [],
       lastMoveAt: Date.now(),
     });
@@ -104,10 +105,10 @@ export const makeMove = mutation({
     }
 
     const move: Move = JSON.parse(args.move);
-    const board: Board = JSON.parse(game.board);
+    const gameState: GameState = JSON.parse(game.gameState);
 
     // Validate and apply move
-    const newBoard = applyMove(board, move);
+    const newBoard = applyMove(gameState, move);
     const nextTurn = game.currentTurn === "w" ? "b" : "w";
 
     // Check for game end conditions
@@ -142,7 +143,7 @@ export const makeMove = mutation({
     }
 
     await ctx.db.patch(args.gameId, {
-      board: JSON.stringify(newBoard),
+      gameState: JSON.stringify(newBoard),
       currentTurn: nextTurn,
       moveHistory: [...game.moveHistory, args.move],
       lastMoveAt: Date.now(),

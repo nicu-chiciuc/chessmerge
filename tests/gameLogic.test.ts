@@ -394,7 +394,7 @@ describe("Game Logic Tests", () => {
       emptyBoard[4][7] = [{ color: "b", pieceType: "r" }];
 
       expect(isInCheck(emptyBoard, "w")).toBe(true);
-      expect(isInCheck(emptyBoard, "b")).toBe(false);
+      expect(() => isInCheck(emptyBoard, "b")).toThrow();
     });
 
     it("should return false when king is not under attack", () => {
@@ -411,7 +411,7 @@ describe("Game Logic Tests", () => {
       emptyBoard[6][7] = [{ color: "b", pieceType: "r" }];
 
       expect(isInCheck(emptyBoard, "w")).toBe(false);
-      expect(isInCheck(emptyBoard, "b")).toBe(false);
+      expect(() => isInCheck(emptyBoard, "b")).toThrow();
     });
   });
 
@@ -422,14 +422,14 @@ describe("Game Logic Tests", () => {
 
       expect(string).toBe(
         [
-          "br  bn  bb  bq  bk  bb  bn  br ",
-          "bp  bp  bp  bp  bp  bp  bp  bp ",
-          ".   .   .   .   .   .   .   .  ",
-          ".   .   .   .   .   .   .   .  ",
-          ".   .   .   .   .   .   .   .  ",
-          ".   .   .   .   .   .   .   .  ",
-          "wp  wp  wp  wp  wp  wp  wp  wp ",
-          "wr  wn  wb  wq  wk  wb  wn  wr ",
+          "r  n  b  q  k  b  n  r ",
+          "p  p  p  p  p  p  p  p ",
+          ".  .  .  .  .  .  .  . ",
+          ".  .  .  .  .  .  .  . ",
+          ".  .  .  .  .  .  .  . ",
+          ".  .  .  .  .  .  .  . ",
+          "P  P  P  P  P  P  P  P ",
+          "R  N  B  Q  K  B  N  R ",
         ].join("\n"),
       );
     });

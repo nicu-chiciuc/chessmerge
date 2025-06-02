@@ -17,7 +17,7 @@ const applicationTables = {
     winner: v.optional(
       v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
     ),
-    board: v.string(), // JSON serialized board state
+    gameState: v.string(), // JSON serialized game state
     moveHistory: v.array(v.string()), // JSON serialized moves
     lastMoveAt: v.number(),
     gameEndReason: v.optional(

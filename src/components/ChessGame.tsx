@@ -9,6 +9,7 @@ import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect } from "react";
 import {
   Board,
+  GameState,
   MergedPieceTypes,
   Move,
   Position,
@@ -34,8 +35,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
   >("both");
 
   // Parse board directly - expect new format only
-  const board: Board = game
-    ? JSON.parse(game.board)
+  const gameState: GameState = game
+    ? JSON.parse(game.gameState)
     : Array(8)
         .fill(null)
         .map(() =>
@@ -75,20 +76,21 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
     // Recalculate valid moves based on selected piece mode
     if (selectedSquare) {
-      const selectedCell = board[selectedSquare.row][selectedSquare.col];
+      const selectedCell =
+        gameState.board[selectedSquare.row][selectedSquare.col];
       let newValidMoves: Move[] = [];
 
       if (mode === "both") {
         // Get moves for all pieces in the cell
-        newValidMoves = getAllMovesForCell(selectedSquare, board);
+        newValidMoves = getAllMovesForCell(selectedSquare, gameState);
       } else if (mode === "first" && selectedCell.length >= 1) {
         // Get moves only for the first piece
         const piece = selectedCell[0];
-        newValidMoves = getPieceMoves(piece, selectedSquare, board, true);
+        newValidMoves = getPieceMoves(piece, selectedSquare, gameState, true);
       } else if (mode === "second" && selectedCell.length >= 2) {
         // Get moves only for the second piece
         const piece = selectedCell[1];
-        newValidMoves = getPieceMoves(piece, selectedSquare, board, true);
+        newValidMoves = getPieceMoves(piece, selectedSquare, gameState, true);
       }
 
       setValidMoves(newValidMoves);
@@ -98,7 +100,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const handleSquareClick = async (row: number, col: number) => {
     if (!game || !isMyTurn || game.status !== "active") return;
 
-    const clickedCell = board[row][col];
+    const clickedCell = gameState.board[row][col];
     const position = { row, col };
 
     if (selectedSquare) {
@@ -106,7 +108,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
       const targetMove = validMoves.find(
         (move) => move.to.row === row && move.to.col === col,
       );
-      const selectedCell = board[selectedSquare.row][selectedSquare.col];
+      const selectedCell =
+        gameState.board[selectedSquare.row][selectedSquare.col];
       if (targetMove) {
         if (selectedPieceMode === "both" && selectedCell.length === 2) {
           targetMove.piece =
@@ -127,7 +130,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       setSelectedSquare(position);
       setSelectedPieceMode("both");
 
-      const allMoves = getAllMovesForCell(position, board);
+      const allMoves = getAllMovesForCell(position, gameState);
       setValidMoves(allMoves);
     }
   };
@@ -160,7 +163,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       <div className="xl:col-span-3">
         <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 md:p-6">
           <ChessBoard
-            board={board}
+            board={gameState.board}
             selectedSquare={selectedSquare}
             validMoves={validPositions}
             // fullMoves={validMoves}

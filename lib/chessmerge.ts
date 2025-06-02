@@ -53,8 +53,7 @@ export interface Move {
 
   piece: PieceType | MergedPieceTypes;
 
-  // Means that the target cell already contains a single piece of same color
-  mergesTarget?: boolean;
+  type: "base" | "merge" | "castle";
 
   capturedPieces?: Piece[]; // Pieces captured at destination
 }
@@ -62,8 +61,14 @@ export interface Move {
 // Board where each cell can contain 0-2 pieces of the same color
 export type Board = Piece[][][];
 
+// A better name
+export type GameState = {
+  board: Board;
+  options: Options;
+};
+
 // Initialize standard chess board
-export function createInitialBoard(): Board {
+export function createInitialBoard(): GameState {
   const board: Board = Array(8)
     .fill(null)
     .map(() =>
@@ -86,7 +91,23 @@ export function createInitialBoard(): Board {
     board[1][col] = [{ color: "b", pieceType: "p" }];
   }
 
-  return board;
+  return {
+    board,
+    options: {
+      castlingRights: {
+        white: {
+          short: true,
+          long: true,
+        },
+        black: {
+          short: true,
+          long: true,
+        },
+      },
+      halfMoveClock: 0,
+      enPassantTarget: undefined,
+    },
+  };
 }
 
 // Check if position is valid
@@ -98,23 +119,39 @@ export function isValidPosition(pos: Position): boolean {
 export function getPieceMoves(
   piece: Piece,
   pos: Position,
-  board: Board,
+  gameState: GameState,
   filterCheckMoves: boolean = false,
 ): Move[] {
   return getSinglePieceMoves(
     piece.pieceType,
     piece.color,
     pos,
-    board,
+    gameState,
     filterCheckMoves,
   );
 }
+
+// Similar to Forsyth–Edwards Notation
+type Options = {
+  castlingRights: {
+    white: {
+      short: boolean;
+      long: boolean;
+    };
+    black: {
+      short: boolean;
+      long: boolean;
+    };
+  };
+  enPassantTarget?: Position;
+  halfMoveClock: number;
+};
 
 function getSinglePieceMoves(
   type: PieceType,
   color: PieceColor,
   pos: Position,
-  board: Board,
+  { board, options }: GameState,
   filterCheckMoves: boolean = false,
 ): Move[] {
   const moves: Move[] = [];
@@ -148,7 +185,7 @@ function getSinglePieceMoves(
           from: pos,
           to: { row: row + direction, col },
           piece: "p",
-          mergesTarget: board[row + direction][col].length === 1,
+          type: board[row + direction][col].length === 1 ? "merge" : "base",
         });
 
         // Double move from start
@@ -162,7 +199,8 @@ function getSinglePieceMoves(
             from: pos,
             to: { row: row + 2 * direction, col },
             piece: "p",
-            mergesTarget: board[row + 2 * direction][col].length === 1,
+            type:
+              board[row + 2 * direction][col].length === 1 ? "merge" : "base",
           });
         }
       }
@@ -182,6 +220,7 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "p",
                 capturedPieces: [...targetCell],
+                type: "base",
               });
             }
           }
@@ -208,6 +247,7 @@ function getSinglePieceMoves(
               from: pos,
               to: newPos,
               piece: "r",
+              type: "base",
             });
           } else {
             const firstTargetPiece = targetCell[0];
@@ -218,6 +258,7 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "r",
                 capturedPieces: [...targetCell],
+                type: "base",
               });
             } else if (
               targetCell.length === 1 &&
@@ -228,7 +269,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "r",
-                mergesTarget: true,
+                type: "merge",
               });
             }
             break;
@@ -258,6 +299,7 @@ function getSinglePieceMoves(
               from: pos,
               to: newPos,
               piece: "n",
+              type: "base",
             });
           } else {
             const firstTargetPiece = targetCell[0];
@@ -268,6 +310,7 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "n",
                 capturedPieces: [...targetCell],
+                type: "base",
               });
             } else if (
               targetCell.length === 1 &&
@@ -278,7 +321,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "n",
-                mergesTarget: true,
+                type: "merge",
               });
             }
           }
@@ -305,6 +348,7 @@ function getSinglePieceMoves(
               from: pos,
               to: newPos,
               piece: "b",
+              type: "base",
             });
           } else {
             const firstTargetPiece = targetCell[0];
@@ -315,6 +359,7 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "b",
                 capturedPieces: [...targetCell],
+                type: "base",
               });
             } else if (
               targetCell.length === 1 &&
@@ -325,7 +370,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "b",
-                mergesTarget: true,
+                type: "merge",
               });
             }
             break;
@@ -339,8 +384,8 @@ function getSinglePieceMoves(
       // Combination of rook and bishop
       moves.push(
         ...[
-          ...getSinglePieceMoves("r", color, pos, board),
-          ...getSinglePieceMoves("b", color, pos, board),
+          ...getSinglePieceMoves("r", color, pos, { board, options }),
+          ...getSinglePieceMoves("b", color, pos, { board, options }),
         ].map(
           (move): Move => ({
             ...move,
@@ -363,6 +408,7 @@ function getSinglePieceMoves(
                 from: pos,
                 to: newPos,
                 piece: "k",
+                type: "base",
               });
             } else {
               const firstTargetPiece = targetCell[0];
@@ -373,6 +419,7 @@ function getSinglePieceMoves(
                   to: newPos,
                   piece: "k",
                   capturedPieces: [...targetCell],
+                  type: "base",
                 });
               }
               // Note: Kings cannot merge as per the canMerge function
@@ -380,6 +427,28 @@ function getSinglePieceMoves(
           }
         }
       }
+
+      const kingMovedPreviously = false; // TODO: Implement this
+      const closeRookMovedPreviously = false; // TODO: Implement this
+      const farRookMovedPreviously = false; // TODO: Implement this
+      const spaceEmptyToCloseRook = false; // TODO: Implement this
+      const spaceToCloseRookNotInCheck = false; // TODO: Implement this
+
+      if (
+        !kingMovedPreviously &&
+        !closeRookMovedPreviously &&
+        spaceEmptyToCloseRook &&
+        spaceToCloseRookNotInCheck
+      ) {
+        moves.push({
+          type: "castle",
+          from: pos,
+          to: { row: row + 2, col: col },
+          piece: "k",
+          capturedPieces: [],
+        });
+      }
+
       break;
     }
   }
@@ -387,7 +456,7 @@ function getSinglePieceMoves(
   // Filter out moves that result in check
   if (filterCheckMoves) {
     return moves.filter((move) => {
-      const newBoard = applyMove(board, move);
+      const newBoard = applyMove({ board, options }, move);
       return !isInCheck(newBoard, color);
     });
   }
@@ -404,7 +473,7 @@ export function canMerge(
   return pieceType1 !== "k" && pieceType2 !== "k";
 }
 
-function findKingPosition(board: Board, color: PieceColor): Position {
+function findKingPosition({ board }: GameState, color: PieceColor): Position {
   // Find king position
   let kingPos: Position | null = null;
   for (let row = 0; row < 8; row++) {
@@ -427,18 +496,18 @@ function findKingPosition(board: Board, color: PieceColor): Position {
   return kingPos;
 }
 
-export function isInCheck(board: Board, color: PieceColor): boolean {
-  const kingPos = findKingPosition(board, color);
+export function isInCheck(gameState: GameState, color: PieceColor): boolean {
+  const kingPos = findKingPosition(gameState, color);
 
   // Check if any opponent piece can attack the king
   const opponentColor = otherColor(color);
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const cell = board[row][col];
+      const cell = gameState.board[row][col];
       for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
         const piece = cell[pieceIndex];
         if (piece.color === opponentColor) {
-          const moves = getPieceMoves(piece, { row, col }, board);
+          const moves = getPieceMoves(piece, { row, col }, gameState);
           if (
             moves.some(
               (move) =>
@@ -455,8 +524,8 @@ export function isInCheck(board: Board, color: PieceColor): boolean {
   return false;
 }
 
-export function applyMove(board: Board, move: Move): Board {
-  const newBoard = board.map((row) => row.map((cell) => [...cell]));
+export function applyMove(gameState: GameState, move: Move): GameState {
+  const newBoard = gameState.board.map((row) => row.map((cell) => [...cell]));
 
   const sourceCell = newBoard[move.from.row][move.from.col];
   const targetCell = newBoard[move.to.row][move.to.col];
@@ -496,13 +565,25 @@ export function applyMove(board: Board, move: Move): Board {
     // Move to empty cell
     if (targetCell.length === 0) {
       newBoard[move.to.row][move.to.col] = [pieceToMove];
-      return newBoard;
+      return {
+        board: newBoard,
+        options: {
+          ...gameState.options,
+          halfMoveClock: gameState.options.halfMoveClock + 1,
+        },
+      };
     }
 
     // Capture enemy piece/s
     if (targetCell[0].color !== pieceToMove.color) {
       newBoard[move.to.row][move.to.col] = [pieceToMove];
-      return newBoard;
+      return {
+        board: newBoard,
+        options: {
+          ...gameState.options,
+          halfMoveClock: 0,
+        },
+      };
     }
 
     if (targetCell.length > 1) {
@@ -517,7 +598,14 @@ export function applyMove(board: Board, move: Move): Board {
     }
 
     newBoard[move.to.row][move.to.col] = [targetCell[0], pieceToMove];
-    return newBoard;
+
+    return {
+      board: newBoard,
+      options: {
+        ...gameState.options,
+        halfMoveClock: gameState.options.halfMoveClock + 1,
+      },
+    };
   }
 
   if (move.piece.length === 2) {
@@ -545,19 +633,37 @@ export function applyMove(board: Board, move: Move): Board {
     // Move to empty cell
     if (targetCell.length === 0) {
       newBoard[move.to.row][move.to.col] = [sourceCell[0], sourceCell[1]];
-      return newBoard;
+      return {
+        board: newBoard,
+        options: {
+          ...gameState.options,
+          halfMoveClock: gameState.options.halfMoveClock + 1,
+        },
+      };
     }
 
     // Capture enemy piece/s
     if (targetCell[0].color !== sourceCell[0].color) {
       newBoard[move.to.row][move.to.col] = [sourceCell[0], sourceCell[1]];
-      return newBoard;
+      return {
+        board: newBoard,
+        options: {
+          ...gameState.options,
+          halfMoveClock: 0,
+        },
+      };
     }
 
     throw new Error("Trying to move 2 pieces to a cell with at least 1 piece");
   }
 
-  return newBoard;
+  return {
+    board: newBoard,
+    options: {
+      ...gameState.options,
+      halfMoveClock: gameState.options.halfMoveClock + 1,
+    },
+  };
 }
 
 function otherColor(color: PieceColor): PieceColor {
@@ -569,19 +675,19 @@ function otherColor(color: PieceColor): PieceColor {
  * that the king is not in check after the move
  */
 export function canAnyMoveCombatCheck(
-  board: Board,
+  gameState: GameState,
   color: PieceColor,
 ): boolean {
   // For each piece of the color, check if any move would combat the check
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const cell = board[row][col];
+      const cell = gameState.board[row][col];
       for (const piece of cell) {
         if (piece.color === color) {
-          const moves = getPieceMoves(piece, { row, col }, board);
+          const moves = getPieceMoves(piece, { row, col }, gameState);
 
           for (const move of moves) {
-            const newBoard = applyMove(board, move);
+            const newBoard = applyMove(gameState, move);
             const isCheck = isInCheck(newBoard, color);
 
             if (!isCheck) return true;
@@ -595,20 +701,23 @@ export function canAnyMoveCombatCheck(
 }
 
 // Helper functions for UI - simplified for new structure
-export function getAllMovesForCell(pos: Position, board: Board): Move[] {
+export function getAllMovesForCell(
+  pos: Position,
+  gameState: GameState,
+): Move[] {
   const moves: Move[] = [];
-  const cell = board[pos.row][pos.col];
+  const cell = gameState.board[pos.row][pos.col];
 
   // Get moves for each piece in the cell
   for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
     const piece = cell[pieceIndex];
-    const pieceMoves = getPieceMoves(piece, pos, board, true);
+    const pieceMoves = getPieceMoves(piece, pos, gameState, true);
     moves.push(...pieceMoves);
   }
 
   if (cell.length === 2) {
     // filter out moves that would merge with the target cell
-    return moves.filter((move) => !move.mergesTarget);
+    return moves.filter((move) => move.type !== "merge");
   }
 
   return moves;
@@ -620,13 +729,21 @@ export function boardToString(board: Board): string {
       row
         .map((cell) => {
           if (cell.length === 0) {
-            return ".  ";
+            return ". ";
           }
           if (cell.length === 1) {
-            return cell[0].color + cell[0].pieceType + " ";
+            const str = cell[0].pieceType + " ";
+            if (cell[0].color === "w") {
+              return str.toUpperCase();
+            }
+            return str;
           }
           if (cell.length === 2) {
-            return cell[0].color + cell[0].pieceType + cell[1].pieceType;
+            const str = cell[0].pieceType + cell[1].pieceType;
+            if (cell[0].color === "w") {
+              return str.toUpperCase();
+            }
+            return str;
           }
           throw new Error("Invalid board state");
         })
