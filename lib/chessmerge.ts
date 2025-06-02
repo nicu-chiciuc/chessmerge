@@ -147,6 +147,7 @@ export function getPieceMoves(
   pos: Position,
   gameState: GameState,
   filterCheckMoves: boolean = false,
+  ignoreKingMoves: boolean = false,
 ): Move[] {
   return getSinglePieceMoves(
     piece.pieceType,
@@ -154,6 +155,7 @@ export function getPieceMoves(
     pos,
     gameState,
     filterCheckMoves,
+    ignoreKingMoves,
   );
 }
 
@@ -177,9 +179,11 @@ function getSinglePieceMoves(
   type: PieceType,
   color: PieceColor,
   pos: Position,
-  { board, options }: GameState,
+  gameState: GameState,
   filterCheckMoves: boolean = false,
+  ignoreKingMoves: boolean = false,
 ): Move[] {
+  const { board, options } = gameState;
   const moves: Move[] = [];
   const { row, col } = pos;
 
@@ -423,6 +427,10 @@ function getSinglePieceMoves(
     }
 
     case "k": {
+      if (ignoreKingMoves) {
+        break;
+      }
+
       for (const dr of [-1, 0, 1]) {
         for (const dc of [-1, 0, 1]) {
           if (dr === 0 && dc === 0) continue;
@@ -454,25 +462,39 @@ function getSinglePieceMoves(
         }
       }
 
-      const kingMovedPreviously = false; // TODO: Implement this
-      const closeRookMovedPreviously = false; // TODO: Implement this
-      const farRookMovedPreviously = false; // TODO: Implement this
-      const spaceEmptyToCloseRook = false; // TODO: Implement this
-      const spaceToCloseRookNotInCheck = false; // TODO: Implement this
-
       if (
         options.castlingRights[color].short &&
-        !kingMovedPreviously &&
-        !closeRookMovedPreviously &&
-        spaceEmptyToCloseRook &&
-        spaceToCloseRookNotInCheck
+        // Nothing is attacked
+        !isCellAttacked(gameState, { row: row, col: col + 0 }, color, true) &&
+        !isCellAttacked(gameState, { row: row, col: col + 1 }, color, true) &&
+        !isCellAttacked(gameState, { row: row, col: col + 2 }, color, true) &&
+        // space to close rook is empty
+        board[row][col + 1].length === 0 &&
+        board[row][col + 2].length === 0
       ) {
         moves.push({
           type: "castle",
           from: pos,
-          to: { row: row + 2, col: col },
+          to: { row: row, col: col + 2 },
           piece: "k",
-          capturedPieces: [],
+        });
+      }
+
+      if (
+        options.castlingRights[color].long &&
+        // Nothing is attacked
+        !isCellAttacked(gameState, { row: row, col: col - 0 }, color, true) &&
+        !isCellAttacked(gameState, { row: row, col: col - 1 }, color, true) &&
+        !isCellAttacked(gameState, { row: row, col: col - 2 }, color, true) &&
+        // space to close rook is empty
+        board[row][col - 1].length === 0 &&
+        board[row][col - 2].length === 0
+      ) {
+        moves.push({
+          type: "castle",
+          from: pos,
+          to: { row: row, col: col - 2 },
+          piece: "k",
         });
       }
 
@@ -563,6 +585,58 @@ export function applyMove(gameState: GameState, move: Move): GameState {
 
   if (move.piece.length === 2 && sourceCell.length !== 2) {
     throw new Error("Trying to move 2 pieces but source cell has only 1 piece");
+  }
+
+  if (move.type === "castle") {
+    // short castle
+    if (move.to.col === move.from.col + 2) {
+      newBoard[move.to.row][move.to.col] = [sourceCell[0]];
+      newBoard[move.to.row][move.to.col - 1] = [
+        ...newBoard[move.to.row][move.to.col + 1],
+      ];
+      newBoard[move.to.row][move.to.col + 1] = [];
+      newBoard[move.from.row][move.from.col] = [];
+
+      return {
+        board: newBoard,
+        options: {
+          ...gameState.options,
+          castlingRights: {
+            ...gameState.options.castlingRights,
+            [sourceCell[0].color]: {
+              short: false,
+              long: false,
+            },
+          },
+        },
+      };
+    }
+
+    // long castle
+    if (move.to.col === move.from.col - 2) {
+      newBoard[move.to.row][move.to.col] = [sourceCell[0]];
+      newBoard[move.to.row][move.to.col + 1] = [
+        ...newBoard[move.to.row][move.to.col - 2],
+      ];
+      newBoard[move.to.row][move.to.col - 2] = [];
+      newBoard[move.from.row][move.from.col] = [];
+
+      return {
+        board: newBoard,
+        options: {
+          ...gameState.options,
+          castlingRights: {
+            ...gameState.options.castlingRights,
+            [sourceCell[0].color]: {
+              short: false,
+              long: false,
+            },
+          },
+        },
+      };
+
+      throw new Error("Invalid castle move");
+    }
   }
 
   // Basic move
@@ -691,6 +765,41 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       halfMoveClock: gameState.options.halfMoveClock + 1,
     },
   };
+}
+
+function isCellAttacked(
+  gameState: GameState,
+  pos: Position,
+  color: PieceColor,
+  ignoreKingMoves: boolean = false,
+): boolean {
+  const opponentColor = otherColor(color);
+
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const cell = gameState.board[row][col];
+      for (const piece of cell) {
+        if (piece.color === opponentColor) {
+          const moves = getPieceMoves(
+            piece,
+            { row, col },
+            gameState,
+            false,
+            ignoreKingMoves,
+          );
+          if (
+            moves.some(
+              (move) => move.to.row === pos.row && move.to.col === pos.col,
+            )
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 function otherColor(color: PieceColor): PieceColor {
