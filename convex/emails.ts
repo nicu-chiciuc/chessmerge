@@ -14,7 +14,7 @@ export const sendWelcomeEmail = internalAction({
     unsubscribeToken: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     try {
       await resend.emails.send({
         from: "ChessMerge <hello@yourchessdomain.com>",
@@ -45,7 +45,7 @@ export const sendNewsletterEmail = internalAction({
     content: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     // Send emails in batches to avoid rate limits
     const batchSize = 10;
     for (let i = 0; i < args.emails.length; i += batchSize) {

@@ -40,7 +40,7 @@ export const subscribe = mutation({
       Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     // Add subscriber
-    const subscriberId = await ctx.db.insert("emailSubscribers", {
+    const _subscriberId = await ctx.db.insert("emailSubscribers", {
       email: args.email,
       subscribedAt: Date.now(),
       confirmed: true, // Setting to true since we're sending a welcome email
@@ -131,7 +131,7 @@ export const sendWelcomeEmail = internalAction({
     unsubscribeToken: v.string(),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     if (!process.env.RESEND_API_KEY) {
       console.log("RESEND_API_KEY not configured, skipping email send");
       return null;
