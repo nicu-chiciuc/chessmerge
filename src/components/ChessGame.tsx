@@ -62,15 +62,20 @@ function GameControls({
         <CardTitle>Game Controls</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Textarea is monospace, no autocorrect, no spellcheck, no resize */}
+        {/*
+          Textarea is monospace, no autocorrect, no spellcheck, no resize 
+          should contain all text without need to scroll
+        
+        */}
         <Textarea
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
+          rows={8}
           onBlur={() => setEditingState(false)}
           // onFocus={() => setEditingState(true)}
           value={editingState ? localState : stringBoard}
-          className="font-mono"
+          className="font-mono resize-none"
           onChange={(e) => editState(e.target.value)}
         />
       </CardContent>

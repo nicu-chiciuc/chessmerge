@@ -993,28 +993,22 @@ export function stringToBoard(string: string): Board {
         return [{ color, pieceType: strToPieceType(piece) }];
       }
 
-      if (piece.length === 2) {
-        return [
-          { color, pieceType: strToPieceType(piece[0]) },
-          { color, pieceType: strToPieceType(piece[1]) },
-        ];
-      }
-
-      throw new Error(`Invalid piece: "${cell}" `);
+      // Don't care if there are more than 2 pieces in a cell
+      return [
+        { color, pieceType: strToPieceType(piece[0]) },
+        { color, pieceType: strToPieceType(piece[1]) },
+      ];
     });
 
-    if (cellRow.length !== 8) {
-      throw new Error(`Invalid row length: "${row}"`);
-    }
-
-    return cellRow;
+    // if >8 or <8, make it return 8
+    return cellRow.concat(Array(8).fill([])).slice(0, 8);
   });
 
-  if (board.length !== 8) {
-    throw new Error(`Invalid board length: "${string}"`);
-  }
+  const { board: emptyBoard } = createEmptyBoard();
 
-  return board;
+  const exactBoard = board.concat(emptyBoard).slice(0, 8);
+
+  return exactBoard;
 }
 
 export function mapToName(piece: PieceType) {
