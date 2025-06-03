@@ -106,6 +106,8 @@ export const makeMove = mutation({
     const move: Move = JSON.parse(args.move);
     const gameState: GameState = JSON.parse(game.gameState);
 
+    console.log(move);
+
     // Validate and apply move
     const newBoard = applyMove(gameState, move);
     const nextTurn = game.currentTurn === "w" ? "b" : "w";

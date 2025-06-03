@@ -1,4 +1,4 @@
-import { Board, Position, Piece, PieceType } from "../../lib/chessmerge";
+import { Board, Position, Piece, mapToName } from "../../lib/chessmerge";
 import { useState } from "react";
 
 // Import all chess piece SVGs
@@ -14,26 +14,6 @@ import blackRookSvg from "../pieces/Chess_rdt45.svg";
 import blackBishopSvg from "../pieces/Chess_bdt45.svg";
 import blackKnightSvg from "../pieces/Chess_ndt45.svg";
 import blackPawnSvg from "../pieces/Chess_pdt45.svg";
-
-function mapToName(piece: PieceType) {
-  switch (piece) {
-    case "k":
-      return "King";
-    case "q":
-      return "Queen";
-    case "r":
-      return "Rook";
-    case "b":
-      return "Bishop";
-    case "n":
-      return "Knight";
-    case "p":
-      return "Pawn";
-    default:
-      piece satisfies never;
-      return "Unknown";
-  }
-}
 
 interface ChessBoardProps {
   board: Board;

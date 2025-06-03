@@ -55,11 +55,18 @@ export interface Move {
 
   type: "base" | "merge" | "castle";
 
+  isPromotion?: boolean;
+  promotion?: PieceType;
+
+  /**
+   * @deprecated Note used really
+   */
   capturedPieces?: Piece[]; // Pieces captured at destination
 }
 
+export type Cell = Piece[];
 // Board where each cell can contain 0-2 pieces of the same color
-export type Board = Piece[][][];
+export type Board = Cell[][];
 
 // A better name
 export type GameState = {
@@ -149,7 +156,7 @@ export function getPieceMoves(
   filterCheckMoves: boolean = false,
   ignoreKingMoves: boolean = false,
 ): Move[] {
-  return getSinglePieceMoves(
+  const moves = getSinglePieceMoves(
     piece.pieceType,
     piece.color,
     pos,
@@ -157,6 +164,14 @@ export function getPieceMoves(
     filterCheckMoves,
     ignoreKingMoves,
   );
+
+  for (const move of moves) {
+    if (shouldPromote(move, gameState)) {
+      move.isPromotion = true;
+      move.promotion = "q";
+    }
+  }
+  return moves;
 }
 
 // Similar to Forsyth–Edwards Notation
@@ -211,9 +226,11 @@ function getSinglePieceMoves(
         isValidPosition({ row: row + direction, col }) &&
         isEmptyOrSameCanMerge(board[row + direction][col])
       ) {
+        const to = { row: row + direction, col };
+
         moves.push({
           from: pos,
-          to: { row: row + direction, col },
+          to,
           piece: "p",
           type: board[row + direction][col].length === 1 ? "merge" : "base",
         });
@@ -221,6 +238,7 @@ function getSinglePieceMoves(
         // Double move from start
         if (
           row === startRow &&
+          // TODO: Pawn can also get one row back, should they also be able to double move from there?
           isEmptyOrSameCanMerge(board[row + 2 * direction][col]) &&
           // but there's no piece in the way
           board[row + direction][col].length === 0
@@ -639,6 +657,24 @@ export function applyMove(gameState: GameState, move: Move): GameState {
     }
   }
 
+  let promotedPiece: Piece | null = null;
+  // TODO: promotion can be undefined since applyMove is also called by other functions
+  if (move.isPromotion && move.promotion) {
+    // At least one piece should be a pawn
+    if (
+      !(sourceCell[0]?.pieceType === "p" || sourceCell[1]?.pieceType === "p")
+    ) {
+      throw new Error(
+        `Trying to promote a piece that is not a pawn: ${sourceCell[0].pieceType} and ${sourceCell[1].pieceType}`,
+      );
+    }
+
+    promotedPiece = {
+      color: sourceCell[0].color,
+      pieceType: move.promotion,
+    };
+  }
+
   // Basic move
   if (move.piece.length === 1) {
     if (
@@ -648,7 +684,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       throw new Error("Trying to move a piece that is not in the source cell");
     }
 
-    let pieceToMove = sourceCell[0];
+    let pieceToMove = promotedPiece ?? sourceCell[0];
 
     // This is incorrect since the source can have 2
     if (sourceCell.length === 1) {
@@ -731,9 +767,13 @@ export function applyMove(gameState: GameState, move: Move): GameState {
 
     newBoard[move.from.row][move.from.col] = [];
 
+    const newCell = promotedPiece
+      ? [promotedPiece]
+      : [sourceCell[0], sourceCell[1]];
+
     // Move to empty cell
     if (targetCell.length === 0) {
-      newBoard[move.to.row][move.to.col] = [sourceCell[0], sourceCell[1]];
+      newBoard[move.to.row][move.to.col] = newCell;
       return {
         board: newBoard,
         options: {
@@ -745,7 +785,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
 
     // Capture enemy piece/s
     if (targetCell[0].color !== sourceCell[0].color) {
-      newBoard[move.to.row][move.to.col] = [sourceCell[0], sourceCell[1]];
+      newBoard[move.to.row][move.to.col] = newCell;
       return {
         board: newBoard,
         options: {
@@ -758,13 +798,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
     throw new Error("Trying to move 2 pieces to a cell with at least 1 piece");
   }
 
-  return {
-    board: newBoard,
-    options: {
-      ...gameState.options,
-      halfMoveClock: gameState.options.halfMoveClock + 1,
-    },
-  };
+  throw new Error(`Invalid move type: ${JSON.stringify(move)}`);
 }
 
 function isCellAttacked(
@@ -836,6 +870,17 @@ export function canAnyMoveCombatCheck(
   return false;
 }
 
+function shouldPromote(move: Move, gameState: GameState): boolean {
+  const cell = gameState.board[move.from.row][move.from.col];
+
+  const isPawn = cell[0]?.pieceType === "p" || cell[1]?.pieceType === "p";
+  const isToLastRow =
+    (cell[0]?.color === "w" && move.to.row === 0) ||
+    (cell[0]?.color === "b" && move.to.row === 7);
+
+  return isPawn && isToLastRow;
+}
+
 // Helper functions for UI - simplified for new structure
 export function getAllMovesForCell(
   pos: Position,
@@ -848,6 +893,14 @@ export function getAllMovesForCell(
   for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
     const piece = cell[pieceIndex];
     const pieceMoves = getPieceMoves(piece, pos, gameState, true);
+
+    for (const move of pieceMoves) {
+      if (shouldPromote(move, gameState)) {
+        move.isPromotion = true;
+        move.promotion = "q";
+      }
+    }
+
     moves.push(...pieceMoves);
   }
 
@@ -886,4 +939,24 @@ export function boardToString(board: Board): string {
         .join(" "),
     )
     .join("\n");
+}
+
+export function mapToName(piece: PieceType) {
+  switch (piece) {
+    case "k":
+      return "King";
+    case "q":
+      return "Queen";
+    case "r":
+      return "Rook";
+    case "b":
+      return "Bishop";
+    case "n":
+      return "Knight";
+    case "p":
+      return "Pawn";
+    default:
+      piece satisfies never;
+      return "Unknown";
+  }
 }

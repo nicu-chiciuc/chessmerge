@@ -115,6 +115,11 @@ export function ChessGame({ gameId }: ChessGameProps) {
             `${selectedCell[0].pieceType}${selectedCell[1].pieceType}` as MergedPieceTypes;
         }
 
+        if (targetMove.isPromotion) {
+          // TODO: Implement promotion; For now just queen
+          targetMove.promotion = "q";
+        }
+
         await executeMove(targetMove);
       }
 
