@@ -2,7 +2,6 @@ import {
   BoardOptions,
   getAllMovesForCell,
   stringToBoard,
-  formatPosition,
   parsePosition,
   applyMove,
   boardToString,

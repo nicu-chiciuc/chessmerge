@@ -1,6 +1,5 @@
 import { Move } from "../../lib/chessmerge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MoveHistoryProps {
   moves: Move[];

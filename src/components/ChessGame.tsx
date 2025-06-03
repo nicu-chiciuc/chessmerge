@@ -5,7 +5,6 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
-import { MoveHistory } from "./MoveHistory";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect, useMemo } from "react";
 import {
@@ -101,9 +100,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
             .fill(null)
             .map(() => []),
         );
-  const moveHistory: Move[] = game
-    ? game.moveHistory.map((m) => JSON.parse(m))
-    : [];
+  // const _moveHistory: Move[] = game
+  //   ? game.moveHistory.map((m) => JSON.parse(m))
+  //   : [];
 
   const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
   const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
