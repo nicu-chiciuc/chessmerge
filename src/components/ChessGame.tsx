@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
+import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -6,19 +7,76 @@ import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { MoveHistory } from "./MoveHistory";
 import { EmailSubscribe } from "./EmailSubscribe";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   GameState,
   MergedPieceTypes,
   Move,
   Position,
+  boardToString,
   getAllMovesForCell,
   getPieceMoves,
+  stringToBoard,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ChessGameProps {
   gameId: Id<"games">;
+}
+
+function GameControls({
+  gameId,
+  gameState,
+}: {
+  gameId: Id<"games">;
+  gameState: GameState;
+}) {
+  const setPracticeGameState = useMutation(api.gameLogic.setPracticeGameState);
+
+  const [editingState, setEditingState] = useState(false);
+  const [localState, setLocalState] = useState("");
+
+  const stringBoard = useMemo(() => {
+    return boardToString(gameState.board);
+  }, [gameState.board]);
+
+  const editState = async (strBoard: string) => {
+    setEditingState(true);
+    setLocalState(strBoard);
+
+    try {
+      // Check if the board is valid
+      stringToBoard(strBoard);
+
+      console.log("got board");
+
+      await setPracticeGameState({ gameId, strBoard });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Game Controls</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Textarea is monospace, no autocorrect, no spellcheck, no resize */}
+        <Textarea
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          onBlur={() => setEditingState(false)}
+          // onFocus={() => setEditingState(true)}
+          value={editingState ? localState : stringBoard}
+          className="font-mono"
+          onChange={(e) => editState(e.target.value)}
+        />
+      </CardContent>
+    </Card>
+  );
 }
 
 export function ChessGame({ gameId }: ChessGameProps) {
@@ -189,9 +247,14 @@ export function ChessGame({ gameId }: ChessGameProps) {
             isBlackPlayer={isBlackPlayer}
           />
         </div>
-        <div className="flex-1">
+        {/* <div className="flex-1">
           <MoveHistory moves={moveHistory} />
-        </div>
+        </div> */}
+        {game.isPracticeGame && (
+          <div className="flex-1">
+            <GameControls gameState={gameState} gameId={gameId} />
+          </div>
+        )}
         <div className="w-full">
           <EmailSubscribe compact />
         </div>

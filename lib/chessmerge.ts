@@ -1,5 +1,8 @@
+import { includes } from "@tscu/dependent";
+
 // Piece types and colors
-export type PieceType = "p" | "r" | "n" | "b" | "q" | "k";
+export const PieceTypes = ["p", "r", "n", "b", "q", "k"] as const;
+export type PieceType = (typeof PieceTypes)[number];
 export type PieceColor = "w" | "b";
 
 export type MergedPieceTypes =
@@ -71,7 +74,7 @@ export type Board = Cell[][];
 // A better name
 export type GameState = {
   board: Board;
-  options: Options;
+  options: BoardOptions;
 };
 
 export function createEmptyBoard(): GameState {
@@ -175,7 +178,7 @@ export function getPieceMoves(
 }
 
 // Similar to Forsyth–Edwards Notation
-type Options = {
+export type BoardOptions = {
   castlingRights: {
     w: {
       short: boolean;
@@ -480,15 +483,22 @@ function getSinglePieceMoves(
         }
       }
 
+      // This is necessary because the board can be edited, and the status of castling rights is not updated
+      const kingsAreOnStartPosition =
+        (color === "w" && row === 0 && col === 4) ||
+        (color === "b" && row === 7 && col === 4);
+
       if (
         options.castlingRights[color].short &&
+        kingsAreOnStartPosition &&
         // Nothing is attacked
         !isCellAttacked(gameState, { row: row, col: col + 0 }, color, true) &&
         !isCellAttacked(gameState, { row: row, col: col + 1 }, color, true) &&
         !isCellAttacked(gameState, { row: row, col: col + 2 }, color, true) &&
         // space to close rook is empty
-        board[row][col + 1].length === 0 &&
-        board[row][col + 2].length === 0
+        // We use ?., because the board can be edited, and the status of castling rights is not updated
+        board[row]?.[col + 1]?.length === 0 &&
+        board[row]?.[col + 2]?.length === 0
       ) {
         moves.push({
           type: "castle",
@@ -500,6 +510,7 @@ function getSinglePieceMoves(
 
       if (
         options.castlingRights[color].long &&
+        kingsAreOnStartPosition &&
         // Nothing is attacked
         !isCellAttacked(gameState, { row: row, col: col - 0 }, color, true) &&
         !isCellAttacked(gameState, { row: row, col: col - 1 }, color, true) &&
@@ -912,6 +923,14 @@ export function getAllMovesForCell(
   return moves;
 }
 
+export function cleanStringBoard(str: string): string {
+  return boardToString(stringToBoard(str));
+}
+
+/**
+ * Similar to FEN notation
+ * White are uppercase, black are lowercase
+ */
 export function boardToString(board: Board): string {
   return board
     .map((row) =>
@@ -939,6 +958,63 @@ export function boardToString(board: Board): string {
         .join(" "),
     )
     .join("\n");
+}
+
+function strToPieceType(str: string): PieceType {
+  if (includes(PieceTypes, str)) {
+    return str;
+  }
+  throw new Error(`Invalid piece type: ${str}`);
+}
+
+export function stringToBoard(string: string): Board {
+  // It's fine if there are empty rows at beginning or end
+  // this makes parsing easier in code when it's indented
+  const realRows = string
+    .split("\n")
+    .map((row) => row.trim())
+    .filter((row) => row.length > 0);
+
+  const board = realRows.map((row) => {
+    // given "r    n    br   .  k  b  n  r  "
+    // remove multiple spaces, even between dots
+    // and then split by spaces
+    const trimmedRow = row.trim().replace(/\s+/g, " ");
+
+    const cellRow = trimmedRow.split(" ").map((cell): Cell => {
+      if (cell === ".") {
+        return [];
+      }
+
+      const piece = cell.toLowerCase();
+      const color = cell.toUpperCase() === cell ? "w" : "b";
+
+      if (piece.length === 1) {
+        return [{ color, pieceType: strToPieceType(piece) }];
+      }
+
+      if (piece.length === 2) {
+        return [
+          { color, pieceType: strToPieceType(piece[0]) },
+          { color, pieceType: strToPieceType(piece[1]) },
+        ];
+      }
+
+      throw new Error(`Invalid piece: "${cell}" `);
+    });
+
+    if (cellRow.length !== 8) {
+      throw new Error(`Invalid row length: "${row}"`);
+    }
+
+    return cellRow;
+  });
+
+  if (board.length !== 8) {
+    throw new Error(`Invalid board length: "${string}"`);
+  }
+
+  return board;
 }
 
 export function mapToName(piece: PieceType) {

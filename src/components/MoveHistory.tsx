@@ -1,4 +1,6 @@
 import { Move } from "../../lib/chessmerge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MoveHistoryProps {
   moves: Move[];
@@ -28,32 +30,35 @@ export function MoveHistory({ moves }: MoveHistoryProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-4">
-      <h3 className="font-semibold mb-3">Move History</h3>
-
-      {moves.length === 0 ? (
-        <p className="text-gray-500 text-sm">No moves yet</p>
-      ) : (
-        <div className="max-h-64 overflow-y-auto">
-          <div className="space-y-1 text-sm">
-            {groupedMoves.map((group) => (
-              <div key={group.moveNumber} className="flex items-center gap-2">
-                <span className="text-gray-500 w-6 text-right">
-                  {group.moveNumber}.
-                </span>
-                <span className="w-16 font-mono">
-                  {formatMove(group.white)}
-                </span>
-                {group.black && (
-                  <span className="w-16 font-mono">
-                    {formatMove(group.black)}
+    <Card>
+      <CardHeader>
+        <CardTitle>Move History</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {moves.length === 0 ? (
+          <p className="text-gray-500 text-sm">No moves yet</p>
+        ) : (
+          <div className="max-h-64 overflow-y-auto">
+            <div className="space-y-1 text-sm">
+              {groupedMoves.map((group) => (
+                <div key={group.moveNumber} className="flex items-center gap-2">
+                  <span className="text-gray-500 w-6 text-right">
+                    {group.moveNumber}.
                   </span>
-                )}
-              </div>
-            ))}
+                  <span className="w-16 font-mono">
+                    {formatMove(group.white)}
+                  </span>
+                  {group.black && (
+                    <span className="w-16 font-mono">
+                      {formatMove(group.black)}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

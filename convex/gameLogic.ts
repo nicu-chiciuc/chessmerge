@@ -8,6 +8,7 @@ import {
   applyMove,
   canAnyMoveCombatCheck,
   GameState,
+  stringToBoard,
 } from "../lib/chessmerge";
 
 // Check if king is in check
@@ -109,11 +110,11 @@ export const makeMove = mutation({
     console.log(move);
 
     // Validate and apply move
-    const newBoard = applyMove(gameState, move);
+    const newGameState = applyMove(gameState, move);
     const nextTurn = game.currentTurn === "w" ? "b" : "w";
 
     // Check for game end conditions
-    const isCheck = isInCheck(newBoard, nextTurn);
+    const isCheck = isInCheck(newGameState, nextTurn);
     let status: "waiting" | "active" | "completed" | "abandoned" = game.status;
     let winner: "w" | "b" | "draw" | undefined = game.winner;
     let gameEndReason:
@@ -126,7 +127,7 @@ export const makeMove = mutation({
 
     if (isCheck) {
       // Check for checkmate
-      const canMoveCombatCheck = canAnyMoveCombatCheck(newBoard, nextTurn);
+      const canMoveCombatCheck = canAnyMoveCombatCheck(newGameState, nextTurn);
       console.log("canMoveCombatCheck", canMoveCombatCheck);
       if (!canMoveCombatCheck) {
         status = "completed";
@@ -135,7 +136,7 @@ export const makeMove = mutation({
       }
     } else {
       // Check for stalemate
-      const canMoveCombatCheck = canAnyMoveCombatCheck(newBoard, nextTurn);
+      const canMoveCombatCheck = canAnyMoveCombatCheck(newGameState, nextTurn);
       if (!canMoveCombatCheck) {
         status = "completed";
         winner = "draw";
@@ -144,7 +145,7 @@ export const makeMove = mutation({
     }
 
     await ctx.db.patch(args.gameId, {
-      gameState: JSON.stringify(newBoard),
+      gameState: JSON.stringify(newGameState),
       currentTurn: nextTurn,
       moveHistory: [...game.moveHistory, args.move],
       lastMoveAt: Date.now(),
@@ -158,6 +159,44 @@ export const makeMove = mutation({
       isCheck,
       isCheckmate: gameEndReason === "checkmate",
     };
+  },
+});
+
+export const setPracticeGameState = mutation({
+  args: {
+    gameId: v.id("games"),
+    // String representation of board
+    strBoard: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    // Only practice games can have their state set
+    if (!game.isPracticeGame) throw new Error("Game is not a practice game");
+
+    console.log("got strBoard", args.strBoard);
+    try {
+      const board = stringToBoard(args.strBoard);
+
+      const oldGameState: GameState = JSON.parse(game.gameState);
+
+      const newGameState: GameState = {
+        ...oldGameState,
+        board,
+      };
+
+      await ctx.db.patch(args.gameId, {
+        gameState: JSON.stringify(newGameState),
+      });
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      console.error(error);
+      // throw new Error("Invalid board");
+    }
   },
 });
 
