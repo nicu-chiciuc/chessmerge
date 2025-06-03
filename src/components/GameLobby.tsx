@@ -3,6 +3,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { EmailSubscribe } from "./EmailSubscribe";
+import { Button } from "@/components/ui/button";
 
 interface GameLobbyProps {
   onJoinGame: (gameId: Id<"games">) => void;
@@ -55,18 +56,21 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
         </p>
 
         <div className="flex gap-4 justify-center flex-wrap">
-          <button
+          <Button
             onClick={() => void handleCreateGame()}
-            className="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover transition-colors shadow-sm hover:shadow"
+            size="lg"
+            className="px-6 py-3"
           >
             Create New Game
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => void handleCreatePracticeGame()}
-            className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm hover:shadow"
+            variant="secondary"
+            size="lg"
+            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
           >
             Practice Game
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -149,12 +153,12 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                       {new Date(game._creationTime).toLocaleDateString()}
                     </div>
                   </div>
-                  <button
+                  <Button
                     onClick={() => void handleJoinGame(game._id)}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                    size="sm"
                   >
                     Join
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
