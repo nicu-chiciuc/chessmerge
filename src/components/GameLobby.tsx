@@ -181,6 +181,34 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                 • Merged pieces can be promoted if it contains a pawn, be
                 careful, this replaces both pieces.
               </li>
+              <li>
+                • (🚫 Not implemented) You can choose what to promote to (except
+                pawn and rook, just like in chess)
+              </li>
+
+              <li>• If the king and rook didn't move they can castle. </li>
+              <li>
+                • A piece (e.g. a bishop) can move into the rook and move
+                somewhere else, that still means that the rook didn't move and
+                still can castle.
+              </li>
+
+              <li>
+                • (🚫 Not implemented) When castling and the rook is merged with
+                some other piece, you can choose whether you castle with just
+                the rook (by unmerging it), or with the merged piece.
+              </li>
+
+              <li>
+                • (🚫 Not implemented) En passant can be done both by a pawn or
+                a merged piece that contains a pawn.
+              </li>
+
+              <li>
+                • (❓ Not sure) Since pawn can get to their back rank (e.g.
+                white pawn to row 1), it's not clear if they still can do the
+                double move.
+              </li>
             </ul>
           </div>
         </div>
