@@ -1080,5 +1080,7 @@ export const FECN = {
       .join("/");
   },
 
-  fromFECN: (str: string) => {},
+  fromFECN: (_str: string) => {
+    throw new Error("Not implemented");
+  },
 };
