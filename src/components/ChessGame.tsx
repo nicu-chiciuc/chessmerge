@@ -6,9 +6,9 @@ import { Id } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { EmailSubscribe } from "./EmailSubscribe";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  FECN,
+  FEMN,
   GameState,
   MergedPieceTypes,
   Move,
@@ -25,6 +25,46 @@ interface ChessGameProps {
   gameId: Id<"games">;
 }
 
+function useEditOnFocus({
+  logName,
+  serverState,
+  setServerState,
+}: {
+  logName?: string;
+  serverState: string;
+  setServerState: (strBoard: string) => Promise<unknown>;
+}) {
+  const [editingState, setEditingState] = useState(false);
+  const [localState, setLocalState] = useState("");
+
+  const setLocaleState = useCallback(
+    async (strBoard: string) => {
+      console.log(`triggered ${logName}`);
+      setEditingState(true);
+      setLocalState(strBoard);
+
+      try {
+        await setServerState(strBoard);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [logName, setServerState],
+  );
+
+  const onBlur = useCallback(() => {
+    setEditingState(false);
+  }, []);
+
+  const state = useMemo(() => {
+    return editingState ? localState : serverState;
+  }, [editingState, localState, serverState]);
+
+  return useMemo(() => {
+    return [state, setLocaleState, onBlur] as const;
+  }, [state, setLocaleState, onBlur]);
+}
+
 function GameControls({
   gameId,
   gameState,
@@ -34,28 +74,22 @@ function GameControls({
 }) {
   const setPracticeGameState = useMutation(api.gameLogic.setPracticeGameState);
 
-  const [editingState, setEditingState] = useState(false);
-  const [localState, setLocalState] = useState("");
+  const [arrayBoard, setLocaleArrayBoard, onBlurArrayBoard] = useEditOnFocus({
+    logName: "Array",
+    serverState: boardToString(gameState.board),
+    setServerState: async (arrayStringBoard) => {
+      await setPracticeGameState({ gameId, strBoard: arrayStringBoard });
+    },
+  });
 
-  const stringBoard = useMemo(() => {
-    return boardToString(gameState.board);
-  }, [gameState.board]);
-
-  const editState = async (strBoard: string) => {
-    setEditingState(true);
-    setLocalState(strBoard);
-
-    try {
-      // Check if the board is valid
-      stringToBoard(strBoard);
-
-      console.log("got board");
-
+  const [femnBoard, setLocaleFemnBoard, onBlurFemnBoard] = useEditOnFocus({
+    logName: "FEMN",
+    serverState: FEMN.toFEMNBoard(gameState.board),
+    setServerState: async (femn) => {
+      const strBoard = boardToString(FEMN.fromFEMNBoard(femn));
       await setPracticeGameState({ gameId, strBoard });
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    },
+  });
 
   return (
     <Card>
@@ -63,10 +97,15 @@ function GameControls({
         <CardTitle>Game Controls</CardTitle>
       </CardHeader>
       <CardContent>
-        <span className="font-bold text-xs">FECN</span>
+        <span className="font-bold text-xs">FEMN</span>
         <Textarea
-          value={FECN.toFECN(gameState.board)}
-          className="font-mono resize-none w-[26ch] overflow-hidden"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          value={femnBoard}
+          onBlur={onBlurFemnBoard}
+          onChange={(e) => setLocaleFemnBoard(e.target.value)}
+          className="font-mono resize-none w-full overflow-hidden"
         />
         <div className="h-4" />
 
@@ -83,11 +122,10 @@ function GameControls({
           autoCapitalize="off"
           spellCheck={false}
           rows={8}
-          onBlur={() => setEditingState(false)}
-          // onFocus={() => setEditingState(true)}
-          value={editingState ? localState : stringBoard}
+          onBlur={onBlurArrayBoard}
+          value={arrayBoard}
           className="font-mono resize-none w-[26ch] overflow-hidden"
-          onChange={(e) => editState(e.target.value)}
+          onChange={(e) => setLocaleArrayBoard(e.target.value)}
         />
       </CardContent>
     </Card>

@@ -165,7 +165,7 @@ export const makeMove = mutation({
 export const setPracticeGameState = mutation({
   args: {
     gameId: v.id("games"),
-    // String representation of board
+    // Array string representation of board
     strBoard: v.string(),
   },
   handler: async (ctx, args) => {

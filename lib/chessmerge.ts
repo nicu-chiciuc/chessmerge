@@ -1031,9 +1031,9 @@ export function mapToName(piece: PieceType) {
   }
 }
 
-export const FECN = {
+export const FEMN = {
   // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-  toFECN: (board: Board) => {
+  toFEMNBoard: (board: Board) => {
     return board
       .map((row) => {
         let str = "";
@@ -1080,7 +1080,63 @@ export const FECN = {
       .join("/");
   },
 
-  fromFECN: (_str: string) => {
-    throw new Error("Not implemented");
+  fromFEMNBoard: (str: string): Board => {
+    const rows = str.split("/");
+
+    const board = rows.map((row) => {
+      const cells = row.split("");
+
+      const cellRow: Cell[] = [];
+
+      //
+      for (let i = 0; i < cells.length; i++) {
+        if (cells[i] === "+") {
+          cells[i] = cells[i - 1] + cells[i + 1];
+          cells[i - 1] = "";
+          cells[i + 1] = "";
+        }
+      }
+
+      const filtered = cells.flatMap((strCell): Cell[] => {
+        if (strCell === "") {
+          return [];
+        }
+
+        // empty cells
+        if (strCell.match(/[1-8]/)) {
+          return Array(Number(strCell))
+            .fill(".")
+            .map(
+              () =>
+                // empty cell
+                [] satisfies Cell,
+            );
+        }
+
+        const piece = strCell.toLowerCase();
+        const color = strCell.toUpperCase() === strCell ? "w" : "b";
+
+        if (piece.length === 1) {
+          return [[{ color, pieceType: strToPieceType(piece) }]];
+        }
+
+        // Don't care if there are more than 2 pieces in a cell
+        return [
+          [
+            { color, pieceType: strToPieceType(piece[0]) },
+            { color, pieceType: strToPieceType(piece[1]) },
+          ],
+        ];
+      });
+
+      // if >8 or <8, make it return 8
+      return filtered.concat(Array(8).fill([])).slice(0, 8);
+    });
+
+    const { board: emptyBoard } = createEmptyBoard();
+
+    const exactBoard = board.concat(emptyBoard).slice(0, 8);
+
+    return exactBoard;
   },
 };
