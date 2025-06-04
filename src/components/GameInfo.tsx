@@ -60,7 +60,7 @@ export function GameInfo({
       const youWon =
         (game.winner === "w" && isWhitePlayer) ||
         (game.winner === "b" && isBlackPlayer);
-      return youWon ? "text-green-600" : "text-red-600";
+      return youWon ? "text-primary-600" : "text-destructive-600";
     }
     return "text-blue-600";
   };
