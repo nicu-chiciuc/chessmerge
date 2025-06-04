@@ -1030,3 +1030,55 @@ export function mapToName(piece: PieceType) {
       return "Unknown";
   }
 }
+
+export const FECN = {
+  // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
+  toFECN: (board: Board) => {
+    return board
+      .map((row) => {
+        let str = "";
+        let lastPiece = 0;
+
+        row.forEach((cell) => {
+          if (cell.length === 0) {
+            lastPiece += 1;
+            return;
+          }
+
+          if (lastPiece > 0) {
+            str += lastPiece;
+          }
+          lastPiece = 0;
+
+          if (cell.length === 1) {
+            let piece: string = cell[0].pieceType;
+            if (cell[0].color === "w") {
+              piece = piece.toUpperCase();
+            }
+            str += piece;
+
+            return;
+          }
+
+          if (cell.length === 2) {
+            let piece = cell[0].pieceType + "+" + cell[1].pieceType;
+            if (cell[0].color === "w") {
+              piece = piece.toUpperCase();
+            }
+            str += piece;
+
+            return;
+          }
+        });
+
+        if (lastPiece > 0) {
+          str += lastPiece;
+        }
+
+        return str;
+      })
+      .join("/");
+  },
+
+  fromFECN: (str: string) => {},
+};

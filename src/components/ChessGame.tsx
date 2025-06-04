@@ -8,6 +8,7 @@ import { GameInfo } from "./GameInfo";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect, useMemo } from "react";
 import {
+  FECN,
   GameState,
   MergedPieceTypes,
   Move,
@@ -62,12 +63,21 @@ function GameControls({
         <CardTitle>Game Controls</CardTitle>
       </CardHeader>
       <CardContent>
+        <span className="font-bold text-xs">FECN</span>
+        <Textarea
+          value={FECN.toFECN(gameState.board)}
+          className="font-mono resize-none w-[26ch] overflow-hidden"
+        />
+        <div className="h-4" />
+
         {/*
           Textarea is monospace, no autocorrect, no spellcheck, no resize 
           should contain all text without need to scroll
           Width should contain exactly 8*3 (24) characters plus 2 so it doesn't wrap
         NEVER has a scrollbar
         */}
+        <span className="font-bold text-xs">String array</span>
+
         <Textarea
           autoCorrect="off"
           autoCapitalize="off"
