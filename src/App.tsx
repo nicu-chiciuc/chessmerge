@@ -57,7 +57,7 @@ function Content() {
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-8">
           <div className="text-center">
             <h1 className="text-5xl font-bold text-primary mb-4">ChessMerge</h1>
-            <p className="text-xl text-secondary mb-2">
+            <p className="text-xl mb-2">
               Chess with a twist - merge and unmerge pieces!
             </p>
             <p className="text-gray-600">

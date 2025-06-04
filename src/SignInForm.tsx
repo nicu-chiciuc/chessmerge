@@ -49,7 +49,7 @@ export function SignInForm() {
         <button className="auth-button" type="submit" disabled={submitting}>
           {flow === "signIn" ? "Sign in" : "Sign up"}
         </button>
-        <div className="text-center text-sm text-secondary">
+        <div className="text-center text-sm ">
           <span>
             {flow === "signIn"
               ? "Don't have an account? "
