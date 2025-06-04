@@ -65,7 +65,8 @@ function GameControls({
         {/*
           Textarea is monospace, no autocorrect, no spellcheck, no resize 
           should contain all text without need to scroll
-        
+          Width should contain exactly 8*3 (24) characters plus 2 so it doesn't wrap
+        NEVER has a scrollbar
         */}
         <Textarea
           autoCorrect="off"
@@ -75,7 +76,7 @@ function GameControls({
           onBlur={() => setEditingState(false)}
           // onFocus={() => setEditingState(true)}
           value={editingState ? localState : stringBoard}
-          className="font-mono resize-none"
+          className="font-mono resize-none w-[26ch] overflow-hidden"
           onChange={(e) => editState(e.target.value)}
         />
       </CardContent>
