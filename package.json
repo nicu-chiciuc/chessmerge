@@ -22,7 +22,9 @@
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.81",
+    "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-scroll-area": "^1.2.9",
+    "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@robolex/sure": "^0.12.0",
     "@tscu/dependent": "npm:@jsr/tscu__dependent@^0.1.2",
