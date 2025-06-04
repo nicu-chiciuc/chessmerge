@@ -255,6 +255,12 @@ export function ChessGame({ gameId }: ChessGameProps) {
       </div>
 
       <div className="flex flex-col sm:flex-row xl:flex-col gap-4 xl:gap-6">
+        {game.isPracticeGame && (
+          <div className="flex-1">
+            <GameControls gameState={gameState} gameId={gameId} />
+          </div>
+        )}
+
         <div className="flex-1">
           <GameInfo
             game={game}
@@ -265,11 +271,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
         {/* <div className="flex-1">
           <MoveHistory moves={moveHistory} />
         </div> */}
-        {game.isPracticeGame && (
-          <div className="flex-1">
-            <GameControls gameState={gameState} gameId={gameId} />
-          </div>
-        )}
         <div className="w-full">
           <EmailSubscribe compact />
         </div>
