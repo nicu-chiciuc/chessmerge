@@ -1086,8 +1086,6 @@ export const FEMN = {
     const board = rows.map((row) => {
       const cells = row.split("");
 
-      const cellRow: Cell[] = [];
-
       //
       for (let i = 0; i < cells.length; i++) {
         if (cells[i] === "+") {
