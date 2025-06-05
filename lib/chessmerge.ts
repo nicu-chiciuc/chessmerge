@@ -156,16 +156,17 @@ export function getPieceMoves(
   piece: Piece,
   pos: Position,
   gameState: GameState,
-  filterCheckMoves: boolean = false,
-  ignoreKingMoves: boolean = false,
+  options?: {
+    filterCheckMoves?: boolean;
+    ignoreKingMoves?: boolean;
+  },
 ): Move[] {
   const moves = getSinglePieceMoves(
     piece.pieceType,
     piece.color,
     pos,
     gameState,
-    filterCheckMoves,
-    ignoreKingMoves,
+    options,
   );
 
   for (const move of moves) {
@@ -198,8 +199,13 @@ function getSinglePieceMoves(
   color: PieceColor,
   pos: Position,
   gameState: GameState,
-  filterCheckMoves: boolean = false,
-  ignoreKingMoves: boolean = false,
+  {
+    filterCheckMoves = false,
+    ignoreKingMoves = false,
+  }: {
+    filterCheckMoves?: boolean;
+    ignoreKingMoves?: boolean;
+  } = {},
 ): Move[] {
   const { board, options } = gameState;
   const moves: Move[] = [];
@@ -663,8 +669,6 @@ export function applyMove(gameState: GameState, move: Move): GameState {
           },
         },
       };
-
-      throw new Error("Invalid castle move");
     }
   }
 
@@ -825,13 +829,10 @@ function isCellAttacked(
       const cell = gameState.board[row][col];
       for (const piece of cell) {
         if (piece.color === opponentColor) {
-          const moves = getPieceMoves(
-            piece,
-            { row, col },
-            gameState,
-            false,
+          const moves = getPieceMoves(piece, { row, col }, gameState, {
+            filterCheckMoves: false,
             ignoreKingMoves,
-          );
+          });
           if (
             moves.some(
               (move) => move.to.row === pos.row && move.to.col === pos.col,
@@ -903,8 +904,11 @@ export function getAllMovesForCell(
   // Get moves for each piece in the cell
   for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
     const piece = cell[pieceIndex];
-    const pieceMoves = getPieceMoves(piece, pos, gameState, true);
+    const pieceMoves = getPieceMoves(piece, pos, gameState, {
+      filterCheckMoves: true,
+    });
 
+    // TODO: Check if move to same square can be done by other piece
     for (const move of pieceMoves) {
       if (shouldPromote(move, gameState)) {
         move.isPromotion = true;

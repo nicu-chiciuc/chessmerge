@@ -26,18 +26,16 @@ describe("Game Cases", () => {
   };
 
   it("should be able to move pawn e2 to e4", () => {
-    const board = stringToBoard(
-      [
-        "r  n  b  q  k  b  n  r ",
-        "p  p  p  p  p  p  p  p ",
-        ".  .  .  .  .  .  .  . ",
-        ".  .  .  .  .  .  .  . ",
-        ".  .  .  .  .  .  .  . ",
-        ".  .  .  .  .  .  .  . ",
-        "P  P  P  P  P  P  P  P ",
-        "R  N  B  Q  K  B  N  R ",
-      ].join("\n"),
-    );
+    const board = stringToBoard(`
+        r  n  b  q  k  b  n  r 
+        p  p  p  p  p  p  p  p 
+        .  .  .  .  .  .  .  . 
+        .  .  .  .  .  .  .  . 
+        .  .  .  .  .  .  .  . 
+        .  .  .  .  .  .  .  . 
+        P  P  P  P  P  P  P  P 
+        R  N  B  Q  K  B  N  R 
+    `);
 
     const moves = getAllMovesForCell(parsePosition("e2"), {
       board,
@@ -92,5 +90,27 @@ describe("Game Cases", () => {
         pieceType: "q",
       },
     ]);
+  });
+
+  it("pinned piece cannot move", () => {
+    const board = stringToBoard(`
+      .  .  .  .  .  .  .  . 
+      .  k  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  . 
+      .  .  .  .  .  .  bq . 
+      .  .  .  .  .  PR .  . 
+      .  .  .  .  K  .  .  . 
+    `);
+
+    const gameState = {
+      board,
+      options: standardOptions,
+    };
+
+    const moves = getAllMovesForCell(parsePosition("f2"), gameState);
+
+    expect(moves).toHaveLength(0);
   });
 });
