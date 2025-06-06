@@ -173,8 +173,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
     game &&
     (game.isPracticeGame
       ? isWhitePlayer || isBlackPlayer
-      : (game.currentTurn === "w" && isWhitePlayer) ||
-        (game.currentTurn === "b" && isBlackPlayer));
+      : (gameState.options.turn === "w" && isWhitePlayer) ||
+        (gameState.options.turn === "b" && isBlackPlayer));
 
   useEffect(() => {
     if (game?.status === "completed") {
@@ -271,7 +271,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       setSelectedPieceMode("both");
     } else if (
       clickedCell.length > 0 &&
-      clickedCell[0].color === game.currentTurn
+      clickedCell[0].color === gameState.options.turn
     ) {
       // Select cell and get all possible moves
       setSelectedSquare(position);
@@ -320,7 +320,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
             onPieceSelectionChange={handlePieceSelectionChange}
             flipped={game.isPracticeGame ? false : isBlackPlayer}
             isMyTurn={!!isMyTurn}
-            currentTurn={game.currentTurn}
+            currentTurn={gameState.options.turn}
           />
         </div>
       </div>
@@ -335,6 +335,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
         <div className="flex-1">
           <GameInfo
             game={game}
+            gameState={gameState}
             isWhitePlayer={isWhitePlayer}
             isBlackPlayer={isBlackPlayer}
           />

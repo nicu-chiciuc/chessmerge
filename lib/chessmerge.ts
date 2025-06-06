@@ -154,7 +154,7 @@ export function createInitialBoard(): GameState {
         },
       },
       halfMoveClock: 0,
-      enPassantTarget: undefined,
+      enPassantTarget: null,
     },
   };
 }

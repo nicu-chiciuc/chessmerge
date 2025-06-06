@@ -24,7 +24,6 @@ export const createGame = mutation({
     return await ctx.db.insert("games", {
       whitePlayerId: userId,
       status: "waiting",
-      currentTurn: "w",
       gameState: JSON.stringify(board),
       moveHistory: [],
       lastMoveAt: Date.now(),
@@ -45,7 +44,6 @@ export const createPracticeGame = mutation({
       blackPlayerId: userId, // Same user plays both sides
       isPracticeGame: true,
       status: "active", // Start immediately, no need to wait
-      currentTurn: "w",
       gameState: JSON.stringify(board),
       moveHistory: [],
       lastMoveAt: Date.now(),
@@ -94,27 +92,28 @@ export const makeMove = mutation({
     if (!isWhitePlayer && !isBlackPlayer)
       throw new Error("Not a player in this game");
 
+    const move: Move = JSON.parse(args.move);
+    const gameState: GameState = JSON.parse(game.gameState);
+
     // For practice games, allow the same user to play both sides
     if (game.isPracticeGame) {
       // In practice mode, user can make moves for either side
     } else {
       // For regular games, enforce turn order
-      if (game.currentTurn !== (isWhitePlayer ? "w" : "b")) {
+      if (gameState.options.turn !== (isWhitePlayer ? "w" : "b")) {
         throw new Error("Not your turn");
       }
     }
-
-    const move: Move = JSON.parse(args.move);
-    const gameState: GameState = JSON.parse(game.gameState);
 
     console.log(move);
 
     // Validate and apply move
     const newGameState = applyMove(gameState, move);
-    const nextTurn = game.currentTurn === "w" ? "b" : "w";
+    // TODO: move this inside
+    newGameState.options.turn = gameState.options.turn === "w" ? "b" : "w";
 
     // Check for game end conditions
-    const isCheck = isInCheck(newGameState, nextTurn);
+    const isCheck = isInCheck(newGameState, newGameState.options.turn);
     let status: "waiting" | "active" | "completed" | "abandoned" = game.status;
     let winner: "w" | "b" | "draw" | undefined = game.winner;
     let gameEndReason:
@@ -127,16 +126,22 @@ export const makeMove = mutation({
 
     if (isCheck) {
       // Check for checkmate
-      const canMoveCombatCheck = canAnyMoveCombatCheck(newGameState, nextTurn);
+      const canMoveCombatCheck = canAnyMoveCombatCheck(
+        newGameState,
+        newGameState.options.turn,
+      );
       console.log("canMoveCombatCheck", canMoveCombatCheck);
       if (!canMoveCombatCheck) {
         status = "completed";
-        winner = game.currentTurn;
+        winner = newGameState.options.turn;
         gameEndReason = "checkmate";
       }
     } else {
       // Check for stalemate
-      const canMoveCombatCheck = canAnyMoveCombatCheck(newGameState, nextTurn);
+      const canMoveCombatCheck = canAnyMoveCombatCheck(
+        newGameState,
+        newGameState.options.turn,
+      );
       if (!canMoveCombatCheck) {
         status = "completed";
         winner = "draw";
@@ -146,7 +151,6 @@ export const makeMove = mutation({
 
     await ctx.db.patch(args.gameId, {
       gameState: JSON.stringify(newGameState),
-      currentTurn: nextTurn,
       moveHistory: [...game.moveHistory, args.move],
       lastMoveAt: Date.now(),
       status,

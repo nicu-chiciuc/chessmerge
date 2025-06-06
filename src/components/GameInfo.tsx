@@ -1,13 +1,16 @@
+import { GameState } from "lib/chessmerge";
 import { Doc } from "../../convex/_generated/dataModel";
 
 interface GameInfoProps {
   game: Doc<"games">;
+  gameState: GameState;
   isWhitePlayer: boolean;
   isBlackPlayer: boolean;
 }
 
 export function GameInfo({
   game,
+  gameState,
   isWhitePlayer,
   isBlackPlayer,
 }: GameInfoProps) {
@@ -15,7 +18,7 @@ export function GameInfo({
     if (game.isPracticeGame) {
       switch (game.status) {
         case "active":
-          return `${game.currentTurn === "w" ? "White" : "Black"}'s turn`;
+          return `${gameState.options.turn === "w" ? "White" : "Black"}'s turn`;
         case "completed": {
           if (game.winner === "draw") {
             return "Practice game ended in a draw";
@@ -32,7 +35,7 @@ export function GameInfo({
       case "waiting":
         return "Waiting for opponent";
       case "active": {
-        if (game.currentTurn === "w") {
+        if (gameState.options.turn === "w") {
           return isWhitePlayer ? "Your turn" : "Opponent's turn";
         } else {
           return isBlackPlayer ? "Your turn" : "Opponent's turn";
@@ -94,7 +97,9 @@ export function GameInfo({
         {game.status === "active" && (
           <div className="flex justify-between">
             <span className="text-gray-600">Current turn:</span>
-            <span className="font-medium capitalize">{game.currentTurn}</span>
+            <span className="font-medium capitalize">
+              {gameState.options.turn}
+            </span>
           </div>
         )}
 

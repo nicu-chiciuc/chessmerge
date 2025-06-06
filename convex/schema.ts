@@ -13,7 +13,7 @@ const applicationTables = {
       v.literal("completed"),
       v.literal("abandoned"),
     ),
-    currentTurn: v.union(v.literal("w"), v.literal("b")),
+    // currentTurn: v.union(v.literal("w"), v.literal("b")),
     winner: v.optional(
       v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
     ),
