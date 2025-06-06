@@ -6,24 +6,12 @@ import {
   applyMove,
   boardToString,
   cleanStringBoard,
+  createEmptyBoard,
 } from "lib/chessmerge";
 import { describe, it, expect } from "vitest";
 
 describe("Game Cases", () => {
-  const standardOptions: BoardOptions = {
-    castlingRights: {
-      w: {
-        short: false,
-        long: false,
-      },
-      b: {
-        short: false,
-        long: false,
-      },
-    },
-    halfMoveClock: 0,
-    enPassantTarget: undefined,
-  };
+  const standardOptions: BoardOptions = createEmptyBoard().options;
 
   it("should be able to move pawn e2 to e4", () => {
     const board = stringToBoard(`

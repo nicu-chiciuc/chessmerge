@@ -228,6 +228,8 @@ const BoardOptionsSchema = object({
   fullMoveClock: number,
 });
 
+console.log(BoardOptionsSchema);
+
 function getSinglePieceMoves(
   type: PieceType,
   color: PieceColor,
