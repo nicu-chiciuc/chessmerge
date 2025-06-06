@@ -1,4 +1,13 @@
-import { includes } from "@tscu/dependent";
+import { includes, notEmpty } from "@tscu/dependent";
+import {
+  boolean,
+  literal,
+  number,
+  object,
+  optional,
+  string,
+  union,
+} from "@robolex/sure";
 
 // Piece types and colors
 export const PieceTypes = ["p", "r", "n", "b", "q", "k"] as const;
@@ -87,6 +96,7 @@ export function createEmptyBoard(): GameState {
           .map(() => []),
       ),
     options: {
+      turn: "w",
       castlingRights: {
         w: {
           short: true,
@@ -98,7 +108,8 @@ export function createEmptyBoard(): GameState {
         },
       },
       halfMoveClock: 0,
-      enPassantTarget: undefined,
+      fullMoveClock: 1,
+      enPassantTarget: null,
     },
   };
 }
@@ -130,6 +141,8 @@ export function createInitialBoard(): GameState {
   return {
     board,
     options: {
+      turn: "w",
+      fullMoveClock: 1,
       castlingRights: {
         w: {
           short: true,
@@ -147,7 +160,7 @@ export function createInitialBoard(): GameState {
 }
 
 // Check if position is valid
-export function isValidPosition(pos: Position): boolean {
+export function isInsideBoard(pos: Position): boolean {
   return pos.row >= 0 && pos.row < 8 && pos.col >= 0 && pos.col < 8;
 }
 
@@ -180,6 +193,7 @@ export function getPieceMoves(
 
 // Similar to Forsyth–Edwards Notation
 export type BoardOptions = {
+  turn: PieceColor;
   castlingRights: {
     w: {
       short: boolean;
@@ -190,9 +204,29 @@ export type BoardOptions = {
       long: boolean;
     };
   };
-  enPassantTarget?: Position;
+  enPassantTarget: Position | null;
   halfMoveClock: number;
+  fullMoveClock: number;
 };
+
+const PieceColorSchema = union(literal("w"), literal("b"));
+
+const BoardOptionsSchema = object({
+  turn: PieceColorSchema,
+  castlingRights: object({
+    w: object({
+      short: boolean,
+      long: boolean,
+    }),
+    b: object({
+      short: boolean,
+      long: boolean,
+    }),
+  }),
+  enPassantTarget: optional(string),
+  halfMoveClock: number,
+  fullMoveClock: number,
+});
 
 function getSinglePieceMoves(
   type: PieceType,
@@ -232,7 +266,7 @@ function getSinglePieceMoves(
 
       // Forward moves
       if (
-        isValidPosition({ row: row + direction, col }) &&
+        isInsideBoard({ row: row + direction, col }) &&
         isEmptyOrSameCanMerge(board[row + direction][col])
       ) {
         const to = { row: row + direction, col };
@@ -265,7 +299,7 @@ function getSinglePieceMoves(
       // Captures
       for (const dcol of [-1, 1]) {
         const newPos = { row: row + direction, col: col + dcol };
-        if (isValidPosition(newPos)) {
+        if (isInsideBoard(newPos)) {
           const targetCell = board[newPos.row][newPos.col];
 
           if (targetCell.length > 0) {
@@ -277,6 +311,26 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "p",
                 capturedPieces: [...targetCell],
+                type: "base",
+              });
+            }
+          }
+
+          if (
+            options.enPassantTarget &&
+            equalPositions(options.enPassantTarget, newPos)
+          ) {
+            // check the piece in the cell behind the en passant target
+            const cellBehind = board[row + direction][col];
+            if (
+              cellBehind.length > 0 &&
+              cellBehind[0].pieceType === "p" &&
+              cellBehind[0].color === otherColor(color)
+            ) {
+              moves.push({
+                from: pos,
+                to: newPos,
+                piece: "p",
                 type: "base",
               });
             }
@@ -296,7 +350,7 @@ function getSinglePieceMoves(
       ]) {
         for (let i = 1; i < 8; i++) {
           const newPos = { row: row + dr * i, col: col + dc * i };
-          if (!isValidPosition(newPos)) break;
+          if (!isInsideBoard(newPos)) break;
 
           const targetCell = board[newPos.row][newPos.col];
           if (targetCell.length === 0) {
@@ -349,7 +403,7 @@ function getSinglePieceMoves(
       ];
       for (const [dr, dc] of knightMoves) {
         const newPos = { row: row + dr, col: col + dc };
-        if (isValidPosition(newPos)) {
+        if (isInsideBoard(newPos)) {
           const targetCell = board[newPos.row][newPos.col];
           if (targetCell.length === 0) {
             moves.push({
@@ -397,7 +451,7 @@ function getSinglePieceMoves(
       ]) {
         for (let i = 1; i < 8; i++) {
           const newPos = { row: row + dr * i, col: col + dc * i };
-          if (!isValidPosition(newPos)) break;
+          if (!isInsideBoard(newPos)) break;
 
           const targetCell = board[newPos.row][newPos.col];
           if (targetCell.length === 0) {
@@ -462,7 +516,7 @@ function getSinglePieceMoves(
         for (const dc of [-1, 0, 1]) {
           if (dr === 0 && dc === 0) continue;
           const newPos = { row: row + dr, col: col + dc };
-          if (isValidPosition(newPos)) {
+          if (isInsideBoard(newPos)) {
             const targetCell = board[newPos.row][newPos.col];
             if (targetCell.length === 0) {
               moves.push({
@@ -893,6 +947,18 @@ function shouldPromote(move: Move, gameState: GameState): boolean {
   return isPawn && isToLastRow;
 }
 
+export function printMove(move: Move) {
+  return {
+    ...move,
+    from: formatPosition(move.from),
+    to: formatPosition(move.to),
+  };
+}
+
+function equalPositions(pos1: Position, pos2: Position): boolean {
+  return pos1.row === pos2.row && pos1.col === pos2.col;
+}
+
 // Helper functions for UI - simplified for new structure
 export function getAllMovesForCell(
   pos: Position,
@@ -900,28 +966,84 @@ export function getAllMovesForCell(
 ): Move[] {
   const moves: Move[] = [];
   const cell = gameState.board[pos.row][pos.col];
+  const firstCellMoves = cell[0]
+    ? getPieceMoves(cell[0], pos, gameState, {
+        filterCheckMoves: true,
+      })
+    : [];
 
-  // Get moves for each piece in the cell
-  for (let pieceIndex = 0; pieceIndex < cell.length; pieceIndex++) {
-    const piece = cell[pieceIndex];
-    const pieceMoves = getPieceMoves(piece, pos, gameState, {
-      filterCheckMoves: true,
-    });
+  const secondCellMoves = cell[1]
+    ? getPieceMoves(cell[1], pos, gameState, {
+        filterCheckMoves: true,
+      })
+    : [];
 
-    // TODO: Check if move to same square can be done by other piece
-    for (const move of pieceMoves) {
-      if (shouldPromote(move, gameState)) {
-        move.isPromotion = true;
-        move.promotion = "q";
-      }
-    }
-
-    moves.push(...pieceMoves);
-  }
+  moves.push(...firstCellMoves, ...secondCellMoves);
 
   if (cell.length === 2) {
-    // filter out moves that would merge with the target cell
-    return moves.filter((move) => move.type !== "merge");
+    // @ts-expect-error Fix
+    const pieceType: PieceType = cell[0].pieceType + cell[1].pieceType;
+
+    const movesOnlyFromFirstPiece = firstCellMoves.filter((move) =>
+      secondCellMoves.every(
+        (secondMove) => !equalPositions(move.to, secondMove.to),
+      ),
+    );
+
+    const movesOnlyFromSecondPiece = secondCellMoves.filter((move) =>
+      firstCellMoves.every(
+        (firstMove) => !equalPositions(move.to, firstMove.to),
+      ),
+    );
+
+    // Check if a move to the same square is possible by both pieces
+    const sameSquareMoves = firstCellMoves
+      .map((move): Move | null => {
+        const found = secondCellMoves.find((secondMove) =>
+          equalPositions(move.to, secondMove.to),
+        );
+
+        if (!found) {
+          return null;
+        }
+
+        const anyMoveIsMerge = move.type === "merge" || found.type === "merge";
+
+        // Merge things like like type?
+        // isPromotion?
+        return {
+          ...move,
+          ...found,
+          // Theoretically not possible to have castle
+          type: anyMoveIsMerge ? "merge" : "base",
+        };
+      })
+      .filter(notEmpty);
+
+    console.log({
+      movesOnlyFromFirstPiece: movesOnlyFromFirstPiece.map(printMove),
+      movesOnlyFromSecondPiece: movesOnlyFromSecondPiece.map(printMove),
+      sameSquareMoves: sameSquareMoves.map(printMove),
+    });
+
+    const allMoves: Move[] = [
+      ...movesOnlyFromFirstPiece,
+      ...movesOnlyFromSecondPiece,
+      ...sameSquareMoves,
+    ]
+      .filter((move) => move !== null && move.type !== "merge")
+      .map(
+        (move): Move => ({
+          ...move,
+          piece: pieceType,
+        }),
+      );
+
+    console.log({
+      allMoves: allMoves.map(printMove),
+    });
+
+    moves.push(...allMoves);
   }
 
   return moves;
@@ -1140,5 +1262,64 @@ export const FEMN = {
     const exactBoard = board.concat(emptyBoard).slice(0, 8);
 
     return exactBoard;
+  },
+
+  // "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  toFEMNGame: (gameState: GameState, joiner: string = " ") => {
+    const boardStr = FEMN.toFEMNBoard(gameState.board);
+
+    const castlingRightsStr = [
+      gameState.options.castlingRights.w.short ? "K" : "",
+      gameState.options.castlingRights.w.long ? "Q" : "",
+      gameState.options.castlingRights.b.short ? "k" : "",
+      gameState.options.castlingRights.b.long ? "q" : "",
+    ].join("");
+
+    return [
+      boardStr,
+      gameState.options.turn === "w" ? "w" : "b",
+      castlingRightsStr,
+      gameState.options.enPassantTarget
+        ? formatPosition(gameState.options.enPassantTarget)
+        : "-",
+      gameState.options.halfMoveClock,
+      gameState.options.fullMoveClock,
+    ].join(joiner);
+  },
+
+  // allows " " or "_"
+  fromFEMNGame: (str: string, joiner: string = " "): GameState => {
+    const [
+      boardStr,
+      turn,
+      castlingRights,
+      enPassantTarget,
+      halfMoveClock,
+      fullMoveClock,
+    ] = str.split(joiner);
+
+    return {
+      board: FEMN.fromFEMNBoard(boardStr),
+      options: {
+        turn: turn === "w" ? "w" : "b",
+        enPassantTarget:
+          enPassantTarget === "-"
+            ? null
+            : // @ts-expect-error Figure out
+              parsePosition(enPassantTarget),
+        castlingRights: {
+          w: {
+            short: castlingRights.includes("K"),
+            long: castlingRights.includes("Q"),
+          },
+          b: {
+            short: castlingRights.includes("k"),
+            long: castlingRights.includes("q"),
+          },
+        },
+        halfMoveClock: Number(halfMoveClock),
+        fullMoveClock: Number(fullMoveClock),
+      },
+    };
   },
 };

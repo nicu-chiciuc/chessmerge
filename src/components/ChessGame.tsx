@@ -14,11 +14,13 @@ import {
   Move,
   Position,
   boardToString,
+  formatPosition,
   getAllMovesForCell,
-  getPieceMoves,
+  parsePosition,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ChessGameProps {
   gameId: Id<"games">;
@@ -83,10 +85,13 @@ function GameControls({
 
   const [femnBoard, setLocaleFemnBoard, onBlurFemnBoard] = useEditOnFocus({
     logName: "FEMN",
-    serverState: FEMN.toFEMNBoard(gameState.board),
+    serverState: FEMN.toFEMNGame(gameState),
     setServerState: async (femn) => {
-      const strBoard = boardToString(FEMN.fromFEMNBoard(femn));
-      await setPracticeGameState({ gameId, strBoard });
+      const strBoard = FEMN.fromFEMNGame(femn);
+      await setPracticeGameState({
+        gameId,
+        strBoard: boardToString(strBoard.board),
+      });
     },
   });
 
@@ -107,6 +112,13 @@ function GameControls({
           className="font-mono resize-none w-full overflow-hidden"
         />
         <div className="h-4" />
+
+        {/* 
+        Add checkboxes to trigger casling rights, with labels for each
+         */}
+        <div className="flex flex-row gap-2">
+          <Checkbox id="white-short-castle" />
+        </div>
 
         {/*
           Textarea is monospace, no autocorrect, no spellcheck, no resize 
@@ -137,8 +149,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
-  const [validMoves, setValidMoves] = useState<Move[]>([]);
-  // const [unmergePositions, setUnmergePositions] = useState<Position[]>([]);
+
   const [selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
   >("both");
@@ -153,9 +164,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
             .fill(null)
             .map(() => []),
         );
-  // const _moveHistory: Move[] = game
-  //   ? game.moveHistory.map((m) => JSON.parse(m))
-  //   : [];
 
   const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
   const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
@@ -180,34 +188,56 @@ export function ChessGame({ gameId }: ChessGameProps) {
     }
   }, [game?.status, game?.gameEndReason, game?.winner]);
 
+  const validMoves = useMemo(() => {
+    console.log("recalculated");
+    if (!selectedSquare) return [];
+
+    const selectedCell =
+      gameState.board[selectedSquare.row][selectedSquare.col];
+    let newValidMoves: Move[] = [];
+
+    const allMoves = getAllMovesForCell(selectedSquare, gameState);
+
+    console.log(
+      allMoves.map((move) => ({
+        ...move,
+        from: formatPosition(move.from),
+        to: formatPosition(move.to),
+      })),
+    );
+
+    if (selectedCell.length < 2) {
+      return allMoves;
+    }
+
+    if (selectedPieceMode === "both") {
+      newValidMoves = allMoves.filter((move) => move.piece.length === 2);
+    } else if (selectedPieceMode === "first" && selectedCell.length >= 1) {
+      newValidMoves = allMoves.filter(
+        (move) =>
+          move.piece.length === 1 && move.piece === selectedCell[0].pieceType,
+      );
+    } else if (selectedPieceMode === "second" && selectedCell.length === 2) {
+      newValidMoves = allMoves.filter(
+        (move) =>
+          move.piece.length === 1 && move.piece === selectedCell[1].pieceType,
+      );
+    }
+
+    console.log(
+      "newValidMoves",
+      newValidMoves.map((move) => ({
+        ...move,
+        from: formatPosition(move.from),
+        to: formatPosition(move.to),
+      })),
+    );
+
+    return newValidMoves;
+  }, [selectedPieceMode, selectedSquare, gameState]);
+
   const handlePieceSelectionChange = (mode: "both" | "first" | "second") => {
     setSelectedPieceMode(mode);
-
-    // Recalculate valid moves based on selected piece mode
-    if (selectedSquare) {
-      const selectedCell =
-        gameState.board[selectedSquare.row][selectedSquare.col];
-      let newValidMoves: Move[] = [];
-
-      if (mode === "both") {
-        // Get moves for all pieces in the cell
-        newValidMoves = getAllMovesForCell(selectedSquare, gameState);
-      } else if (mode === "first" && selectedCell.length >= 1) {
-        // Get moves only for the first piece
-        const piece = selectedCell[0];
-        newValidMoves = getPieceMoves(piece, selectedSquare, gameState, {
-          filterCheckMoves: true,
-        });
-      } else if (mode === "second" && selectedCell.length >= 2) {
-        // Get moves only for the second piece
-        const piece = selectedCell[1];
-        newValidMoves = getPieceMoves(piece, selectedSquare, gameState, {
-          filterCheckMoves: true,
-        });
-      }
-
-      setValidMoves(newValidMoves);
-    }
   };
 
   const handleSquareClick = async (row: number, col: number) => {
@@ -238,7 +268,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
       }
 
       setSelectedSquare(null);
-      setValidMoves([]);
       setSelectedPieceMode("both");
     } else if (
       clickedCell.length > 0 &&
@@ -247,9 +276,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
       // Select cell and get all possible moves
       setSelectedSquare(position);
       setSelectedPieceMode("both");
-
-      const allMoves = getAllMovesForCell(position, gameState);
-      setValidMoves(allMoves);
     }
   };
 
@@ -267,6 +293,10 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
   // Convert Move[] to Position[] for ChessBoard component compatibility
   const validPositions: Position[] = validMoves.map((move) => move.to);
+
+  console.log({
+    validPositions: validPositions.map((pos) => formatPosition(pos)),
+  });
 
   if (!game) {
     return (

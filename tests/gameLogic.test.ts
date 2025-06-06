@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   createInitialBoard,
-  isValidPosition,
+  isInsideBoard,
   canMerge,
   getPieceMoves,
   isInCheck,
@@ -161,18 +161,18 @@ describe("Game Logic Tests", () => {
 
   describe("isValidPosition", () => {
     it("should return true for valid positions", () => {
-      expect(isValidPosition({ row: 0, col: 0 })).toBe(true);
-      expect(isValidPosition({ row: 7, col: 7 })).toBe(true);
-      expect(isValidPosition({ row: 3, col: 4 })).toBe(true);
+      expect(isInsideBoard({ row: 0, col: 0 })).toBe(true);
+      expect(isInsideBoard({ row: 7, col: 7 })).toBe(true);
+      expect(isInsideBoard({ row: 3, col: 4 })).toBe(true);
     });
 
     it("should return false for positions outside the board", () => {
-      expect(isValidPosition({ row: -1, col: 0 })).toBe(false);
-      expect(isValidPosition({ row: 0, col: -1 })).toBe(false);
-      expect(isValidPosition({ row: 8, col: 0 })).toBe(false);
-      expect(isValidPosition({ row: 0, col: 8 })).toBe(false);
-      expect(isValidPosition({ row: -5, col: -5 })).toBe(false);
-      expect(isValidPosition({ row: 10, col: 10 })).toBe(false);
+      expect(isInsideBoard({ row: -1, col: 0 })).toBe(false);
+      expect(isInsideBoard({ row: 0, col: -1 })).toBe(false);
+      expect(isInsideBoard({ row: 8, col: 0 })).toBe(false);
+      expect(isInsideBoard({ row: 0, col: 8 })).toBe(false);
+      expect(isInsideBoard({ row: -5, col: -5 })).toBe(false);
+      expect(isInsideBoard({ row: 10, col: 10 })).toBe(false);
     });
   });
 
