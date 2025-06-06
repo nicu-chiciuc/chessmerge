@@ -204,7 +204,7 @@ export type BoardOptions = {
       long: boolean;
     };
   };
-  enPassantTarget: Position | null;
+  enPassantTarget: null;
   halfMoveClock: number;
   fullMoveClock: number;
 };
@@ -313,26 +313,6 @@ function getSinglePieceMoves(
                 to: newPos,
                 piece: "p",
                 capturedPieces: [...targetCell],
-                type: "base",
-              });
-            }
-          }
-
-          if (
-            options.enPassantTarget &&
-            equalPositions(options.enPassantTarget, newPos)
-          ) {
-            // check the piece in the cell behind the en passant target
-            const cellBehind = board[row + direction][col];
-            if (
-              cellBehind.length > 0 &&
-              cellBehind[0].pieceType === "p" &&
-              cellBehind[0].color === otherColor(color)
-            ) {
-              moves.push({
-                from: pos,
-                to: newPos,
-                piece: "p",
                 type: "base",
               });
             }
@@ -757,7 +737,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
 
     let pieceToMove = promotedPiece ?? sourceCell[0];
 
-    // This is incorrect since the source can have 2
+    // Piece can also unmerge
     if (sourceCell.length === 1) {
       newBoard[move.from.row][move.from.col] = [];
     } else {
@@ -773,6 +753,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
     // Move to empty cell
     if (targetCell.length === 0) {
       newBoard[move.to.row][move.to.col] = [pieceToMove];
+
       return {
         board: newBoard,
         options: {
@@ -957,7 +938,7 @@ export function printMove(move: Move) {
   };
 }
 
-function equalPositions(pos1: Position, pos2: Position): boolean {
+export function equalPositions(pos1: Position, pos2: Position): boolean {
   return pos1.row === pos2.row && pos1.col === pos2.col;
 }
 
@@ -1300,18 +1281,14 @@ export const FEMN = {
     const [
       turn,
       castlingRights,
-      enPassantTarget,
+      _enPassantTarget,
       halfMoveClock,
       fullMoveClock,
     ] = str.split(/[ _]/);
 
     return {
       turn: turn === "w" ? "w" : "b",
-      enPassantTarget:
-        enPassantTarget === "-"
-          ? null
-          : // @ts-expect-error Figure out
-            parsePosition(enPassantTarget),
+      enPassantTarget: null,
       castlingRights: {
         w: {
           short: castlingRights.includes("K"),

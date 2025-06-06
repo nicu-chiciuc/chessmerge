@@ -173,45 +173,59 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
           <div>
             <h3 className="font-medium mb-2">Basic Rules</h3>
             <ul className="space-y-1 text-gray-600">
-              <li>• Standard chess rules apply</li>
-              <li>• But pieces can merge or unmerge</li>
-              <li>• Merged pieces can move as both types of pieces</li>
+              <li>* Standard chess rules apply</li>
+              <li>* But pieces can merge or unmerge</li>
+              <li>* Merged pieces can move as both types of pieces</li>
               <li>
-                • One of the pieces can split at any time, that also means that
+                * One of the pieces can split at any time, that also means that
                 it can split from one piece then merge into another one in the
                 same move
               </li>
               <li>
-                • Merged pieces can be promoted if it contains a pawn, be
+                * Merged pieces can be promoted if it contains a pawn, be
                 careful, this replaces both pieces.
               </li>
               <li>
-                • (🚫 Not implemented) You can choose what to promote to (except
+                * (🚫 Not implemented) You can choose what to promote to (except
                 pawn and rook, just like in chess)
               </li>
 
-              <li>• If the king and rook didn't move they can castle. </li>
+              <li>* If the king and rook didn't move they can castle. </li>
               <li>
-                • A piece (e.g. a bishop) can move into the rook and move
+                * A piece (e.g. a bishop) can move into the rook and move
                 somewhere else, that still means that the rook didn't move and
                 still can castle.
               </li>
 
               <li>
-                • (🚫 Not implemented) When castling and the rook is merged with
+                * (🚫 Not implemented) When castling and the rook is merged with
                 some other piece, you can choose whether you castle with just
                 the rook (by unmerging it), or with the merged piece.
               </li>
 
-              <li>
-                • (🚫 Not implemented) En passant can be done both by a pawn or
-                a merged piece that contains a pawn.
+              <li className="text-red-500">
+                * NO EnPassant, check the questions below. It is too confusing.
               </li>
 
               <li>
-                • (❓ Not sure) Since pawn can get to their back rank (e.g.
+                * (🚫 Not implemented) En passant can be done both by a pawn or
+                a merged piece that contains a pawn.
+              </li>
+              <li>
+                * (❓ Not sure) Since pawn can get to their back rank (e.g.
                 white pawn to row 1), it's not clear if they still can do the
                 double move.
+              </li>
+
+              <li>
+                * (🚫 Not implemented) If pawn moves 2 squares forward and
+                merges into another piece, the en passante will capture only the
+                pawn, and not the the other piece.
+              </li>
+
+              <li>
+                * (❓ Not sure) `4k3/8/8/8/5bp1/8/5P+R2/4K3` then `P+R` to `f4`.
+                Can `P4` take enpassant? What if instead of `P+R` it was `P+B`?
               </li>
             </ul>
           </div>
