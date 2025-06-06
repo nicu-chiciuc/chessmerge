@@ -1279,62 +1279,69 @@ export const FEMN = {
     return exactBoard;
   },
 
-  // "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-  toFEMNGame: (gameState: GameState, joiner: string = " ") => {
-    const boardStr = FEMN.toFEMNBoard(gameState.board);
-
+  toFEMNWithoutBoard: (options: BoardOptions, joiner: string = " ") => {
     const castlingRightsStr = [
-      gameState.options.castlingRights.w.short ? "K" : "",
-      gameState.options.castlingRights.w.long ? "Q" : "",
-      gameState.options.castlingRights.b.short ? "k" : "",
-      gameState.options.castlingRights.b.long ? "q" : "",
+      options.castlingRights.w.short ? "K" : "",
+      options.castlingRights.w.long ? "Q" : "",
+      options.castlingRights.b.short ? "k" : "",
+      options.castlingRights.b.long ? "q" : "",
     ].join("");
 
     return [
-      boardStr,
-      gameState.options.turn === "w" ? "w" : "b",
+      options.turn === "w" ? "w" : "b",
       castlingRightsStr,
-      gameState.options.enPassantTarget
-        ? formatPosition(gameState.options.enPassantTarget)
-        : "-",
-      gameState.options.halfMoveClock,
-      gameState.options.fullMoveClock,
+      options.enPassantTarget ? formatPosition(options.enPassantTarget) : "-",
+      options.halfMoveClock,
+      options.fullMoveClock,
     ].join(joiner);
   },
 
-  // allows " " or "_"
-  fromFEMNGame: (str: string, joiner: string = " "): GameState => {
+  fromFEMNWithoutBoard: (str: string): BoardOptions => {
     const [
-      boardStr,
       turn,
       castlingRights,
       enPassantTarget,
       halfMoveClock,
       fullMoveClock,
-    ] = str.split(joiner);
+    ] = str.split(/[ _]/);
+
+    return {
+      turn: turn === "w" ? "w" : "b",
+      enPassantTarget:
+        enPassantTarget === "-"
+          ? null
+          : // @ts-expect-error Figure out
+            parsePosition(enPassantTarget),
+      castlingRights: {
+        w: {
+          short: castlingRights.includes("K"),
+          long: castlingRights.includes("Q"),
+        },
+        b: {
+          short: castlingRights.includes("k"),
+          long: castlingRights.includes("q"),
+        },
+      },
+      halfMoveClock: Number(halfMoveClock),
+      fullMoveClock: Number(fullMoveClock),
+    };
+  },
+
+  // "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  toFEMNGame: (gameState: GameState, joiner: string = " ") => {
+    return [
+      FEMN.toFEMNBoard(gameState.board),
+      FEMN.toFEMNWithoutBoard(gameState.options, joiner),
+    ].join(joiner);
+  },
+
+  // allows " " or "_"
+  fromFEMNGame: (str: string): GameState => {
+    const [boardStr, ...rest] = str.split(/[ _]/);
 
     return {
       board: FEMN.fromFEMNBoard(boardStr),
-      options: {
-        turn: turn === "w" ? "w" : "b",
-        enPassantTarget:
-          enPassantTarget === "-"
-            ? null
-            : // @ts-expect-error Figure out
-              parsePosition(enPassantTarget),
-        castlingRights: {
-          w: {
-            short: castlingRights.includes("K"),
-            long: castlingRights.includes("Q"),
-          },
-          b: {
-            short: castlingRights.includes("k"),
-            long: castlingRights.includes("q"),
-          },
-        },
-        halfMoveClock: Number(halfMoveClock),
-        fullMoveClock: Number(fullMoveClock),
-      },
+      options: FEMN.fromFEMNWithoutBoard(rest.join(" ")),
     };
   },
 };

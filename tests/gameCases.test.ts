@@ -7,6 +7,8 @@ import {
   boardToString,
   cleanStringBoard,
   createEmptyBoard,
+  GameState,
+  FEMN,
 } from "lib/chessmerge";
 import { describe, it, expect } from "vitest";
 
@@ -114,9 +116,9 @@ describe("Game Cases", () => {
       .  .  .  .  K  .  .  . 
     `);
 
-    const gameState = {
+    const gameState: GameState = {
       board,
-      options: standardOptions,
+      options: FEMN.fromFEMNWithoutBoard("w KQkq - 0 1"),
     };
 
     const moves = getAllMovesForCell(parsePosition("f2"), gameState);
