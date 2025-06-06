@@ -9,7 +9,6 @@ import {
   createEmptyBoard,
   GameState,
   FEMN,
-  Position,
   equalPositions,
 } from "lib/chessmerge";
 import { describe, it, expect } from "vitest";
