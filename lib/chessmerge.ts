@@ -961,13 +961,18 @@ function equalPositions(pos1: Position, pos2: Position): boolean {
   return pos1.row === pos2.row && pos1.col === pos2.col;
 }
 
-// Helper functions for UI - simplified for new structure
+/**
+ * The ONLY function that should be used to get moves for a cell by an
+ * external system.
+ */
 export function getAllMovesForCell(
   pos: Position,
   gameState: GameState,
 ): Move[] {
   const moves: Move[] = [];
   const cell = gameState.board[pos.row][pos.col];
+  // Check that color is the same as gameState.options.turn. Also why is it not `| undefined` here?
+  const color = cell[0]?.color;
   const firstCellMoves = cell[0]
     ? getPieceMoves(cell[0], pos, gameState, {
         filterCheckMoves: true,
@@ -1022,11 +1027,11 @@ export function getAllMovesForCell(
       })
       .filter(notEmpty);
 
-    console.log({
-      movesOnlyFromFirstPiece: movesOnlyFromFirstPiece.map(printMove),
-      movesOnlyFromSecondPiece: movesOnlyFromSecondPiece.map(printMove),
-      sameSquareMoves: sameSquareMoves.map(printMove),
-    });
+    // console.log({
+    //   movesOnlyFromFirstPiece: movesOnlyFromFirstPiece.map(printMove),
+    //   movesOnlyFromSecondPiece: movesOnlyFromSecondPiece.map(printMove),
+    //   sameSquareMoves: sameSquareMoves.map(printMove),
+    // });
 
     const allMoves: Move[] = [
       ...movesOnlyFromFirstPiece,
@@ -1041,14 +1046,22 @@ export function getAllMovesForCell(
         }),
       );
 
-    console.log({
-      allMoves: allMoves.map(printMove),
-    });
+    // console.log({
+    //   allMoves: allMoves.map(printMove),
+    // });
 
     moves.push(...allMoves);
   }
 
-  return moves;
+  // Filter out moves that would put the king in check
+  const filteredMoves = moves.filter((move) => {
+    const newBoard = applyMove(gameState, move);
+    const isCheck = isInCheck(newBoard, color);
+
+    return !isCheck;
+  });
+
+  return filteredMoves;
 }
 
 export function cleanStringBoard(str: string): string {

@@ -86,9 +86,9 @@ describe("Game Cases", () => {
       .  k  .  .  .  .  .  . 
       .  .  .  .  .  .  .  . 
       .  .  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  b 
       .  .  .  .  .  .  .  . 
-      .  .  .  .  .  .  bq . 
-      .  .  .  .  .  PR .  . 
+      .  .  .  .  .  R  .  . 
       .  .  .  .  K  .  .  . 
     `);
 
@@ -100,5 +100,27 @@ describe("Game Cases", () => {
     const moves = getAllMovesForCell(parsePosition("f2"), gameState);
 
     expect(moves).toHaveLength(0);
+  });
+
+  it("pinned piece can move as long as it doesn't put the king in check", () => {
+    const board = stringToBoard(`
+      .  .  .  .  .  .  .  . 
+      .  k  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  . 
+      .  .  .  .  .  .  .  b 
+      .  .  .  .  .  .  .  . 
+      .  .  .  .  .  Q  .  . 
+      .  .  .  .  K  .  .  . 
+    `);
+
+    const gameState = {
+      board,
+      options: standardOptions,
+    };
+
+    const moves = getAllMovesForCell(parsePosition("f2"), gameState);
+
+    expect(moves).toHaveLength(2);
   });
 });

@@ -134,7 +134,7 @@ function GameControls({
           rows={8}
           onBlur={onBlurArrayBoard}
           value={arrayBoard}
-          className="font-mono resize-none w-[26ch] overflow-hidden"
+          className="font-mono resize-none w-[26ch] overflow-hidden text-nowrap"
           onChange={(e) => setLocaleArrayBoard(e.target.value)}
         />
       </CardContent>
