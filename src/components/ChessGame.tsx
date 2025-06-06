@@ -147,11 +147,20 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const makeMove = useMutation(api.gameLogic.makeMove);
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
-  const [selectedSquare, setSelectedSquare] = useState<Position | null>(null);
-
+  const [selectedSquare, raw_setSelectedSquare] = useState<Position | null>(
+    null,
+  );
   const [selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
   >("both");
+
+  const setSelectedSquare = useCallback(
+    (square: Position | null) => {
+      raw_setSelectedSquare(square);
+      setSelectedPieceMode("both");
+    },
+    [raw_setSelectedSquare],
+  );
 
   // Parse board directly - expect new format only
   const gameState: GameState = game
@@ -252,6 +261,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
       );
       const selectedCell =
         gameState.board[selectedSquare.row][selectedSquare.col];
+
       if (targetMove) {
         if (selectedPieceMode === "both" && selectedCell.length === 2) {
           targetMove.piece =
@@ -264,18 +274,22 @@ export function ChessGame({ gameId }: ChessGameProps) {
         }
 
         await executeMove(targetMove);
-      }
 
-      setSelectedSquare(null);
-      setSelectedPieceMode("both");
-    } else if (
+        setSelectedSquare(null);
+        return;
+      }
+    }
+
+    if (
       clickedCell.length > 0 &&
       clickedCell[0].color === gameState.options.turn
     ) {
       // Select cell and get all possible moves
       setSelectedSquare(position);
-      setSelectedPieceMode("both");
+      return;
     }
+
+    setSelectedSquare(null);
   };
 
   const executeMove = async (move: Move) => {

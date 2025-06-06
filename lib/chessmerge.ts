@@ -280,22 +280,7 @@ function getSinglePieceMoves(
           type: board[row + direction][col].length === 1 ? "merge" : "base",
         });
 
-        // Double move from start
-        if (
-          row === startRow &&
-          // TODO: Pawn can also get one row back, should they also be able to double move from there?
-          isEmptyOrSameCanMerge(board[row + 2 * direction][col]) &&
-          // but there's no piece in the way
-          board[row + direction][col].length === 0
-        ) {
-          moves.push({
-            from: pos,
-            to: { row: row + 2 * direction, col },
-            piece: "p",
-            type:
-              board[row + 2 * direction][col].length === 1 ? "merge" : "base",
-          });
-        }
+        // No Double move from start
       }
 
       // Captures
