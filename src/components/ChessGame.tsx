@@ -322,20 +322,18 @@ export function ChessGame({ gameId }: ChessGameProps) {
   return (
     <div className="flex flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-6">
       <div className="xl:col-span-3">
-        <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 md:p-6">
-          <ChessBoard
-            board={gameState.board}
-            selectedSquare={selectedSquare}
-            validMoves={validPositions}
-            // fullMoves={validMoves}
-            // unmergePositions={unmergePositions}
-            onSquareClick={handleSquareClick}
-            onPieceSelectionChange={handlePieceSelectionChange}
-            flipped={game.isPracticeGame ? false : isBlackPlayer}
-            isMyTurn={!!isMyTurn}
-            currentTurn={gameState.options.turn}
-          />
-        </div>
+        <ChessBoard
+          board={gameState.board}
+          selectedSquare={selectedSquare}
+          validMoves={validPositions}
+          // fullMoves={validMoves}
+          // unmergePositions={unmergePositions}
+          onSquareClick={handleSquareClick}
+          onPieceSelectionChange={handlePieceSelectionChange}
+          flipped={game.isPracticeGame ? false : isBlackPlayer}
+          isMyTurn={!!isMyTurn}
+          currentTurn={gameState.options.turn}
+        />
       </div>
 
       <div className="flex flex-col sm:flex-row xl:flex-col gap-4 xl:gap-6">

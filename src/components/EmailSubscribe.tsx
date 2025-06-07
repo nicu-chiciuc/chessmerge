@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Button } from "./ui/button";
 
 interface EmailSubscribeProps {
   compact?: boolean;
@@ -59,13 +60,12 @@ export function EmailSubscribe({ compact = false }: EmailSubscribeProps) {
           />
         </div>
 
-        <button
+        <Button
           type="submit"
           disabled={status === "loading" || status === "success"}
-          className={`w-full bg-primary text-white ${compact ? "py-1.5 text-sm" : "py-2"} px-4 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {status === "loading" ? "Subscribing..." : "Subscribe"}
-        </button>
+        </Button>
       </form>
 
       {message && (

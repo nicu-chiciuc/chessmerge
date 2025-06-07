@@ -14,13 +14,12 @@ import blackRookSvg from "../pieces/Chess_rdt45.svg";
 import blackBishopSvg from "../pieces/Chess_bdt45.svg";
 import blackKnightSvg from "../pieces/Chess_ndt45.svg";
 import blackPawnSvg from "../pieces/Chess_pdt45.svg";
+import { Button } from "./ui/button";
 
 interface ChessBoardProps {
   board: Board;
   selectedSquare: Position | null;
   validMoves: Position[];
-  // fullMoves?: Move[];
-  // unmergePositions: Position[];
   onSquareClick: (row: number, col: number) => void;
   onPieceSelectionChange?: (mode: "both" | "first" | "second") => void;
   flipped?: boolean;
@@ -263,16 +262,14 @@ export function ChessBoard({
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      <div className="w-full max-w-[min(90vw,90vh)] mx-auto">
-        <div className="grid grid-cols-8 border-2 border-gray-800 w-full">
-          {Array.from({ length: 8 }, (_, row) =>
-            Array.from({ length: 8 }, (_, col) => {
-              const actualRow = flipped ? 7 - row : row;
-              const actualCol = flipped ? 7 - col : col;
-              return renderSquare(actualRow, actualCol);
-            }),
-          )}
-        </div>
+      <div className="grid grid-cols-8 border-2 border-gray-800 w-full">
+        {Array.from({ length: 8 }, (_, row) =>
+          Array.from({ length: 8 }, (_, col) => {
+            const actualRow = flipped ? 7 - row : row;
+            const actualCol = flipped ? 7 - col : col;
+            return renderSquare(actualRow, actualCol);
+          }),
+        )}
       </div>
 
       {/* Piece selection buttons for merged pieces */}
@@ -281,47 +278,37 @@ export function ChessBoard({
           <div className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
             Choose which piece(s) to move:
           </div>
-          <div className="flex gap-1 sm:gap-2 flex-wrap">
-            <button
+          <div className="flex gap-1">
+            <Button
+              variant={selectedPieceMode === "first" ? "default" : "outline"}
               onClick={() => handlePieceSelectionChange("first")}
-              className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-1 min-w-0 ${
-                selectedPieceMode === "first"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
             >
               <ChessPieceContent piece={selectedCell[0]} size="small" />
               <span className="truncate">
                 Only {mapToName(selectedCell[0].pieceType)}
               </span>
-            </button>
-            <button
+            </Button>
+
+            <Button
+              variant={selectedPieceMode === "second" ? "default" : "outline"}
               onClick={() => handlePieceSelectionChange("second")}
-              className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-1 min-w-0 ${
-                selectedPieceMode === "second"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
             >
               <ChessPieceContent piece={selectedCell[1]} size="small" />
               <span className="truncate">
                 Only {mapToName(selectedCell[1].pieceType)}
               </span>
-            </button>
-            <button
+            </Button>
+
+            <Button
+              variant={selectedPieceMode === "both" ? "default" : "outline"}
               onClick={() => handlePieceSelectionChange("both")}
-              className={`px-2 sm:px-3 py-1 sm:py-2 rounded border text-xs sm:text-sm flex items-center gap-1 sm:gap-2 flex-1 min-w-0 ${
-                selectedPieceMode === "both"
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-              }`}
             >
               <div className="flex -space-x-1">
                 <ChessPieceContent piece={selectedCell[0]} size="small" />
                 <ChessPieceContent piece={selectedCell[1]} size="small" />
               </div>
               <span className="truncate">Both pieces</span>
-            </button>
+            </Button>
           </div>
         </div>
       )}

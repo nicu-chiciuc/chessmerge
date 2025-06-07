@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { Button } from "./ui/button";
 
 export function UnsubscribePage() {
   const [searchParams] = useSearchParams();
@@ -68,12 +69,10 @@ export function UnsubscribePage() {
               </svg>
             </div>
             <p className="text-gray-700 mb-6">{message}</p>
-            <button
-              onClick={() => void navigate("/")}
-              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-            >
+
+            <Button onClick={() => void navigate("/")}>
               Back to ChessMerge
-            </button>
+            </Button>
           </>
         )}
 

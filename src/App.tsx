@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { AppRoutes } from "./routes";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EmailSubscribe } from "./components/EmailSubscribe";
+import { Button } from "./components/ui/button";
 
 export default function App() {
   const location = useLocation();
@@ -18,17 +19,14 @@ export default function App() {
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-primary">ChessMerge</h2>
           {isGameRoute && (
-            <button
-              onClick={() => void navigate("/")}
-              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-            >
-              ← Back to Lobby
-            </button>
+            <Button variant="outline" onClick={() => void navigate("/")}>
+              ← Lobby
+            </Button>
           )}
         </div>
         <SignOutButton />
       </header>
-      <main className="flex-1 p-4">
+      <main>
         <Content />
       </main>
       <Toaster />
