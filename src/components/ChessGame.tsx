@@ -14,7 +14,6 @@ import {
   Move,
   Position,
   boardToString,
-  formatPosition,
   getAllMovesForCell,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
@@ -26,7 +25,6 @@ interface ChessGameProps {
 }
 
 function useEditOnFocus({
-  logName,
   serverState,
   setServerState,
 }: {
@@ -39,7 +37,6 @@ function useEditOnFocus({
 
   const setLocaleState = useCallback(
     async (strBoard: string) => {
-      console.log(`triggered ${logName}`);
       setEditingState(true);
       setLocalState(strBoard);
 
@@ -49,7 +46,7 @@ function useEditOnFocus({
         console.error(error);
       }
     },
-    [logName, setServerState],
+    [setServerState],
   );
 
   const onBlur = useCallback(() => {
@@ -197,7 +194,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
   }, [game?.status, game?.gameEndReason, game?.winner]);
 
   const validMoves = useMemo(() => {
-    console.log("recalculated");
     if (!selectedSquare) return [];
 
     const selectedCell =
@@ -205,14 +201,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     let newValidMoves: Move[] = [];
 
     const allMoves = getAllMovesForCell(selectedSquare, gameState);
-
-    console.log(
-      allMoves.map((move) => ({
-        ...move,
-        from: formatPosition(move.from),
-        to: formatPosition(move.to),
-      })),
-    );
 
     if (selectedCell.length < 2) {
       return allMoves;
@@ -231,15 +219,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
           move.piece.length === 1 && move.piece === selectedCell[1].pieceType,
       );
     }
-
-    console.log(
-      "newValidMoves",
-      newValidMoves.map((move) => ({
-        ...move,
-        from: formatPosition(move.from),
-        to: formatPosition(move.to),
-      })),
-    );
 
     return newValidMoves;
   }, [selectedPieceMode, selectedSquare, gameState]);
@@ -306,10 +285,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
   // Convert Move[] to Position[] for ChessBoard component compatibility
   const validPositions: Position[] = validMoves.map((move) => move.to);
-
-  console.log({
-    validPositions: validPositions.map((pos) => formatPosition(pos)),
-  });
 
   if (!game) {
     return (

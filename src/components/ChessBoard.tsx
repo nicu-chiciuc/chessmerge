@@ -1,4 +1,4 @@
-import { Board, Position, Piece, mapToName } from "../../lib/chessmerge";
+import { Board, Position, Piece } from "../../lib/chessmerge";
 import { useState } from "react";
 
 // Import all chess piece SVGs
@@ -15,7 +15,6 @@ import blackBishopSvg from "../pieces/Chess_bdt45.svg";
 import blackKnightSvg from "../pieces/Chess_ndt45.svg";
 import blackPawnSvg from "../pieces/Chess_pdt45.svg";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
 
 interface ChessBoardProps {
   board: Board;

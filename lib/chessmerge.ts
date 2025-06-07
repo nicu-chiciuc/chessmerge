@@ -211,7 +211,7 @@ export type BoardOptions = {
 
 const PieceColorSchema = union(literal("w"), literal("b"));
 
-const BoardOptionsSchema = object({
+export const BoardOptionsSchema = object({
   turn: PieceColorSchema,
   castlingRights: object({
     w: object({
@@ -227,8 +227,6 @@ const BoardOptionsSchema = object({
   halfMoveClock: number,
   fullMoveClock: number,
 });
-
-console.log(BoardOptionsSchema);
 
 function getSinglePieceMoves(
   type: PieceType,
@@ -250,7 +248,7 @@ function getSinglePieceMoves(
   switch (type) {
     case "p": {
       const direction = color === "w" ? -1 : 1;
-      const startRow = color === "w" ? 6 : 1;
+      // const startRow = color === "w" ? 6 : 1;
 
       function isEmptyOrSameCanMerge(targetCell: Piece[]) {
         if (targetCell.length === 0) return true;

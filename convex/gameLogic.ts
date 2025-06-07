@@ -105,8 +105,6 @@ export const makeMove = mutation({
       }
     }
 
-    console.log(move);
-
     // Validate and apply move
     const newGameState = applyMove(gameState, move);
     // TODO: move this inside
@@ -130,7 +128,6 @@ export const makeMove = mutation({
         newGameState,
         newGameState.options.turn,
       );
-      console.log("canMoveCombatCheck", canMoveCombatCheck);
       if (!canMoveCombatCheck) {
         status = "completed";
         winner = newGameState.options.turn;
@@ -179,7 +176,6 @@ export const setPracticeGameState = mutation({
     // Only practice games can have their state set
     if (!game.isPracticeGame) throw new Error("Game is not a practice game");
 
-    console.log("got strBoard", args.strBoard);
     try {
       const board = stringToBoard(args.strBoard);
 
