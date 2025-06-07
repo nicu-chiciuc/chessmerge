@@ -15,6 +15,7 @@ import blackBishopSvg from "../pieces/Chess_bdt45.svg";
 import blackKnightSvg from "../pieces/Chess_ndt45.svg";
 import blackPawnSvg from "../pieces/Chess_pdt45.svg";
 import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
 
 interface ChessBoardProps {
   board: Board;
@@ -262,7 +263,7 @@ export function ChessBoard({
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      <div className="grid grid-cols-8 border-2 border-gray-800 w-full">
+      <div className="chessBoard grid grid-cols-8 border-2 border-gray-800 w-full">
         {Array.from({ length: 8 }, (_, row) =>
           Array.from({ length: 8 }, (_, col) => {
             const actualRow = flipped ? 7 - row : row;
@@ -273,43 +274,38 @@ export function ChessBoard({
       </div>
 
       {/* Piece selection buttons for merged pieces */}
-      {hasTwoPieces && selectedCell && isMyTurn && (
-        <div className="mt-4 p-3 sm:p-4 bg-gray-100 rounded-lg border max-w-xs sm:max-w-sm md:max-w-md mx-auto w-full">
-          <div className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
-            Choose which piece(s) to move:
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant={selectedPieceMode === "first" ? "default" : "outline"}
-              onClick={() => handlePieceSelectionChange("first")}
-            >
-              <ChessPieceContent piece={selectedCell[0]} size="small" />
-              <span className="truncate">
-                Only {mapToName(selectedCell[0].pieceType)}
-              </span>
-            </Button>
+      {hasTwoPieces && selectedCell && isMyTurn ? (
+        <div className="mt-4 flex gap-2 space-between">
+          <Button
+            variant={selectedPieceMode === "first" ? "default" : "outline"}
+            onClick={() => handlePieceSelectionChange("first")}
+          >
+            <span className="truncate">Only</span>
+            <ChessPieceContent piece={selectedCell[0]} size="large" />
+          </Button>
 
-            <Button
-              variant={selectedPieceMode === "second" ? "default" : "outline"}
-              onClick={() => handlePieceSelectionChange("second")}
-            >
-              <ChessPieceContent piece={selectedCell[1]} size="small" />
-              <span className="truncate">
-                Only {mapToName(selectedCell[1].pieceType)}
-              </span>
-            </Button>
+          <Button
+            variant={selectedPieceMode === "second" ? "default" : "outline"}
+            onClick={() => handlePieceSelectionChange("second")}
+          >
+            <span className="truncate">Only</span>
+            <ChessPieceContent piece={selectedCell[1]} size="large" />
+          </Button>
 
-            <Button
-              variant={selectedPieceMode === "both" ? "default" : "outline"}
-              onClick={() => handlePieceSelectionChange("both")}
-            >
-              <div className="flex -space-x-1">
-                <ChessPieceContent piece={selectedCell[0]} size="small" />
-                <ChessPieceContent piece={selectedCell[1]} size="small" />
-              </div>
-              <span className="truncate">Both pieces</span>
-            </Button>
-          </div>
+          <Button
+            variant={selectedPieceMode === "both" ? "default" : "outline"}
+            onClick={() => handlePieceSelectionChange("both")}
+          >
+            <span className="truncate">Both </span>
+            <div className="flex -space-x-1">
+              <ChessPieceContent piece={selectedCell[0]} size="large" />
+              <ChessPieceContent piece={selectedCell[1]} size="large" />
+            </div>
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-4 opacity-0">
+          <Button />
         </div>
       )}
     </div>

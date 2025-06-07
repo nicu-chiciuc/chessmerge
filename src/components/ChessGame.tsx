@@ -320,8 +320,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
   }
 
   return (
-    <div className="flex flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-6">
-      <div className="xl:col-span-3">
+    <div className="mt-4 flex flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-6">
+      <div className="w-full max-w-3xl xl:col-span-3 mx-auto">
         <ChessBoard
           board={gameState.board}
           selectedSquare={selectedSquare}
