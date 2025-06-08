@@ -17,6 +17,7 @@ import {
   boardToString,
   createEmptyGameState,
   getAllMovesForCell,
+  stringToBoard,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,8 +72,12 @@ function GameControls({
     logName: "Array",
     serverState: boardToString(gameState.board),
     setServerState: async (arrayStringBoard) => {
-      const newGameState = FEMN.fromFEMNGame(arrayStringBoard);
-      await setPracticeGameState(newGameState);
+      const newGameState = stringToBoard(arrayStringBoard);
+
+      await setPracticeGameState({
+        board: newGameState,
+        options: gameState.options,
+      });
     },
   });
 
@@ -81,6 +86,7 @@ function GameControls({
     serverState: FEMN.toFEMNGame(gameState),
     setServerState: async (femn) => {
       const newGameState = FEMN.fromFEMNGame(femn);
+
       await setPracticeGameState(newGameState);
     },
   });
