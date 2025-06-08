@@ -510,8 +510,8 @@ function getSinglePieceMoves(
 
       // This is necessary because the board can be edited, and the status of castling rights is not updated
       const kingsAreOnStartPosition =
-        (color === "w" && row === 0 && col === 4) ||
-        (color === "b" && row === 7 && col === 4);
+        (color === "w" && row === 7 && col === 4) ||
+        (color === "b" && row === 0 && col === 4);
 
       if (
         options.castlingRights[color].short &&

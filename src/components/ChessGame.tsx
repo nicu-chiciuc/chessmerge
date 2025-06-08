@@ -182,8 +182,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
       await executeMove(needsPromotion);
 
       setNeedsPromotion(null);
+      setSelectedSquare(null);
     },
-    [executeMove, needsPromotion],
+    [executeMove, needsPromotion, setSelectedSquare],
   );
 
   // Parse board directly - expect new format only
