@@ -15,9 +15,7 @@ import {
   Piece,
   Position,
   boardToString,
-  formatPosition,
   getAllMovesForCell,
-  parsePosition,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
