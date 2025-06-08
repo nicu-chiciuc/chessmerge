@@ -66,14 +66,19 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
             Create New Game
           </Button>
 
-          <Button
-            onClick={() => void handleCreatePracticeGame()}
-            variant="secondary"
-            size="lg"
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
-          >
-            Practice Game
-          </Button>
+          {
+            // Only in dev
+            import.meta.env.DEV && (
+              <Button
+                onClick={() => void handleCreatePracticeGame()}
+                variant="secondary"
+                size="lg"
+                className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
+              >
+                Practice Game
+              </Button>
+            )
+          }
 
           <Button
             onClick={() => void navigate("/practice")}
@@ -81,7 +86,7 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
             size="lg"
             className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
           >
-            Local Practice{" "}
+            Local Practice
           </Button>
         </div>
       </div>
