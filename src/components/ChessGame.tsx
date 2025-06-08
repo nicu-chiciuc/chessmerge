@@ -15,15 +15,12 @@ import {
   Piece,
   Position,
   boardToString,
+  createEmptyGameState,
   getAllMovesForCell,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-
-interface ChessGameProps {
-  gameId: Id<"games">;
-}
 
 function useEditOnFocus({
   serverState,
@@ -64,19 +61,18 @@ function useEditOnFocus({
 }
 
 function GameControls({
-  gameId,
+  setPracticeGameState,
   gameState,
 }: {
-  gameId: Id<"games">;
+  setPracticeGameState: (gameState: GameState) => Promise<unknown>;
   gameState: GameState;
 }) {
-  const setPracticeGameState = useMutation(api.gameLogic.setPracticeGameState);
-
   const [arrayBoard, setLocaleArrayBoard, onBlurArrayBoard] = useEditOnFocus({
     logName: "Array",
     serverState: boardToString(gameState.board),
     setServerState: async (arrayStringBoard) => {
-      await setPracticeGameState({ gameId, strBoard: arrayStringBoard });
+      const newGameState = FEMN.fromFEMNGame(arrayStringBoard);
+      await setPracticeGameState(newGameState);
     },
   });
 
@@ -84,11 +80,8 @@ function GameControls({
     logName: "FEMN",
     serverState: FEMN.toFEMNGame(gameState),
     setServerState: async (femn) => {
-      const strBoard = FEMN.fromFEMNGame(femn);
-      await setPracticeGameState({
-        gameId,
-        strBoard: boardToString(strBoard.board),
-      });
+      const newGameState = FEMN.fromFEMNGame(femn);
+      await setPracticeGameState(newGameState);
     },
   });
 
@@ -140,11 +133,103 @@ function GameControls({
   );
 }
 
-export function ChessGame({ gameId }: ChessGameProps) {
+export function ChessGameWrapper({ gameId }: { gameId: Id<"games"> }) {
   const game = useQuery(api.gameLogic.getGame, { gameId });
-  const makeMove = useMutation(api.gameLogic.makeMove);
+  const makeMoveApi = useMutation(api.gameLogic.makeMove);
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
+  const makeMove = useCallback(
+    async (move: Move) => {
+      await makeMoveApi({ gameId, move: JSON.stringify(move) });
+    },
+    [gameId, makeMoveApi],
+  );
+
+  const gameState = useMemo(() => {
+    return game ? JSON.parse(game.gameState) : createEmptyGameState();
+  }, [game]);
+
+  const setPracticeGameStateApi = useMutation(
+    api.gameLogic.setPracticeGameState,
+  );
+
+  useEffect(() => {
+    if (game?.status === "completed") {
+      if (game.gameEndReason === "checkmate") {
+        toast.success(
+          `Checkmate! ${game.winner === "w" ? "White" : "Black"} wins!`,
+        );
+      } else if (game.gameEndReason === "stalemate") {
+        toast.info("Stalemate! Game is a draw.");
+      }
+    }
+  }, [game?.status, game?.gameEndReason, game?.winner]);
+
+  const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
+  const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
+
+  // For practice games, user can play both sides, otherwise enforce turn order
+  const isMyTurn =
+    game &&
+    (game.isPracticeGame
+      ? isWhitePlayer || isBlackPlayer
+      : (gameState.options.turn === "w" && isWhitePlayer) ||
+        (gameState.options.turn === "b" && isBlackPlayer));
+
+  const setPracticeGameState = useCallback(
+    async (gameState: GameState) => {
+      await setPracticeGameStateApi({
+        gameId,
+        strBoard: boardToString(gameState.board),
+      });
+    },
+    [gameId, setPracticeGameStateApi],
+  );
+
+  if (!game) return null;
+
+  return (
+    <ChessGame
+      gameStatus={game?.status}
+      gameState={gameState}
+      makeMove={makeMove}
+      isMyTurn={!!isMyTurn}
+      setPracticeGameState={setPracticeGameState}
+      isPracticeGame={!!game?.isPracticeGame}
+      isBlackPlayer={isBlackPlayer}
+      renderedGameInfo={
+        <div className="flex-1">
+          <GameInfo
+            game={game}
+            gameState={gameState}
+            isWhitePlayer={isWhitePlayer}
+            isBlackPlayer={isBlackPlayer}
+          />
+        </div>
+      }
+    />
+  );
+}
+
+export function ChessGame({
+  isPracticeGame,
+  gameStatus,
+  gameState,
+  makeMove,
+  isMyTurn,
+  isBlackPlayer,
+  setPracticeGameState,
+  renderedGameInfo,
+}: {
+  isPracticeGame: boolean;
+  isBlackPlayer: boolean;
+  gameStatus: "waiting" | "active" | "completed" | "abandoned" | undefined;
+  gameState: GameState;
+  makeMove: (move: Move) => Promise<unknown>;
+  isMyTurn: boolean;
+  setPracticeGameState: (gameState: GameState) => Promise<unknown>;
+  renderedGameInfo: React.ReactNode;
+}) {
   const [selectedSquare, raw_setSelectedSquare] = useState<Position | null>(
     null,
   );
@@ -165,12 +250,12 @@ export function ChessGame({ gameId }: ChessGameProps) {
   const executeMove = useCallback(
     async (move: Move) => {
       try {
-        await makeMove({ gameId, move: JSON.stringify(move) });
+        await makeMove(move);
       } catch {
         toast.error("Invalid move");
       }
     },
-    [gameId, makeMove],
+    [makeMove],
   );
 
   const setSelectedPromotion = useCallback(
@@ -186,40 +271,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     },
     [executeMove, needsPromotion, setSelectedSquare],
   );
-
-  // Parse board directly - expect new format only
-  const gameState: GameState = game
-    ? JSON.parse(game.gameState)
-    : Array(8)
-        .fill(null)
-        .map(() =>
-          Array(8)
-            .fill(null)
-            .map(() => []),
-        );
-
-  const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
-  const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
-
-  // For practice games, user can play both sides, otherwise enforce turn order
-  const isMyTurn =
-    game &&
-    (game.isPracticeGame
-      ? isWhitePlayer || isBlackPlayer
-      : (gameState.options.turn === "w" && isWhitePlayer) ||
-        (gameState.options.turn === "b" && isBlackPlayer));
-
-  useEffect(() => {
-    if (game?.status === "completed") {
-      if (game.gameEndReason === "checkmate") {
-        toast.success(
-          `Checkmate! ${game.winner === "w" ? "White" : "Black"} wins!`,
-        );
-      } else if (game.gameEndReason === "stalemate") {
-        toast.info("Stalemate! Game is a draw.");
-      }
-    }
-  }, [game?.status, game?.gameEndReason, game?.winner]);
 
   const validMoves = useMemo(() => {
     if (!selectedSquare) return [];
@@ -257,7 +308,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
 
   const handleSquareClick = async (row: number, col: number) => {
     setNeedsPromotion(null);
-    if (!game || !isMyTurn || game.status !== "active") return;
+    if (!isMyTurn || gameStatus !== "active") return;
 
     const clickedCell = gameState.board[row][col];
     const position = { row, col };
@@ -304,14 +355,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
   // Convert Move[] to Position[] for ChessBoard component compatibility
   const validPositions: Position[] = validMoves.map((move) => move.to);
 
-  if (!game) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="mt-4 flex flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-6">
       <div className="w-full max-w-3xl xl:col-span-3 mx-auto">
@@ -323,7 +366,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
           // unmergePositions={unmergePositions}
           onSquareClick={handleSquareClick}
           onPieceSelectionChange={handlePieceSelectionChange}
-          flipped={game.isPracticeGame ? false : isBlackPlayer}
+          flipped={isPracticeGame ? false : isBlackPlayer}
           isMyTurn={!!isMyTurn}
           currentTurn={gameState.options.turn}
           needsPromotion={needsPromotion ? needsPromotion.to : null}
@@ -332,20 +375,17 @@ export function ChessGame({ gameId }: ChessGameProps) {
       </div>
 
       <div className="flex flex-col sm:flex-row xl:flex-col gap-4 xl:gap-6">
-        {game.isPracticeGame && (
+        {isPracticeGame && (
           <div className="flex-1">
-            <GameControls gameState={gameState} gameId={gameId} />
+            <GameControls
+              gameState={gameState}
+              setPracticeGameState={setPracticeGameState}
+            />
           </div>
         )}
 
-        <div className="flex-1">
-          <GameInfo
-            game={game}
-            gameState={gameState}
-            isWhitePlayer={isWhitePlayer}
-            isBlackPlayer={isBlackPlayer}
-          />
-        </div>
+        {renderedGameInfo}
+
         {/* <div className="flex-1">
           <MoveHistory moves={moveHistory} />
         </div> */}

@@ -86,7 +86,7 @@ export type GameState = {
   options: BoardOptions;
 };
 
-export function createEmptyBoard(): GameState {
+export function createEmptyGameState(): GameState {
   return {
     board: Array(8)
       .fill(null)
@@ -115,7 +115,7 @@ export function createEmptyBoard(): GameState {
 }
 
 // Initialize standard chess board
-export function createInitialBoard(): GameState {
+export function createInitialGameState(): GameState {
   const board: Board = Array(8)
     .fill(null)
     .map(() =>
@@ -629,6 +629,7 @@ export function isInCheck(gameState: GameState, color: PieceColor): boolean {
 
 export function applyMove(gameState: GameState, move: Move): GameState {
   const newBoard = gameState.board.map((row) => row.map((cell) => [...cell]));
+  const nextColor = otherColor(gameState.options.turn);
 
   const sourceCell = newBoard[move.from.row][move.from.col];
   const targetCell = newBoard[move.to.row][move.to.col];
@@ -655,6 +656,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         board: newBoard,
         options: {
           ...gameState.options,
+          turn: nextColor,
           castlingRights: {
             ...gameState.options.castlingRights,
             [sourceCell[0].color]: {
@@ -679,6 +681,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         board: newBoard,
         options: {
           ...gameState.options,
+          turn: nextColor,
           castlingRights: {
             ...gameState.options.castlingRights,
             [sourceCell[0].color]: {
@@ -741,6 +744,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         board: newBoard,
         options: {
           ...gameState.options,
+          turn: nextColor,
           halfMoveClock: gameState.options.halfMoveClock + 1,
         },
       };
@@ -753,6 +757,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         board: newBoard,
         options: {
           ...gameState.options,
+          turn: nextColor,
           halfMoveClock: 0,
         },
       };
@@ -775,6 +780,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       board: newBoard,
       options: {
         ...gameState.options,
+        turn: nextColor,
         halfMoveClock: gameState.options.halfMoveClock + 1,
       },
     };
@@ -813,6 +819,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         board: newBoard,
         options: {
           ...gameState.options,
+          turn: nextColor,
           halfMoveClock: gameState.options.halfMoveClock + 1,
         },
       };
@@ -825,6 +832,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         board: newBoard,
         options: {
           ...gameState.options,
+          turn: nextColor,
           halfMoveClock: 0,
         },
       };
@@ -1109,7 +1117,7 @@ export function stringToBoard(string: string): Board {
     return cellRow.concat(Array(8).fill([])).slice(0, 8);
   });
 
-  const { board: emptyBoard } = createEmptyBoard();
+  const { board: emptyBoard } = createEmptyGameState();
 
   const exactBoard = board.concat(emptyBoard).slice(0, 8);
 
@@ -1135,6 +1143,8 @@ export function mapToName(piece: PieceType) {
       return "Unknown";
   }
 }
+
+const FEMN_MERGE = ":";
 
 export const FEMN = {
   // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
@@ -1166,7 +1176,7 @@ export const FEMN = {
           }
 
           if (cell.length === 2) {
-            let piece = cell[0].pieceType + "+" + cell[1].pieceType;
+            let piece = cell[0].pieceType + FEMN_MERGE + cell[1].pieceType;
             if (cell[0].color === "w") {
               piece = piece.toUpperCase();
             }
@@ -1193,7 +1203,7 @@ export const FEMN = {
 
       //
       for (let i = 0; i < cells.length; i++) {
-        if (cells[i] === "+") {
+        if (cells[i] === FEMN_MERGE) {
           cells[i] = cells[i - 1] + cells[i + 1];
           cells[i - 1] = "";
           cells[i + 1] = "";
@@ -1236,7 +1246,7 @@ export const FEMN = {
       return filtered.concat(Array(8).fill([])).slice(0, 8);
     });
 
-    const { board: emptyBoard } = createEmptyBoard();
+    const { board: emptyBoard } = createEmptyGameState();
 
     const exactBoard = board.concat(emptyBoard).slice(0, 8);
 

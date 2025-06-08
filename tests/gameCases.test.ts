@@ -6,7 +6,7 @@ import {
   applyMove,
   boardToString,
   cleanStringBoard,
-  createEmptyBoard,
+  createEmptyGameState,
   GameState,
   FEMN,
   equalPositions,
@@ -14,7 +14,7 @@ import {
 import { describe, it, expect } from "vitest";
 
 describe("Game Cases", () => {
-  const standardOptions: BoardOptions = createEmptyBoard().options;
+  const standardOptions: BoardOptions = createEmptyGameState().options;
 
   it("should be able to move pawn e2 to e4", () => {
     const board = stringToBoard(`

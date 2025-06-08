@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  createInitialBoard,
+  createInitialGameState,
   isInsideBoard,
   canMerge,
   getPieceMoves,
@@ -12,7 +12,7 @@ import {
   type PieceType,
   boardToString,
   GameState,
-  createEmptyBoard,
+  createEmptyGameState,
 } from "../lib/chessmerge";
 
 describe("Game Logic Tests", () => {
@@ -71,7 +71,7 @@ describe("Game Logic Tests", () => {
 
   describe("createInitialBoard", () => {
     it("should create a standard 8x8 chess board", () => {
-      const { board } = createInitialBoard();
+      const { board } = createInitialGameState();
 
       expect(board).toHaveLength(8);
       expect(board[0]).toHaveLength(8);
@@ -85,7 +85,7 @@ describe("Game Logic Tests", () => {
     });
 
     it("should place white pieces on rows 6 and 7", () => {
-      const { board } = createInitialBoard();
+      const { board } = createInitialGameState();
 
       // Check white pawns on row 6
       for (let col = 0; col < 8; col++) {
@@ -117,7 +117,7 @@ describe("Game Logic Tests", () => {
     });
 
     it("should place black pieces on rows 0 and 1", () => {
-      const { board } = createInitialBoard();
+      const { board } = createInitialGameState();
 
       // Check black back row on row 0
       const expectedBackRow: PieceType[] = [
@@ -149,7 +149,7 @@ describe("Game Logic Tests", () => {
     });
 
     it("should have empty cells in the middle rows", () => {
-      const { board } = createInitialBoard();
+      const { board } = createInitialGameState();
 
       for (let row = 2; row < 6; row++) {
         for (let col = 0; col < 8; col++) {
@@ -198,7 +198,7 @@ describe("Game Logic Tests", () => {
     let gameState: GameState;
 
     beforeEach(() => {
-      gameState = createInitialBoard();
+      gameState = createInitialGameState();
     });
 
     describe("Pawn moves", () => {
@@ -234,7 +234,7 @@ describe("Game Logic Tests", () => {
 
       it("should not allow pawn to move forward if path is blocked", () => {
         // Create custom board with a piece blocking the pawn
-        const customBoard = createInitialBoard();
+        const customBoard = createInitialGameState();
         customBoard.board[5][4] = [{ color: "b", pieceType: "p" }];
 
         const piece: Piece = { color: "w", pieceType: "p" };
@@ -248,7 +248,7 @@ describe("Game Logic Tests", () => {
 
     describe("Rook moves", () => {
       it("should allow rook to move horizontally and vertically", () => {
-        const emptyState = createEmptyBoard();
+        const emptyState = createEmptyGameState();
         emptyState.board[4][4] = [{ color: "w", pieceType: "r" }];
 
         const piece: Piece = { color: "w", pieceType: "r" };
@@ -260,7 +260,7 @@ describe("Game Logic Tests", () => {
       });
 
       it("should be blocked by pieces in its path", () => {
-        const emptyState = createEmptyBoard();
+        const emptyState = createEmptyGameState();
         emptyState.board[4][4] = [{ color: "w", pieceType: "r" }];
         emptyState.board[4][6] = [{ color: "b", pieceType: "p" }]; // Block path
 
@@ -284,7 +284,7 @@ describe("Game Logic Tests", () => {
 
     describe("Knight moves", () => {
       it("should move in L-shapes", () => {
-        const emptyState = createEmptyBoard();
+        const emptyState = createEmptyGameState();
         emptyState.board[4][4] = [{ color: "w", pieceType: "n" }];
 
         const piece: Piece = { color: "w", pieceType: "n" };
@@ -318,7 +318,7 @@ describe("Game Logic Tests", () => {
 
     describe("King moves", () => {
       it("should move one square in any direction", () => {
-        const emptyState = createEmptyBoard();
+        const emptyState = createEmptyGameState();
         emptyState.board[4][4] = [{ color: "w", pieceType: "k" }];
 
         const piece: Piece = { color: "w", pieceType: "k" };
@@ -329,7 +329,7 @@ describe("Game Logic Tests", () => {
       });
 
       it.skip("should not be able to merge with other pieces", () => {
-        const emptyState = createEmptyBoard();
+        const emptyState = createEmptyGameState();
         emptyState.board[4][4] = [{ color: "w", pieceType: "k" }];
         emptyState.board[4][5] = [{ color: "w", pieceType: "p" }]; // Friendly piece
 
@@ -345,13 +345,13 @@ describe("Game Logic Tests", () => {
 
   describe("isInCheck", () => {
     it("should return false for initial board position", () => {
-      const gameState = createInitialBoard();
+      const gameState = createInitialGameState();
       expect(isInCheck(gameState, "w")).toBe(false);
       expect(isInCheck(gameState, "b")).toBe(false);
     });
 
     it("should detect check when king is under attack", () => {
-      const gameState = createInitialBoard();
+      const gameState = createInitialGameState();
       gameState.board = Array(8)
         .fill(null)
         .map(() =>
@@ -369,7 +369,7 @@ describe("Game Logic Tests", () => {
     });
 
     it("should return false when king is not under attack", () => {
-      const gameState = createInitialBoard();
+      const gameState = createInitialGameState();
       gameState.board = Array(8)
         .fill(null)
         .map(() =>
@@ -389,7 +389,7 @@ describe("Game Logic Tests", () => {
 
   describe("boardToString", () => {
     it("should convert board to string", () => {
-      const { board } = createInitialBoard();
+      const { board } = createInitialGameState();
       const string = boardToString(board);
 
       expect(string).toBe(
@@ -409,13 +409,13 @@ describe("Game Logic Tests", () => {
 
   describe("getAllMovesForCell", () => {
     it("should return empty array for empty cell", () => {
-      const gameState = createInitialBoard();
+      const gameState = createInitialGameState();
       const moves = getAllMovesForCell({ row: 3, col: 3 }, gameState);
       expect(moves).toHaveLength(0);
     });
 
     it("should return moves for cell with one piece", () => {
-      const gameState = createInitialBoard();
+      const gameState = createInitialGameState();
       const moves = getAllMovesForCell({ row: 6, col: 4 }, gameState); // White pawn
       expect(moves.length).toBeGreaterThan(0);
     });

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
-  createInitialBoard,
+  createInitialGameState,
   Move,
   isInCheck,
   applyMove,
@@ -19,7 +19,7 @@ export const createGame = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const board = createInitialBoard();
+    const board = createInitialGameState();
 
     return await ctx.db.insert("games", {
       whitePlayerId: userId,
@@ -37,7 +37,7 @@ export const createPracticeGame = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const board = createInitialBoard();
+    const board = createInitialGameState();
 
     return await ctx.db.insert("games", {
       whitePlayerId: userId,

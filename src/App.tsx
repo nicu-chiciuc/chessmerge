@@ -11,7 +11,9 @@ import { Button } from "./components/ui/button";
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const isGameRoute = location.pathname.startsWith("/game/");
+  const isGameRoute =
+    location.pathname.startsWith("/game") ||
+    location.pathname.startsWith("/practice");
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

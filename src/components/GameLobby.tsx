@@ -4,6 +4,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface GameLobbyProps {
   onJoinGame: (gameId: Id<"games">) => void;
@@ -15,6 +16,7 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
   const createGame = useMutation(api.gameLogic.createGame);
   const createPracticeGame = useMutation(api.gameLogic.createPracticeGame);
   const joinGame = useMutation(api.gameLogic.joinGame);
+  const navigate = useNavigate();
 
   const handleCreateGame = async () => {
     try {
@@ -63,6 +65,7 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
           >
             Create New Game
           </Button>
+
           <Button
             onClick={() => void handleCreatePracticeGame()}
             variant="secondary"
@@ -70,6 +73,15 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
             className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
           >
             Practice Game
+          </Button>
+
+          <Button
+            onClick={() => void navigate("/practice")}
+            variant="secondary"
+            size="lg"
+            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
+          >
+            Local Practice{" "}
           </Button>
         </div>
       </div>
