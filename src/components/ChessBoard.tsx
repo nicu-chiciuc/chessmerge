@@ -25,6 +25,8 @@ interface ChessBoardProps {
   flipped?: boolean;
   isMyTurn?: boolean;
   currentTurn?: "w" | "b";
+  needsPromotion: Position | null;
+  setSelectedPromotion: (piece: Piece) => void;
 }
 
 const getPieceSvg = (piece: Piece) => {
@@ -58,6 +60,8 @@ export function ChessBoard({
   flipped = false,
   isMyTurn = false,
   currentTurn = "w",
+  needsPromotion,
+  setSelectedPromotion,
 }: ChessBoardProps) {
   const [draggedPiece, setDraggedPiece] = useState<{
     piece: Piece;
@@ -260,9 +264,43 @@ export function ChessBoard({
     );
   };
 
+  const promotionPieces = [
+    { color: "w", pieceType: "q" },
+    { color: "w", pieceType: "r" },
+    { color: "w", pieceType: "b" },
+    { color: "w", pieceType: "n" },
+  ] as const;
+
   return (
-    <div className="flex flex-col items-center justify-center w-full">
-      <div className="chessBoard grid grid-cols-8 border-2 border-gray-800 w-full">
+    <div className="flex flex-col items-center justify-center w-full ">
+      <div className="chessBoard grid grid-cols-8 border-gray-800 w-full relative">
+        {needsPromotion && (
+          // Display a rectangle with width of a square and height of 4 pieces (Q, R, B, N)
+          // inside each square, display a possible promotion piece
+
+          // width should be just one square
+          <div
+            // pointer cursor
+            className="absolute inset-0 z-100 flex flex-col bg-blue-400 w-1/8 h-4/8 rounded-2xl overflow-hidden cursor-pointer"
+            style={{
+              marginLeft: `calc(100% / 8 * ${
+                flipped ? 7 - needsPromotion.col : needsPromotion.col
+              })`,
+            }}
+          >
+            {promotionPieces.map((piece, index) => (
+              <div
+                key={index}
+                className="w-full h-1/4 hover:bg-blue-300"
+                onClick={() => {
+                  setSelectedPromotion(piece);
+                }}
+              >
+                <ChessPieceCell pieces={[piece]} canDrag={false} />
+              </div>
+            ))}
+          </div>
+        )}
         {Array.from({ length: 8 }, (_, row) =>
           Array.from({ length: 8 }, (_, col) => {
             const actualRow = flipped ? 7 - row : row;

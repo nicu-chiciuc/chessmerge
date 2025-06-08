@@ -12,9 +12,12 @@ import {
   GameState,
   MergedPieceTypes,
   Move,
+  Piece,
   Position,
   boardToString,
+  formatPosition,
   getAllMovesForCell,
+  parsePosition,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,12 +154,38 @@ export function ChessGame({ gameId }: ChessGameProps) {
     "both" | "first" | "second"
   >("both");
 
+  const [needsPromotion, setNeedsPromotion] = useState<Move | null>(null);
+
   const setSelectedSquare = useCallback(
     (square: Position | null) => {
       raw_setSelectedSquare(square);
       setSelectedPieceMode("both");
     },
     [raw_setSelectedSquare],
+  );
+
+  const executeMove = useCallback(
+    async (move: Move) => {
+      try {
+        await makeMove({ gameId, move: JSON.stringify(move) });
+      } catch {
+        toast.error("Invalid move");
+      }
+    },
+    [gameId, makeMove],
+  );
+
+  const setSelectedPromotion = useCallback(
+    async (piece: Piece) => {
+      if (!needsPromotion) return;
+
+      needsPromotion.promotion = piece.pieceType;
+
+      await executeMove(needsPromotion);
+
+      setNeedsPromotion(null);
+    },
+    [executeMove, needsPromotion],
   );
 
   // Parse board directly - expect new format only
@@ -228,6 +257,7 @@ export function ChessGame({ gameId }: ChessGameProps) {
   };
 
   const handleSquareClick = async (row: number, col: number) => {
+    setNeedsPromotion(null);
     if (!game || !isMyTurn || game.status !== "active") return;
 
     const clickedCell = gameState.board[row][col];
@@ -248,8 +278,9 @@ export function ChessGame({ gameId }: ChessGameProps) {
         }
 
         if (targetMove.isPromotion) {
-          // TODO: Implement promotion; For now just queen
-          targetMove.promotion = "q";
+          setNeedsPromotion(targetMove);
+
+          return;
         }
 
         await executeMove(targetMove);
@@ -269,18 +300,6 @@ export function ChessGame({ gameId }: ChessGameProps) {
     }
 
     setSelectedSquare(null);
-  };
-
-  const executeMove = async (move: Move) => {
-    try {
-      await makeMove({ gameId, move: JSON.stringify(move) });
-
-      if (move.capturedPieces && move.capturedPieces.length > 0) {
-        toast.success("Piece captured!");
-      }
-    } catch {
-      toast.error("Invalid move");
-    }
   };
 
   // Convert Move[] to Position[] for ChessBoard component compatibility
@@ -308,6 +327,8 @@ export function ChessGame({ gameId }: ChessGameProps) {
           flipped={game.isPracticeGame ? false : isBlackPlayer}
           isMyTurn={!!isMyTurn}
           currentTurn={gameState.options.turn}
+          needsPromotion={needsPromotion ? needsPromotion.to : null}
+          setSelectedPromotion={setSelectedPromotion}
         />
       </div>
 
