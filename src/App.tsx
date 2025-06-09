@@ -1,12 +1,22 @@
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { SignInForm } from "./SignInForm";
-import { SignOutButton } from "./SignOutButton";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { Toaster } from "sonner";
 import { AppRoutes } from "./routes";
 import { useLocation, useNavigate } from "react-router-dom";
-import { EmailSubscribe } from "./components/EmailSubscribe";
 import { Button } from "./components/ui/button";
+
+function AuthButton() {
+  const { isAuthenticated } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const navigate = useNavigate();
+
+  if (isAuthenticated) {
+    return <Button onClick={() => void signOut()}>Sign out</Button>;
+  }
+
+  return <Button onClick={() => void navigate("/login")}>Sign in</Button>;
+}
 
 export default function App() {
   const location = useLocation();
@@ -26,7 +36,7 @@ export default function App() {
             </Button>
           )}
         </div>
-        <SignOutButton />
+        <AuthButton />
       </header>
       <main>
         <Content />
@@ -47,29 +57,11 @@ function Content() {
     );
   }
 
+  const isAuthenticated = loggedInUser !== null;
+
   return (
     <div className="max-w-6xl mx-auto">
-      <Authenticated>
-        <AppRoutes />
-      </Authenticated>
-
-      <Unauthenticated>
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-8">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold text-primary mb-4">ChessMerge</h1>
-            <p className="text-xl mb-2">
-              Chess with a twist - merge and unmerge pieces!
-            </p>
-            <p className="text-gray-600">
-              Sign in to start playing this innovative chess variant
-            </p>
-          </div>
-          <SignInForm />
-          <div className="w-full max-w-md">
-            <EmailSubscribe />
-          </div>
-        </div>
-      </Unauthenticated>
+      <AppRoutes isAuthenticated={isAuthenticated} />
     </div>
   );
 }

@@ -8,9 +8,10 @@ import { useNavigate } from "react-router-dom";
 
 interface GameLobbyProps {
   onJoinGame: (gameId: Id<"games">) => void;
+  isAuthenticated?: boolean;
 }
 
-export function GameLobby({ onJoinGame }: GameLobbyProps) {
+export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProps) {
   const myGames = useQuery(api.gameLogic.listGames) || [];
   const waitingGames = useQuery(api.gameLogic.getWaitingGames) || [];
   const createGame = useMutation(api.gameLogic.createGame);
@@ -19,31 +20,46 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
   const navigate = useNavigate();
 
   const handleCreateGame = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to create games");
+      void navigate("/login");
+      return;
+    }
     try {
       const gameId = await createGame();
       onJoinGame(gameId);
       toast.success("Game created! Waiting for opponent...");
-    } catch (error) {
+    } catch {
       toast.error("Failed to create game");
     }
   };
 
   const handleCreatePracticeGame = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to create practice games");
+      void navigate("/login");
+      return;
+    }
     try {
       const gameId = await createPracticeGame();
       onJoinGame(gameId);
       toast.success("Practice game started! You can play both sides.");
-    } catch (error) {
+    } catch {
       toast.error("Failed to create practice game");
     }
   };
 
   const handleJoinGame = async (gameId: Id<"games">) => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to join games");
+      void navigate("/login");
+      return;
+    }
     try {
       await joinGame({ gameId });
       onJoinGame(gameId);
       toast.success("Joined game!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to join game");
     }
   };
@@ -53,15 +69,23 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary mb-4">Game Lobby</h1>
         <p className="text-gray-600 mb-6">
-          Welcome to ChessMerge! Create a new game, practice, or join an
-          existing one.
+          Welcome to ChessMerge! {isAuthenticated ? "Create a new game, practice, or join an existing one." : "Try local practice or sign in to play online games."}
         </p>
+
+        {!isAuthenticated && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
+            <p className="text-blue-800 text-sm">
+              You're browsing as a guest. Sign in to create and join online games!
+            </p>
+          </div>
+        )}
 
         <div className="flex gap-4 justify-center flex-wrap">
           <Button
             onClick={() => void handleCreateGame()}
             size="lg"
             className="px-6 py-3"
+            disabled={!isAuthenticated}
           >
             Create New Game
           </Button>
@@ -74,6 +98,7 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                 variant="secondary"
                 size="lg"
                 className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
+                disabled={!isAuthenticated}
               >
                 Practice Game
               </Button>
@@ -95,7 +120,17 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
         {/* My Games */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h2 className="text-xl font-semibold mb-4">My Games</h2>
-          {myGames.length === 0 ? (
+          {!isAuthenticated ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500 mb-4">Sign in to see your games</p>
+              <Button
+                variant="outline"
+                onClick={() => void navigate("/login")}
+              >
+                Sign In
+              </Button>
+            </div>
+          ) : myGames.length === 0 ? (
             <p className="text-gray-500">
               No games yet. Create one to get started!
             </p>
@@ -164,17 +199,19 @@ export function GameLobby({ onJoinGame }: GameLobbyProps) {
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                 >
                   <div>
-                    <div className="font-medium">Waiting for opponent</div>
+                    <div className="font-medium">
+                      {isAuthenticated ? "Waiting for opponent" : "Game available (spectate only)"}
+                    </div>
                     <div className="text-sm text-gray-500">
                       Created{" "}
                       {new Date(game._creationTime).toLocaleDateString()}
                     </div>
                   </div>
                   <Button
-                    onClick={() => void handleJoinGame(game._id)}
+                    onClick={() => void (isAuthenticated ? handleJoinGame(game._id) : onJoinGame(game._id))}
                     size="sm"
                   >
-                    Join
+                    {isAuthenticated ? "Join" : "Spectate"}
                   </Button>
                 </div>
               ))}

@@ -33,20 +33,6 @@ const applicationTables = {
     .index("by_player", ["whitePlayerId"])
     .index("by_black_player", ["blackPlayerId"]),
 
-  gameSpectators: defineTable({
-    gameId: v.id("games"),
-    userId: v.id("users"),
-  })
-    .index("by_game", ["gameId"])
-    .index("by_user", ["userId"]),
-
-  savedGames: defineTable({
-    userId: v.id("users"),
-    gameId: v.id("games"),
-    name: v.string(),
-    description: v.optional(v.string()),
-  }).index("by_user", ["userId"]),
-
   emailSubscribers: defineTable({
     email: v.string(),
     subscribedAt: v.number(),

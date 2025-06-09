@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -105,26 +104,6 @@ export function SignInForm() {
               {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
             </Button>
           </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                or
-              </span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full"
-            size="lg"
-            onClick={() => void signIn("anonymous")}
-          >
-            Sign in anonymously
-          </Button>
         </CardContent>
       </Card>
     </div>

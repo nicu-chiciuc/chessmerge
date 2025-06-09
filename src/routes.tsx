@@ -5,6 +5,7 @@ import { UnsubscribePage } from "./components/UnsubscribePage";
 import { useParams, useNavigate } from "react-router-dom";
 import { Id } from "../convex/_generated/dataModel";
 import { LocalPracticePage } from "./components/LocalPracticePage";
+import { LoginPage } from "./pages/LoginPage";
 
 // Helper function to validate if a string is a valid Convex ID
 function isValidConvexId(id: string): id is Id<"games"> {
@@ -27,22 +28,23 @@ function GameRoute() {
   return <ChessGameWrapper gameId={gameId} />;
 }
 
-function LobbyRoute() {
+function LobbyRoute({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const navigate = useNavigate();
 
   const handleJoinGame = (gameId: Id<"games">) => {
     void navigate(`/game/${gameId}`);
   };
 
-  return <GameLobby onJoinGame={handleJoinGame} />;
+  return <GameLobby onJoinGame={handleJoinGame} isAuthenticated={isAuthenticated} />;
 }
 
-export function AppRoutes() {
+export function AppRoutes({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   return (
     <Routes>
-      <Route path="/" element={<LobbyRoute />} />
+      <Route path="/" element={<LobbyRoute isAuthenticated={isAuthenticated} />} />
       <Route path="/game/:gameId" element={<GameRoute />} />
       <Route path="/practice" element={<LocalPracticePage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/unsubscribe" element={<UnsubscribePage />} />
     </Routes>
   );
