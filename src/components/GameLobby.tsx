@@ -11,7 +11,10 @@ interface GameLobbyProps {
   isAuthenticated?: boolean;
 }
 
-export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProps) {
+export function GameLobby({
+  onJoinGame,
+  isAuthenticated = false,
+}: GameLobbyProps) {
   const myGames = useQuery(api.gameLogic.listGames) || [];
   const waitingGames = useQuery(api.gameLogic.getWaitingGames) || [];
   const createGame = useMutation(api.gameLogic.createGame);
@@ -69,13 +72,17 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary mb-4">Game Lobby</h1>
         <p className="text-gray-600 mb-6">
-          Welcome to ChessMerge! {isAuthenticated ? "Create a new game, practice, or join an existing one." : "Try local practice or sign in to play online games."}
+          Welcome to ChessMerge!{" "}
+          {isAuthenticated
+            ? "Create a new game, practice, or join an existing one."
+            : "Try local practice or sign in to play online games."}
         </p>
 
         {!isAuthenticated && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
             <p className="text-blue-800 text-sm">
-              You're browsing as a guest. Sign in to create and join online games!
+              You're browsing as a guest. Sign in to create and join online
+              games!
             </p>
           </div>
         )}
@@ -123,10 +130,7 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
           {!isAuthenticated ? (
             <div className="text-center py-8">
               <p className="text-gray-500 mb-4">Sign in to see your games</p>
-              <Button
-                variant="outline"
-                onClick={() => void navigate("/login")}
-              >
+              <Button variant="outline" onClick={() => void navigate("/login")}>
                 Sign In
               </Button>
             </div>
@@ -200,7 +204,9 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
                 >
                   <div>
                     <div className="font-medium">
-                      {isAuthenticated ? "Waiting for opponent" : "Game available (spectate only)"}
+                      {isAuthenticated
+                        ? "Waiting for opponent"
+                        : "Game available (spectate only)"}
                     </div>
                     <div className="text-sm text-gray-500">
                       Created{" "}
@@ -208,7 +214,11 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
                     </div>
                   </div>
                   <Button
-                    onClick={() => void (isAuthenticated ? handleJoinGame(game._id) : onJoinGame(game._id))}
+                    onClick={() =>
+                      void (isAuthenticated
+                        ? handleJoinGame(game._id)
+                        : onJoinGame(game._id))
+                    }
                     size="sm"
                   >
                     {isAuthenticated ? "Join" : "Spectate"}
@@ -240,8 +250,8 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
                 careful, this replaces both pieces.
               </li>
               <li>
-                * (🚫 Not implemented) You can choose what to promote to (except
-                pawn and rook, just like in chess)
+                * You can choose what to promote to (except pawn and rook, just
+                like in chess)
               </li>
 
               <li>* If the king and rook didn't move they can castle. </li>
@@ -252,9 +262,8 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
               </li>
 
               <li>
-                * (🚫 Not implemented) When castling and the rook is merged with
-                some other piece, you can choose whether you castle with just
-                the rook (by unmerging it), or with the merged piece.
+                * When castling and the rook is merged with some other piece,
+                The whole merged piece must castle.
               </li>
 
               <li className="text-red-500">
@@ -262,24 +271,21 @@ export function GameLobby({ onJoinGame, isAuthenticated = false }: GameLobbyProp
               </li>
 
               <li>
-                * (🚫 Not implemented) En passant can be done both by a pawn or
-                a merged piece that contains a pawn.
-              </li>
-              <li>
                 * (❓ Not sure) Since pawn can get to their back rank (e.g.
                 white pawn to row 1), it's not clear if they still can do the
                 double move.
               </li>
 
               <li>
-                * (🚫 Not implemented) If pawn moves 2 squares forward and
-                merges into another piece, the en passante will capture only the
-                pawn, and not the the other piece.
+                * (❓ Not sure) If pawn moves 2 squares forward and merges into
+                another piece, the en passante will capture only the pawn, and
+                not the the other piece.
               </li>
 
               <li>
-                * (❓ Not sure) `4k3/8/8/8/5bp1/8/5P+R2/4K3` then `P+R` to `f4`.
-                Can `P4` take enpassant? What if instead of `P+R` it was `P+B`?
+                * (❓ Not sure) If a rook merged with a pawn moves 2 squares
+                from the pawn's starting position, can it still be taken en
+                passante? What if it's a bishope merged with a pawn?{" "}
               </li>
             </ul>
           </div>
