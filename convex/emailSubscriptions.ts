@@ -156,7 +156,7 @@ export const sendWelcomeEmail = internalAction({
         : `[UNSUBSCRIBE_URL_NOT_CONFIGURED - Set FRONTEND_URL environment variable]`;
 
       const result = await resend.emails.send({
-        from: "ChessMerge <contact@chessmerge.com>", // Use Resend's test domain if you haven't set up your own
+        from: "ChessMerge <contact@tsx.md>", // Use Resend's test domain if you haven't set up your own
         to: args.email,
         subject: "Welcome to ChessMerge Updates!",
         html: `
@@ -188,7 +188,7 @@ export const sendWelcomeEmail = internalAction({
 
       // Send email to me when new user subscribes
       await resend.emails.send({
-        from: "ChessMerge <contact@chessmerge.com>",
+        from: "ChessMerge <contact@tsx.md>",
         to: "nicuchiciuc@gmail.com",
         subject: "New user subscribed to ChessMerge",
         html: `New user subscribed: ${args.email}`,

@@ -61,7 +61,7 @@ export const sendAccountCreationEmail = internalAction({
 
       // Send notification to admin about new account
       await resend.emails.send({
-        from: "ChessMerge <contact@chessmerge.com>",
+        from: "ChessMerge <contact@tsx.md>",
         to: "nicuchiciuc@gmail.com",
         subject: "New account created on ChessMerge",
         html: `New account created: ${args.email}`,
