@@ -13,6 +13,7 @@ export default tseslint.config(
       "postcss.config.js",
       "tailwind.config.js",
       "vite.config.ts",
+      "coverage",
     ],
   },
   {
@@ -28,7 +29,11 @@ export default tseslint.config(
         ...globals.node,
       },
       parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
+        project: [
+          "./tsconfig.node.json",
+          "./tsconfig.app.json",
+          "./convex/tsconfig.json",
+        ],
       },
     },
     plugins: {
