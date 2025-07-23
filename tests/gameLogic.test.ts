@@ -212,14 +212,14 @@ describe("Game Logic Tests", () => {
         expect(forwardMoves).toHaveLength(1);
       });
 
-      it("should allow white pawn to move forward two squares from starting position", () => {
+      it("should NOT allow white pawn to move forward two squares from starting position", () => {
         const piece: Piece = { color: "w", pieceType: "p" };
         const moves = getPieceMoves(piece, { row: 6, col: 4 }, gameState);
 
         const doubleMoves = moves.filter(
           (move) => move.to.row === 4 && move.to.col === 4,
         );
-        expect(doubleMoves).toHaveLength(1);
+        expect(doubleMoves).toHaveLength(0);
       });
 
       it("should allow black pawn to move forward one square", () => {

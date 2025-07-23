@@ -16,7 +16,7 @@ import { describe, it, expect } from "vitest";
 describe("Game Cases", () => {
   const standardOptions: BoardOptions = createEmptyGameState().options;
 
-  it("should be able to move pawn e2 to e4", () => {
+  it("should NOT be able to move pawn e2 to e4", () => {
     const board = stringToBoard(`
         r  n  b  q  k  b  n  r 
         p  p  p  p  p  p  p  p 
@@ -33,7 +33,7 @@ describe("Game Cases", () => {
       options: standardOptions,
     });
 
-    expect(moves).toHaveLength(2);
+    expect(moves).toHaveLength(1);
   });
 
   it("black pawn can promote to queen", () => {
@@ -125,44 +125,5 @@ describe("Game Cases", () => {
     const moves = getAllMovesForCell(parsePosition("f2"), gameState);
 
     expect(moves).toHaveLength(2);
-  });
-
-  it("should NOT support taking en passant", () => {
-    const board = stringToBoard(`
-      .  .  .  .  k  .  .  . 
-      .  .  .  .  .  .  .  . 
-      .  .  .  .  .  .  .  . 
-      .  .  .  .  .  .  .  . 
-      .  .  .  .  .  .  p  . 
-      .  .  .  .  .  .  .  . 
-      .  .  .  .  .  P  .  . 
-      .  .  .  .  K  .  .  .  
-    `);
-
-    const gameState: GameState = {
-      board,
-      options: FEMN.fromFEMNWithoutBoard("w - - 0 1"),
-    };
-
-    // Move white pawn 2 squares forward to f4
-    const whiteMove = getAllMovesForCell(parsePosition("f2"), gameState).find(
-      (move) => equalPositions(move.to, parsePosition("f4")),
-    );
-    if (!whiteMove) {
-      throw new Error("White pawn should be able to move to f4");
-    }
-
-    const newGameState = applyMove(gameState, whiteMove);
-
-    // enPassantTarget is always null
-    expect(newGameState.options.enPassantTarget).toBe(null);
-
-    // Now black pawn should be able to take en passant
-    const blackMove = getAllMovesForCell(
-      parsePosition("e7"),
-      newGameState,
-    ).find((move) => equalPositions(move.to, parsePosition("f3")));
-
-    expect(blackMove).toBe(undefined);
   });
 });
