@@ -357,6 +357,10 @@ interface ChessPieceCellProps {
   selectedPieceMode?: "both" | "first" | "second";
 }
 
+// Percentage of each piece that's visible (0-100)
+const SINGLE_PIECE_VISIBLE_PERCENT = 60;
+const MERGED_PIECE_VISIBLE_PERCENT = 55;
+
 function ChessPieceCell({
   pieces,
   canDrag = false,
@@ -366,20 +370,37 @@ function ChessPieceCell({
 }: ChessPieceCellProps) {
   if (pieces.length === 0) return null;
 
+  // Calculate the inner width needed to show the desired percentage
+  // e.g., 60% visible means inner container is 100/60 * 100 = 166.67% wide
+  const singleInnerWidth = (100 / SINGLE_PIECE_VISIBLE_PERCENT) * 100;
+  const mergedInnerWidth = (100 / MERGED_PIECE_VISIBLE_PERCENT) * 100;
+
   if (pieces.length === 1) {
-    // Single piece
+    // Single piece - show left portion (so knight's head is visible)
     return (
-      <ChessPiece
-        piece={pieces[0]}
+      <div
+        className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-full h-full p-[10%]`}
         draggable={canDrag}
         onDragStart={(e) => onDragStart?.(e, 0)}
         onDragEnd={onDragEnd}
-      />
+      >
+        <div
+          className="h-full overflow-hidden relative"
+          style={{ width: `${SINGLE_PIECE_VISIBLE_PERCENT}%` }}
+        >
+          <div
+            className="absolute left-0 top-0 h-full flex items-center justify-center"
+            style={{ width: `${singleInnerWidth}%` }}
+          >
+            <ChessPieceContent piece={pieces[0]} size="responsive" />
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (pieces.length === 2) {
-    // Two pieces merged - display both with each piece cut in half
+    // Two pieces merged - each takes 50% of cell, showing left half of each piece
     // Arrange pieces so that knights are on the left (head visible)
     const [leftPiece, rightPiece] = pieces.some((p) => p.pieceType === "n")
       ? [
@@ -398,25 +419,31 @@ function ChessPieceCell({
 
     return (
       <div className="relative w-full h-full flex p-[10%]">
-        {/* Left half - show right side of piece */}
+        {/* Left piece - show left side */}
         <div
           className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
           draggable={canDrag}
           onDragStart={(e) => onDragStart?.(e, pieces.indexOf(leftPiece))}
           onDragEnd={onDragEnd}
         >
-          <div className="absolute left-0 top-0 w-[200%] h-full flex items-center justify-center">
+          <div
+            className="absolute left-0 top-0 h-full flex items-center justify-center"
+            style={{ width: `${mergedInnerWidth}%` }}
+          >
             <ChessPieceContent piece={leftPiece} size="responsive" />
           </div>
         </div>
-        {/* Right half - show left side of piece */}
+        {/* Right piece - show right side */}
         <div
           className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(rightPiece))}`}
           draggable={canDrag}
           onDragStart={(e) => onDragStart?.(e, pieces.indexOf(rightPiece))}
           onDragEnd={onDragEnd}
         >
-          <div className="absolute right-0 top-0 w-[200%] h-full flex items-center justify-center">
+          <div
+            className="absolute right-0 top-0 h-full flex items-center justify-center"
+            style={{ width: `${mergedInnerWidth}%` }}
+          >
             <ChessPieceContent piece={rightPiece} size="responsive" />
           </div>
         </div>
@@ -428,31 +455,6 @@ function ChessPieceCell({
   return (
     <div className="w-full h-full bg-red-500 flex items-center justify-center text-white text-[0.5em] font-bold">
       {pieces.length}
-    </div>
-  );
-}
-
-interface ChessPieceProps {
-  piece: Piece;
-  draggable?: boolean;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragEnd?: () => void;
-}
-
-function ChessPiece({
-  piece,
-  draggable = false,
-  onDragStart,
-  onDragEnd,
-}: ChessPieceProps) {
-  return (
-    <div
-      className={`${draggable ? "cursor-grab active:cursor-grabbing" : ""} flex items-center justify-center w-full h-full p-[10%]`}
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-    >
-      <ChessPieceContent piece={piece} size="responsive" />
     </div>
   );
 }
