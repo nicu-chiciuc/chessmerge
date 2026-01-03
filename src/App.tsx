@@ -10,9 +10,15 @@ function AuthButton() {
   const { isAuthenticated } = useConvexAuth();
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
+  const loggedInUser = useQuery(api.auth.loggedInUser);
 
-  if (isAuthenticated) {
-    return <Button onClick={() => void signOut()}>Sign out</Button>;
+  if (isAuthenticated && loggedInUser) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-gray-600">{loggedInUser.email}</span>
+        <Button onClick={() => void signOut()}>Sign out</Button>
+      </div>
+    );
   }
 
   return <Button onClick={() => void navigate("/login")}>Sign in</Button>;
