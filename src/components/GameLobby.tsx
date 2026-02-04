@@ -17,24 +17,17 @@ export function GameLobby({
 }: GameLobbyProps) {
   const myGames = useQuery(api.gameLogic.listGames) || [];
   const waitingGames = useQuery(api.gameLogic.getWaitingGames) || [];
-  const createGame = useMutation(api.gameLogic.createGame);
   const createPracticeGame = useMutation(api.gameLogic.createPracticeGame);
   const joinGame = useMutation(api.gameLogic.joinGame);
   const navigate = useNavigate();
 
-  const handleCreateGame = async () => {
+  const handleCreateGame = () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to create games");
       void navigate("/login");
       return;
     }
-    try {
-      const gameId = await createGame();
-      onJoinGame(gameId);
-      toast.success("Game created! Waiting for opponent...");
-    } catch {
-      toast.error("Failed to create game");
-    }
+    void navigate("/new");
   };
 
   const handleCreatePracticeGame = async () => {
@@ -89,7 +82,7 @@ export function GameLobby({
 
         <div className="flex gap-4 justify-center flex-wrap">
           <Button
-            onClick={() => void handleCreateGame()}
+            onClick={handleCreateGame}
             size="lg"
             className="px-6 py-3"
             disabled={!isAuthenticated}

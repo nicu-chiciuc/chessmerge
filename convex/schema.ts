@@ -28,6 +28,16 @@ const applicationTables = {
         v.literal("draw_agreement"),
       ),
     ),
+    // Time control settings
+    timeControl: v.optional(
+      v.object({
+        initialTimeMs: v.number(), // Initial time in milliseconds
+        incrementMs: v.number(), // Increment per move in milliseconds
+      }),
+    ),
+    moveTimestamps: v.optional(v.array(v.number())), // When each move was made
+    gameStartedAt: v.number(), // When the game became active (black joined)
+    scheduledTimeoutId: v.optional(v.id("_scheduled_functions")), // Timeout check scheduled function
   })
     .index("by_status", ["status"])
     .index("by_player", ["whitePlayerId"])

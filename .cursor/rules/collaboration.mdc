@@ -1,0 +1,33 @@
+---
+description: Guidelines for working in a multi-agent collaborative environment where multiple AI agents may be editing the same workspace simultaneously
+globs: **/*
+---
+
+# Multi-Agent Collaboration Guidelines
+
+## Concurrent Work Awareness
+
+Multiple AI agents may be working in this workspace simultaneously. Keep this in mind when making changes.
+
+## Atomic Commits
+
+- Commit changes atomically - each commit should be a complete, self-contained change
+- Don't leave the codebase in a broken state between commits
+- Prefer smaller, focused commits over large sweeping changes
+- Complete one logical unit of work before committing
+
+## Handling Concurrent Changes
+
+- If you encounter unexpected changes in files you're working on, don't panic - another agent may have made them
+- If git operations fail due to conflicts or changed state, assess the situation calmly:
+  - Pull/fetch to see what changed
+  - Determine if your changes are still relevant
+  - Rebase or merge as appropriate
+- Don't assume unexpected file changes are errors - verify before "fixing" them
+
+## Best Practices
+
+- Read files fresh before making edits when possible, especially after any delays
+- Keep file edits minimal and focused to reduce conflict potential
+- If you notice files have changed since you last read them, re-read before proceeding
+- Communicate clearly about what you're changing and why in commit messages

@@ -6,6 +6,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Id } from "../convex/_generated/dataModel";
 import { LocalPracticePage } from "./components/LocalPracticePage";
 import { LoginPage } from "./pages/LoginPage";
+import { NewGamePage } from "./components/NewGamePage";
 
 // Helper function to validate if a string is a valid Convex ID
 function isValidConvexId(id: string): id is Id<"games"> {
@@ -28,20 +29,37 @@ function GameRoute() {
   return <ChessGameWrapper gameId={gameId} />;
 }
 
-function LobbyRoute({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+function LobbyRoute({
+  isAuthenticated = false,
+}: {
+  isAuthenticated?: boolean;
+}) {
   const navigate = useNavigate();
 
   const handleJoinGame = (gameId: Id<"games">) => {
     void navigate(`/game/${gameId}`);
   };
 
-  return <GameLobby onJoinGame={handleJoinGame} isAuthenticated={isAuthenticated} />;
+  return (
+    <GameLobby onJoinGame={handleJoinGame} isAuthenticated={isAuthenticated} />
+  );
 }
 
-export function AppRoutes({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
+export function AppRoutes({
+  isAuthenticated = false,
+}: {
+  isAuthenticated?: boolean;
+}) {
   return (
     <Routes>
-      <Route path="/" element={<LobbyRoute isAuthenticated={isAuthenticated} />} />
+      <Route
+        path="/"
+        element={<LobbyRoute isAuthenticated={isAuthenticated} />}
+      />
+      <Route
+        path="/new"
+        element={<NewGamePage isAuthenticated={isAuthenticated} />}
+      />
       <Route path="/game/:gameId" element={<GameRoute />} />
       <Route path="/practice" element={<LocalPracticePage />} />
       <Route path="/login" element={<LoginPage />} />

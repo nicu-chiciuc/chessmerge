@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
+import { GameTimer } from "./GameTimer";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -204,7 +205,10 @@ export function ChessGameWrapper({ gameId }: { gameId: Id<"games"> }) {
       isPracticeGame={!!game?.isPracticeGame}
       isBlackPlayer={isBlackPlayer}
       renderedGameInfo={
-        <div className="flex-1">
+        <div className="flex-1 space-y-4">
+          {game.timeControl && (
+            <GameTimer game={game} currentTurn={gameState.options.turn} />
+          )}
           <GameInfo
             game={game}
             gameState={gameState}
@@ -395,7 +399,7 @@ export function ChessGame({
         {/* <div className="flex-1">
           <MoveHistory moves={moveHistory} />
         </div> */}
-        <div className="w-full">
+        <div className="flex-1">
           <EmailSubscribe compact />
         </div>
       </div>
