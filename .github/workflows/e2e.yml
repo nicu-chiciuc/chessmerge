@@ -23,6 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Convex types
+        run: npx convex codegen
+
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
