@@ -8,7 +8,7 @@ interface EmailSubscribeProps {
   hideCard?: boolean;
 }
 
-export function EmailSubscribe({ compact = false }: EmailSubscribeProps) {
+export function EmailSubscribe({ compact = false, hideCard = false }: EmailSubscribeProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
