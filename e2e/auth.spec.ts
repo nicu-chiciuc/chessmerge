@@ -7,16 +7,19 @@ test.describe("Authentication Flow", () => {
     }) => {
       await page.goto("/login");
 
-      // Wait for the form to load (CardTitle is a div, not a heading)
+      // Wait for the form to load
       await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
-      await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+      
+      // The form submit button (type="submit")
+      await expect(page.locator('button[type="submit"]')).toBeVisible();
+      await expect(page.locator('button[type="submit"]')).toHaveText("Sign in");
 
       // Click to switch to sign up
       await page.getByRole("button", { name: "Sign up instead" }).click();
 
       // Now shows sign up form
       await expect(page.getByText("Create account")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Sign up" })).toBeVisible();
+      await expect(page.locator('button[type="submit"]')).toHaveText("Sign up");
     });
 
     test("should show loading state when submitting sign up form", async ({
@@ -35,10 +38,10 @@ test.describe("Authentication Flow", () => {
       await page.getByLabel("Password").fill("securepassword123");
 
       // Submit the form
-      await page.getByRole("button", { name: "Sign up" }).click();
+      await page.locator('button[type="submit"]').click();
 
       // Button should show loading state
-      await expect(page.getByRole("button", { name: "Loading..." })).toBeVisible();
+      await expect(page.locator('button[type="submit"]')).toHaveText("Loading...");
     });
   });
 
@@ -108,10 +111,10 @@ test.describe("Authentication Flow", () => {
       await page.getByLabel("Password").fill("password123");
 
       // Submit the form
-      await page.getByRole("button", { name: "Sign in" }).click();
+      await page.locator('button[type="submit"]').click();
 
       // Button should show loading state
-      await expect(page.getByRole("button", { name: "Loading..." })).toBeVisible();
+      await expect(page.locator('button[type="submit"]')).toHaveText("Loading...");
     });
   });
 });
