@@ -4,7 +4,10 @@
       "Bash(rg:*)",
       "WebFetch(domain:labs.convex.dev)",
       "Bash(npx tsc:*)",
-      "Bash(npx convex dev:*)"
+      "Bash(npx convex dev:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
