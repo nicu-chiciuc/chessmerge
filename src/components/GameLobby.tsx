@@ -244,8 +244,8 @@ export function GameLobby({
       {/* Game Rules Accordion */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <Accordion.Root type="single" collapsible className="w-full">
-          <Accordion.Item value="rules" className="border-none">
-            <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+          <Accordion.Item value="rules" className="border-none group">
+            <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group-data-[state=open]:bg-gray-50">
               <h2 className="text-xl font-semibold text-gray-900">ChessMerge Rules</h2>
               <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </Accordion.Trigger>
