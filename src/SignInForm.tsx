@@ -43,7 +43,7 @@ export function SignInForm() {
               formData.set("flow", flow);
               void signIn("password", formData)
                 .then(() => {
-                  navigate("/");
+                  void navigate("/");
                 })
                 .catch((error) => {
                   let toastTitle = "";

@@ -12,7 +12,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (loggedInUser) {
-      navigate("/");
+      void navigate("/");
     }
   }, [loggedInUser, navigate]);
 
