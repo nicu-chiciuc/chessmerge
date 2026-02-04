@@ -10,16 +10,19 @@ test.describe("Authentication Flow", () => {
       // Wait for the form to load
       await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
       
-      // The form submit button (type="submit")
-      await expect(page.locator('button[type="submit"]')).toBeVisible();
-      await expect(page.locator('button[type="submit"]')).toHaveText("Sign in");
+      // Find the auth form (contains password field)
+      const authForm = page.locator("form").filter({ has: page.getByLabel("Password") });
+      const submitButton = authForm.locator('button[type="submit"]');
+      
+      await expect(submitButton).toBeVisible();
+      await expect(submitButton).toHaveText("Sign in");
 
       // Click to switch to sign up
       await page.getByRole("button", { name: "Sign up instead" }).click();
 
       // Now shows sign up form
       await expect(page.getByText("Create account")).toBeVisible();
-      await expect(page.locator('button[type="submit"]')).toHaveText("Sign up");
+      await expect(submitButton).toHaveText("Sign up");
     });
 
     test("should show loading state when submitting sign up form", async ({
@@ -30,6 +33,10 @@ test.describe("Authentication Flow", () => {
       // Wait for the form to load
       await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
 
+      // Find the auth form
+      const authForm = page.locator("form").filter({ has: page.getByLabel("Password") });
+      const submitButton = authForm.locator('button[type="submit"]');
+
       // Switch to sign up
       await page.getByRole("button", { name: "Sign up instead" }).click();
 
@@ -38,10 +45,10 @@ test.describe("Authentication Flow", () => {
       await page.getByLabel("Password").fill("securepassword123");
 
       // Submit the form
-      await page.locator('button[type="submit"]').click();
+      await submitButton.click();
 
       // Button should show loading state
-      await expect(page.locator('button[type="submit"]')).toHaveText("Loading...");
+      await expect(submitButton).toHaveText("Loading...");
     });
   });
 
@@ -106,15 +113,19 @@ test.describe("Authentication Flow", () => {
       // Wait for the form to load
       await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
 
+      // Find the auth form
+      const authForm = page.locator("form").filter({ has: page.getByLabel("Password") });
+      const submitButton = authForm.locator('button[type="submit"]');
+
       // Fill in the form
       await page.getByLabel("Email").fill("test@example.com");
       await page.getByLabel("Password").fill("password123");
 
       // Submit the form
-      await page.locator('button[type="submit"]').click();
+      await submitButton.click();
 
       // Button should show loading state
-      await expect(page.locator('button[type="submit"]')).toHaveText("Loading...");
+      await expect(submitButton).toHaveText("Loading...");
     });
   });
 });
