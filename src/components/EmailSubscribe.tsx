@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 
 interface EmailSubscribeProps {
   compact?: boolean;
+  hideCard?: boolean;
 }
 
 export function EmailSubscribe({ compact = false }: EmailSubscribeProps) {
