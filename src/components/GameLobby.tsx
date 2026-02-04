@@ -129,7 +129,10 @@ export function GameLobby({
             {!isAuthenticated ? (
               <div className="text-center py-8">
                 <p className="text-gray-500 mb-4">Sign in to see your games</p>
-                <Button variant="outline" onClick={() => void navigate("/login")}>
+                <Button
+                  variant="outline"
+                  onClick={() => void navigate("/login")}
+                >
                   Sign In
                 </Button>
               </div>
@@ -232,9 +235,12 @@ export function GameLobby({
         {/* Right Column - Email Subscription */}
         <div className="lg:col-span-1">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6 sticky top-6">
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">Stay Updated</h3>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">
+              Stay Updated
+            </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Get the latest ChessMerge news and updates delivered to your inbox.
+              Get the latest ChessMerge news and updates delivered to your
+              inbox.
             </p>
             <EmailSubscribe compact={true} hideCard={true} />
           </div>
@@ -246,7 +252,9 @@ export function GameLobby({
         <Accordion.Root type="single" collapsible className="w-full">
           <Accordion.Item value="rules" className="border-none group">
             <Accordion.Trigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group-data-[state=open]:bg-gray-50">
-              <h2 className="text-xl font-semibold text-gray-900">ChessMerge Rules</h2>
+              <h2 className="text-xl font-semibold text-gray-900">
+                ChessMerge Rules
+              </h2>
               <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 group-data-[state=open]:rotate-180" />
             </Accordion.Trigger>
             <Accordion.Content className="px-6 pb-4 border-t pt-4">
@@ -258,51 +266,55 @@ export function GameLobby({
                     <li>* But pieces can merge or unmerge</li>
                     <li>* Merged pieces can move as both types of pieces</li>
                     <li>
-                      * One of the pieces can split at any time, that also means that
-                      it can split from one piece then merge into another one in the
-                      same move
+                      * One of the pieces can split at any time, that also means
+                      that it can split from one piece then merge into another
+                      one in the same move
                     </li>
                     <li>
                       * Merged pieces can be promoted if it contains a pawn, be
                       careful, this replaces both pieces.
                     </li>
                     <li>
-                      * You can choose what to promote to (except pawn and rook, just
-                      like in chess)
+                      * You can choose what to promote to (except pawn and rook,
+                      just like in chess)
                     </li>
 
-                    <li>* If the king and rook didn't move they can castle. </li>
+                    <li>
+                      * If the king and rook didn't move they can castle.{" "}
+                    </li>
                     <li>
                       * A piece (e.g. a bishop) can move into the rook and move
-                      somewhere else, that still means that the rook didn't move and
-                      still can castle.
+                      somewhere else, that still means that the rook didn't move
+                      and still can castle.
                     </li>
 
                     <li>
-                      * When castling and the rook is merged with some other piece,
-                      The whole merged piece must castle.
+                      * When castling and the rook is merged with some other
+                      piece, The whole merged piece must castle.
                     </li>
 
                     <li className="text-red-500">
-                      * NO EnPassant, check the questions below. It is too confusing.
+                      * NO EnPassant, check the questions below. It is too
+                      confusing.
                     </li>
 
                     <li>
-                      * (❓ Not sure) Since pawn can get to their back rank (e.g.
-                      white pawn to row 1), it's not clear if they still can do the
-                      double move.
+                      * (❓ Not sure) Since pawn can get to their back rank
+                      (e.g. white pawn to row 1), it's not clear if they still
+                      can do the double move.
                     </li>
 
                     <li>
-                      * (❓ Not sure) If pawn moves 2 squares forward and merges into
-                      another piece, the en passante will capture only the pawn, and
-                      not the the other piece.
+                      * (❓ Not sure) If pawn moves 2 squares forward and merges
+                      into another piece, the en passante will capture only the
+                      pawn, and not the the other piece.
                     </li>
 
                     <li>
-                      * (❓ Not sure) If a rook merged with a pawn moves 2 squares
-                      from the pawn's starting position, can it still be taken en
-                      passante? What if it's a bishope merged with a pawn?{" "}
+                      * (❓ Not sure) If a rook merged with a pawn moves 2
+                      squares from the pawn's starting position, can it still be
+                      taken en passante? What if it's a bishope merged with a
+                      pawn?{" "}
                     </li>
                   </ul>
                 </div>

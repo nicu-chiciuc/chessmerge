@@ -1,6 +1,7 @@
 # Design: [Feature Name]
 
 ## Related Requirements
+
 - `specs/requirements/[requirement-file].md`
 
 ## Architecture Overview
@@ -37,11 +38,13 @@ ParentComponent
 ## State Design
 
 ### Local State
+
 ```typescript
 const [stateName, setStateName] = useState<Type>(initialValue);
 ```
 
 ### Shared State (if applicable)
+
 - Context or global state structure
 - When state updates propagate
 
@@ -52,27 +55,36 @@ const [stateName, setStateName] = useState<Type>(initialValue);
 export const tableName = defineTable({
   field1: v.string(),
   field2: v.number(),
-})
-  .index("by_field1", ["field1"])
+}).index("by_field1", ["field1"]);
 ```
 
 ## API Design
 
 ### Queries
+
 ```typescript
 // query name and signature
 export const queryName = query({
-  args: { /* args */ },
-  handler: async (ctx, args) => { /* returns */ }
+  args: {
+    /* args */
+  },
+  handler: async (ctx, args) => {
+    /* returns */
+  },
 });
 ```
 
 ### Mutations
+
 ```typescript
 // mutation name and signature
 export const mutationName = mutation({
-  args: { /* args */ },
-  handler: async (ctx, args) => { /* returns */ }
+  args: {
+    /* args */
+  },
+  handler: async (ctx, args) => {
+    /* returns */
+  },
 });
 ```
 
@@ -98,6 +110,7 @@ export const mutationName = mutation({
 ## Alternatives Considered
 
 ### Alternative 1: [Name]
+
 - Pros: ...
 - Cons: ...
 - Why rejected: ...

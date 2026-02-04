@@ -20,14 +20,14 @@ The defining feature of ChessMerge:
 
 ### Pieces That Can Merge
 
-| Piece 1 | Piece 2 | Result |
-|---------|---------|--------|
-| Pawn | Any (except King) | Combined pawn+piece |
-| Rook | Knight, Bishop, Queen, Pawn | Combined piece |
-| Knight | Bishop, Queen, Pawn | Combined piece |
-| Bishop | Queen, Pawn | Combined piece |
-| Queen | Pawn | Combined piece |
-| **King** | **Cannot merge** | N/A |
+| Piece 1  | Piece 2                     | Result              |
+| -------- | --------------------------- | ------------------- |
+| Pawn     | Any (except King)           | Combined pawn+piece |
+| Rook     | Knight, Bishop, Queen, Pawn | Combined piece      |
+| Knight   | Bishop, Queen, Pawn         | Combined piece      |
+| Bishop   | Queen, Pawn                 | Combined piece      |
+| Queen    | Pawn                        | Combined piece      |
+| **King** | **Cannot merge**            | N/A                 |
 
 ### Move Types
 
@@ -88,26 +88,30 @@ lib/
 ## Game Modes
 
 ### 1. Online Multiplayer
+
 - Create games and wait for opponents
 - Real-time synchronization via Convex
 - Time controls (initial time + increment)
 - Rated games (future)
 
 ### 2. Practice Mode
+
 - Play both sides
 - Edit board state directly
 - Test positions and strategies
 
 ### 3. Local Practice
+
 - Offline mode without authentication
 - Play against yourself locally
 
 ## Game State Representation
 
 ### Board Structure
+
 ```typescript
-type Cell = Piece[];           // 0-2 pieces per cell
-type Board = Cell[][];         // 8x8 grid
+type Cell = Piece[]; // 0-2 pieces per cell
+type Board = Cell[][]; // 8x8 grid
 
 interface Piece {
   color: "w" | "b";
@@ -118,6 +122,7 @@ interface Piece {
 ### FEMN Notation
 
 ChessMerge uses **FEMN** (FEN for Merge Notation):
+
 - Similar to FEN but supports merged pieces
 - Merged pieces use `:` separator (e.g., `r:n` for rook+knight)
 - Example: `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`
@@ -160,13 +165,13 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, Vite, TypeScript |
-| Styling | Tailwind CSS 4 |
-| Backend | Convex (serverless) |
-| Auth | Convex Auth |
-| UI Components | Radix UI, shadcn/ui |
-| Routing | React Router 7 |
-| Notifications | Sonner |
-| Email | Resend |
+| Layer         | Technology                 |
+| ------------- | -------------------------- |
+| Frontend      | React 19, Vite, TypeScript |
+| Styling       | Tailwind CSS 4             |
+| Backend       | Convex (serverless)        |
+| Auth          | Convex Auth                |
+| UI Components | Radix UI, shadcn/ui        |
+| Routing       | React Router 7             |
+| Notifications | Sonner                     |
+| Email         | Resend                     |

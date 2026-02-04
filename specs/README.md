@@ -20,21 +20,27 @@ specs/
 ## Workflow
 
 ### 1. Start with Requirements
+
 Before coding any feature, create a requirement spec in `requirements/`:
+
 - Define the feature overview
 - Write user stories
 - List acceptance criteria
 - Document constraints and dependencies
 
 ### 2. Create Design Documents
+
 For complex features, add design specs in `designs/`:
+
 - Data structures and schemas
 - Component architecture
 - API contracts
 - State management approach
 
 ### 3. Break Down into Tasks
+
 Create task lists in `tasks/`:
+
 - Actionable implementation steps
 - File modifications needed
 - Testing requirements
