@@ -1,10 +1,34 @@
 import { SignInForm } from "../SignInForm";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useEffect } from "react";
 import { EmailSubscribe } from "../components/EmailSubscribe";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+
+  useEffect(() => {
+    if (loggedInUser) {
+      void navigate("/");
+    }
+  }, [loggedInUser, navigate]);
+
+  // Show loading while checking auth status
+  if (loggedInUser === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If user is logged in, show nothing while redirecting
+  if (loggedInUser) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50 px-4 pt-16">

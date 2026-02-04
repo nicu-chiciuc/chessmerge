@@ -175,3 +175,5 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 | Routing       | React Router 7             |
 | Notifications | Sonner                     |
 | Email         | Resend                     |
+| Unit Testing  | Vitest                     |
+| E2E Testing   | Playwright                 |

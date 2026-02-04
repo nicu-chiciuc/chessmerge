@@ -13,7 +13,10 @@ export default tseslint.config(
       "postcss.config.js",
       "tailwind.config.js",
       "vite.config.ts",
+      "vitest.config.ts",
+      "playwright.config.ts",
       "coverage",
+      "e2e",
     ],
   },
   {
