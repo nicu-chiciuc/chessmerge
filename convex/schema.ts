@@ -36,7 +36,7 @@ const applicationTables = {
       }),
     ),
     moveTimestamps: v.optional(v.array(v.number())), // When each move was made
-    gameStartedAt: v.number(), // When the game became active (black joined)
+    gameStartedAt: v.optional(v.number()), // When the game became active (black joined)
     scheduledTimeoutId: v.optional(v.id("_scheduled_functions")), // Timeout check scheduled function
   })
     .index("by_status", ["status"])
