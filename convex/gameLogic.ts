@@ -27,14 +27,14 @@ function calculateRemainingTime(
   now: number,
 ): number {
   const timeControl = game.timeControl;
-  if (!timeControl) {
-    return Infinity; // No time control
+  if (!timeControl || game.gameStartedAt === undefined) {
+    return Infinity; // No time control or game hasn't started
   }
 
   const { initialTimeMs, incrementMs } = timeControl;
   const timestamps = game.moveTimestamps || [];
   const moveCount = timestamps.length;
-  const gameStartedAt = game.gameStartedAt;
+  const gameStartedAt = game.gameStartedAt; // Safe: checked above
 
   // Calculate time spent on completed moves
   let timeSpent = 0;
