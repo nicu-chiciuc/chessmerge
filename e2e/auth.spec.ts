@@ -1,8 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-// Increase timeout for tests since there's a loading state while checking auth
-test.setTimeout(30000);
-
 test.describe("Authentication Flow", () => {
   test.describe("Sign Up", () => {
     test("should show sign up form when clicking 'Sign up instead'", async ({
@@ -10,17 +7,15 @@ test.describe("Authentication Flow", () => {
     }) => {
       await page.goto("/login");
 
-      // Wait for the form to load (there's an auth check loading state)
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      // Wait for the form to load (CardTitle is a div, not a heading)
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
       await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
       // Click to switch to sign up
       await page.getByRole("button", { name: "Sign up instead" }).click();
 
       // Now shows sign up form
-      await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+      await expect(page.getByText("Create account")).toBeVisible();
       await expect(page.getByRole("button", { name: "Sign up" })).toBeVisible();
     });
 
@@ -30,9 +25,7 @@ test.describe("Authentication Flow", () => {
       await page.goto("/login");
 
       // Wait for the form to load
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
 
       // Switch to sign up
       await page.getByRole("button", { name: "Sign up instead" }).click();
@@ -49,16 +42,14 @@ test.describe("Authentication Flow", () => {
     });
   });
 
-  test.describe("Login Page Redirect", () => {
+  test.describe("Login Page", () => {
     test("should show login form for unauthenticated users", async ({
       page,
     }) => {
       await page.goto("/login");
 
       // Wait for the form to load
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
       await expect(page.getByLabel("Email")).toBeVisible();
       await expect(page.getByLabel("Password")).toBeVisible();
     });
@@ -67,9 +58,7 @@ test.describe("Authentication Flow", () => {
       await page.goto("/login");
 
       // Wait for the form to load
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
 
       const backButton = page.getByRole("button", { name: "← Back to Lobby" });
       await expect(backButton).toBeVisible();
@@ -85,9 +74,7 @@ test.describe("Authentication Flow", () => {
       await page.goto("/login");
 
       // Wait for the form to load
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
       await expect(
         page.getByText("Enter your credentials to sign in to your account")
       ).toBeVisible();
@@ -97,17 +84,15 @@ test.describe("Authentication Flow", () => {
       await page.goto("/login");
 
       // Wait for the form to load
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
 
       // Switch to sign up
       await page.getByRole("button", { name: "Sign up instead" }).click();
-      await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+      await expect(page.getByText("Create account")).toBeVisible();
 
       // Switch back to sign in
       await page.getByRole("button", { name: "Sign in instead" }).click();
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+      await expect(page.getByText("Welcome back")).toBeVisible();
     });
 
     test("should show loading state when submitting sign in form", async ({
@@ -116,9 +101,7 @@ test.describe("Authentication Flow", () => {
       await page.goto("/login");
 
       // Wait for the form to load
-      await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(page.getByText("Welcome back")).toBeVisible({ timeout: 10000 });
 
       // Fill in the form
       await page.getByLabel("Email").fill("test@example.com");
