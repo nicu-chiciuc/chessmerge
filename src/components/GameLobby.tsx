@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import * as Accordion from "@radix-ui/react-accordion";
+import { ChevronDown } from "lucide-react";
 
 interface GameLobbyProps {
   onJoinGame: (gameId: Id<"games">) => void;
