@@ -63,7 +63,7 @@ export function GameLobby({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-8">
       {/* Header Section */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary mb-4">Game Lobby</h1>
