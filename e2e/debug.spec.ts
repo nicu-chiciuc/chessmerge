@@ -1,13 +1,22 @@
-import { test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
-test("debug - check what page looks like", async ({ page }) => {
+test("debug - find headings on page", async ({ page }) => {
   await page.goto("/login");
-  await page.waitForTimeout(3000);
-  await page.screenshot({ path: "debug-screenshot.png", fullPage: true });
-  console.log("Page URL:", page.url());
-  console.log("Page title:", await page.title());
-  const html = await page.content();
-  console.log("Page HTML length:", html.length);
-  console.log("Has Welcome back:", html.includes("Welcome back"));
-  console.log("Has loading spinner:", html.includes("animate-spin"));
+  await page.waitForTimeout(5000);
+  
+  // Get all headings
+  const headings = await page.locator("h1, h2, h3, h4").allTextContents();
+  console.log("All headings:", headings);
+  
+  // Check for the card title specifically
+  const cardTitle = await page.locator(".text-2xl").textContent();
+  console.log("Card title:", cardTitle);
+  
+  // Check if form elements exist
+  const emailInput = await page.locator('input[name="email"]').count();
+  console.log("Email inputs:", emailInput);
+  
+  // Try to find by text
+  const welcomeText = await page.getByText("Welcome back").count();
+  console.log("Welcome back text count:", welcomeText);
 });
