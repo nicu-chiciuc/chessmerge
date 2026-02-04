@@ -236,7 +236,7 @@ export function GameLobby({
             <p className="text-sm text-gray-600 mb-4">
               Get the latest ChessMerge news and updates delivered to your inbox.
             </p>
-            <EmailSubscribe />
+            <EmailSubscribe compact={true} />
           </div>
         </div>
       </div>
