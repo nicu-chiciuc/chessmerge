@@ -34,6 +34,11 @@ function calculateRemainingTime(
   const moveCount = timestamps.length;
   const gameStartedAt = game.gameStartedAt;
 
+  // If game hasn't started yet, return full initial time
+  if (gameStartedAt === undefined) {
+    return initialTimeMs;
+  }
+
   // Calculate time spent on completed moves
   let timeSpent = 0;
   let movesCompleted = 0;
@@ -65,7 +70,9 @@ function calculateRemainingTime(
   if (currentTurn === player && game.status === "active") {
     const turnStartTime =
       moveCount === 0 ? gameStartedAt : timestamps[moveCount - 1];
-    liveElapsed = now - turnStartTime;
+    if (turnStartTime !== undefined) {
+      liveElapsed = now - turnStartTime;
+    }
   }
   // For completed games, no live elapsed time - timer is frozen at game end
 

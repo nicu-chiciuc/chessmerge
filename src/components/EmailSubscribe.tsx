@@ -5,9 +5,13 @@ import { Button } from "./ui/button";
 
 interface EmailSubscribeProps {
   compact?: boolean;
+  hideCard?: boolean;
 }
 
-export function EmailSubscribe({ compact = false }: EmailSubscribeProps) {
+export function EmailSubscribe({
+  compact = false,
+  hideCard = false,
+}: EmailSubscribeProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
@@ -36,10 +40,8 @@ export function EmailSubscribe({ compact = false }: EmailSubscribeProps) {
     }
   };
 
-  return (
-    <div
-      className={`bg-white rounded-lg shadow-sm border ${compact ? "p-4" : "p-6"} w-full`}
-    >
+  const formContent = (
+    <>
       {!compact && <h3 className="text-lg font-semibold mb-2">Stay Updated</h3>}
       <p
         className={`text-gray-600 ${compact ? "text-xs mb-3" : "text-sm mb-4"}`}
@@ -75,6 +77,18 @@ export function EmailSubscribe({ compact = false }: EmailSubscribeProps) {
           {message}
         </div>
       )}
+    </>
+  );
+
+  if (hideCard) {
+    return <>{formContent}</>;
+  }
+
+  return (
+    <div
+      className={`bg-white rounded-lg shadow-sm border ${compact ? "p-4" : "p-6"} w-full`}
+    >
+      {formContent}
     </div>
   );
 }
