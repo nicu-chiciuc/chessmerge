@@ -1,83 +1,74 @@
+/// <reference types="node" />
 import { spawn } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-const productionKey = "CONVEX_DEPLOY_KEY";
-const previewKey = "PREVIEW_CONVEX_DEPLOY_KEY";
+/**
+Samebase writes both Convex deploy keys to both Cloudflare Workers Builds triggers because the
+Cloudflare dashboard shows one shared build-variable table. The Builds API can store variables per
+trigger, but Samebase keeps its API-created setup equivalent to the dashboard setup.
 
-type DeployPlan =
-  | { kind: "frontendOnly" }
-  | { kind: "convex"; deployKey: string; args: string[] };
+This file has one job. It selects `CONVEX_DEPLOY_KEY` on `main` or
+`PREVIEW_CONVEX_DEPLOY_KEY` on another branch. It then gives only the selected value to Convex as
+`CONVEX_DEPLOY_KEY` and runs `build:app`. Keep application setup and provider migration work out of
+this file. Run `node --run build:app` directly for a local application build.
+*/
+const PRODUCTION_BRANCH = "main";
+const PRODUCTION_KEY = "CONVEX_DEPLOY_KEY";
+const PREVIEW_KEY = "PREVIEW_CONVEX_DEPLOY_KEY";
 
-function isWorkersBuild(env: NodeJS.ProcessEnv) {
-  return env.WORKERS_CI === "1" || env.WORKERS_CI === "true";
-}
-
-export function selectDeployPlan(env: NodeJS.ProcessEnv): DeployPlan {
+export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
   const branch = env.WORKERS_CI_BRANCH;
-
   if (!branch) {
-    if (isWorkersBuild(env)) {
-      throw new Error("Workers Builds must provide WORKERS_CI_BRANCH.");
-    }
-    if (env[productionKey] || env[previewKey]) {
-      throw new Error(
-        "Set WORKERS_CI_BRANCH when a Convex deploy key is present.",
-      );
-    }
-    return { kind: "frontendOnly" };
-  }
-
-  const isProduction = branch === "main";
-  const deployKey = env[isProduction ? productionKey : previewKey];
-  if (!deployKey) {
     throw new Error(
-      `Set ${isProduction ? productionKey : previewKey} for branch ${branch}.`,
+      "Cloudflare Workers Builds must provide WORKERS_CI_BRANCH. Run build:app for a local build.",
     );
   }
 
+  const preview = branch !== PRODUCTION_BRANCH;
+  const keyName = preview ? PREVIEW_KEY : PRODUCTION_KEY;
+  const deployKey = env[keyName];
+  if (!deployKey) {
+    throw new Error(`Set ${keyName} for Cloudflare Workers branch ${branch}.`);
+  }
+
   return {
-    kind: "convex",
-    deployKey,
     args: [
+      "--no-install",
       "convex",
       "deploy",
-      ...(isProduction ? [] : ["--preview-name", branch]),
+      ...(preview ? ["--preview-name", branch] : []),
       "--cmd",
-      "npm run build:app",
+      "node --run build:app",
     ],
+    deployKey,
   };
 }
 
-function run(command: string, args: string[], env = process.env) {
-  return new Promise<void>((resolve, reject) => {
-    const executable =
-      process.platform === "win32" ? `${command}.cmd` : command;
-    const child = spawn(executable, args, { env, stdio: "inherit" });
+export async function main(env: NodeJS.ProcessEnv = process.env) {
+  const deployment = selectConvexDeploy(env);
+  const convexEnv: NodeJS.ProcessEnv = {
+    ...env,
+    CONVEX_DEPLOY_KEY: deployment.deployKey,
+  };
+  delete convexEnv.PREVIEW_CONVEX_DEPLOY_KEY;
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("npx", deployment.args, {
+      env: convexEnv,
+      shell: process.platform === "win32",
+      stdio: "inherit",
+    });
     child.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) {
         resolve();
         return;
       }
-      reject(new Error(`${command} failed with exit code ${code ?? 1}.`));
+
+      reject(new Error(`Convex deploy failed with exit code ${code ?? 1}.`));
     });
   });
-}
-
-export async function main(env = process.env) {
-  const plan = selectDeployPlan(env);
-  if (plan.kind === "frontendOnly") {
-    await run("npm", ["run", "build:app"], env);
-    return;
-  }
-
-  const convexEnv: NodeJS.ProcessEnv = {
-    ...env,
-    CONVEX_DEPLOY_KEY: plan.deployKey,
-  };
-  delete convexEnv.PREVIEW_CONVEX_DEPLOY_KEY;
-  await run("npx", plan.args, convexEnv);
 }
 
 const entrypoint = process.argv[1];
