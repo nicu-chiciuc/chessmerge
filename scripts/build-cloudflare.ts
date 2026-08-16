@@ -20,11 +20,6 @@ export function selectDeployPlan(env: NodeJS.ProcessEnv): DeployPlan {
     if (isWorkersBuild(env)) {
       throw new Error("Workers Builds must provide WORKERS_CI_BRANCH.");
     }
-    if (env[productionKey] || env[previewKey]) {
-      throw new Error(
-        "Set WORKERS_CI_BRANCH when a Convex deploy key is present.",
-      );
-    }
     return { kind: "frontend" };
   }
 
