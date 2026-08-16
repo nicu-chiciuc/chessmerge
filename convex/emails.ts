@@ -4,8 +4,13 @@ import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { Resend } from "resend";
 
-// Initialize Resend with your API key (store in environment variables)
-const resend = new Resend(process.env.RESEND_API_KEY);
+function createResend() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("Set RESEND_API_KEY before sending email.");
+  }
+  return new Resend(apiKey);
+}
 
 export const sendWelcomeEmail = internalAction({
   args: {
@@ -15,6 +20,7 @@ export const sendWelcomeEmail = internalAction({
   },
   returns: v.null(),
   handler: async (_ctx, args) => {
+    const resend = createResend();
     try {
       await resend.emails.send({
         from: "ChessMerge <hello@yourchessdomain.com>",
@@ -46,6 +52,7 @@ export const sendNewsletterEmail = internalAction({
   },
   returns: v.null(),
   handler: async (_ctx, args) => {
+    const resend = createResend();
     // Send emails in batches to avoid rate limits
     const batchSize = 10;
     for (let i = 0; i < args.emails.length; i += batchSize) {
