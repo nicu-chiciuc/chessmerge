@@ -37,7 +37,7 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
       "exec",
       "convex",
       "deploy",
-      ...(preview ? ["--preview-name", branch] : []),
+      ...(preview ? ["--preview-create", branch] : []),
       "--cmd",
       "node --run build:app",
     ],
