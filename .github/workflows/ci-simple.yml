@@ -17,14 +17,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
       
       - name: Run build
-        run: npm run build
+        run: node --run build:app
 
       - name: Run type checking
         run: npm run type-check
@@ -33,4 +33,4 @@ jobs:
         run: npm run lint
 
       - name: Run tests
-        run: npm run test:run 
+        run: npm run test:run
