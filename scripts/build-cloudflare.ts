@@ -6,7 +6,7 @@ const productionKey = "CONVEX_DEPLOY_KEY";
 const previewKey = "PREVIEW_CONVEX_DEPLOY_KEY";
 
 type DeployPlan =
-  | { kind: "frontend" }
+  | { kind: "frontendOnly" }
   | { kind: "convex"; deployKey: string; args: string[] };
 
 function isWorkersBuild(env: NodeJS.ProcessEnv) {
@@ -20,7 +20,12 @@ export function selectDeployPlan(env: NodeJS.ProcessEnv): DeployPlan {
     if (isWorkersBuild(env)) {
       throw new Error("Workers Builds must provide WORKERS_CI_BRANCH.");
     }
-    return { kind: "frontend" };
+    if (env[productionKey] || env[previewKey]) {
+      throw new Error(
+        "Set WORKERS_CI_BRANCH when a Convex deploy key is present.",
+      );
+    }
+    return { kind: "frontendOnly" };
   }
 
   const isProduction = branch === "main";
@@ -62,7 +67,7 @@ function run(command: string, args: string[], env = process.env) {
 
 export async function main(env = process.env) {
   const plan = selectDeployPlan(env);
-  if (plan.kind === "frontend") {
+  if (plan.kind === "frontendOnly") {
     await run("npm", ["run", "build:app"], env);
     return;
   }
