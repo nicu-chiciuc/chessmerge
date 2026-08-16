@@ -1,6 +1,6 @@
 # Welcome to your Convex + React (Vite) + Convex Auth app
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+This is a [Convex](https://convex.dev/) project created with [`pnpm create convex`](https://www.npmjs.com/package/create-convex).
 
 After the initial setup (<2 minutes) you'll have a working full-stack app using:
 
@@ -12,17 +12,17 @@ After the initial setup (<2 minutes) you'll have a working full-stack app using:
 
 ## Get started
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+If you just cloned this codebase and didn't use `pnpm create convex`, run:
 
 ```
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 If you're reading this README on GitHub and want to use this template, run:
 
 ```
-npm create convex@latest -- -t react-vite-convexauth
+pnpm create convex@latest -- -t react-vite-convexauth
 ```
 
 ## Development Scripts
@@ -30,18 +30,18 @@ npm create convex@latest -- -t react-vite-convexauth
 This project includes several useful scripts for development:
 
 ### Core Development
-- `npm run dev` - Start both frontend and backend in development mode
-- `npm run dev:frontend` - Start only the Vite frontend development server
-- `npm run dev:backend` - Start only the Convex backend development server
+- `pnpm run dev` - Start both frontend and backend in development mode
+- `pnpm run dev:frontend` - Start only the Vite frontend development server
+- `pnpm run dev:backend` - Start only the Convex backend development server
 
 ### Type Checking
-- `npm run type-check` - Check TypeScript types across all projects (frontend, node tooling, and convex)
-- `npm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
-- `npm run lint` - Run both TypeScript type checking and ESLint linting
+- `pnpm run type-check` - Check TypeScript types across all projects (frontend, node tooling, and convex)
+- `pnpm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
+- `pnpm run lint` - Run both TypeScript type checking and ESLint linting
 
 ### Build & Deploy
-- `npm run build` - Build the project for production
-- `npm run preview` - Preview the production build locally
+- `pnpm run build` - Build the project for production
+- `pnpm run preview` - Preview the production build locally
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 - `tsconfig.app.json` - Frontend React app (`src/` directory)
@@ -72,15 +72,15 @@ Join thousands of developers building full-stack apps with Convex:
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 3. Set up Convex:
    ```bash
-   npm run setup
+   pnpm run setup
    ```
 4. Start the development server:
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 ### Environment Variables
@@ -95,4 +95,3 @@ To set this:
 3. Add `FRONTEND_URL` with your frontend site's URL
 
 Without this, unsubscribe links in emails will point to a placeholder URL and won't work.
-

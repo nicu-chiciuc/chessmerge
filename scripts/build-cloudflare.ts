@@ -34,7 +34,7 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
 
   return {
     args: [
-      "--no-install",
+      "exec",
       "convex",
       "deploy",
       ...(preview ? ["--preview-name", branch] : []),
@@ -54,7 +54,7 @@ export async function main(env: NodeJS.ProcessEnv = process.env) {
   delete convexEnv.PREVIEW_CONVEX_DEPLOY_KEY;
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn("npx", deployment.args, {
+    const child = spawn("pnpm", deployment.args, {
       env: convexEnv,
       shell: process.platform === "win32",
       stdio: "inherit",

@@ -14,23 +14,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
       
       - name: Run build
-        run: node --run build:app
+        run: pnpm run build:app
 
       - name: Run type checking
-        run: npm run type-check
+        run: pnpm run type-check
 
       - name: Run linting
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Run tests
-        run: npm run test:run
+        run: pnpm run test:run

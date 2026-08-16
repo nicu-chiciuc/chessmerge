@@ -33,23 +33,23 @@ Current coverage for `gameLogic.ts`: **62.75%**
 
 ```bash
 # Run tests in watch mode (default)
-npm test
+pnpm test
 
 # Run tests once and exit
-npm run test:run
+pnpm run test:run
 
 # Run tests with coverage report
-npm run test:coverage
+pnpm run test:coverage
 
 # Run tests with UI interface
-npm run test:ui
+pnpm run test:ui
 
 # Run tests in watch mode
-npm run test:watch
+pnpm run test:watch
 ```
 
 ### Watch Mode
-By default, `npm test` runs in watch mode, which automatically re-runs tests when files change. This provides fast feedback during development.
+By default, `pnpm test` runs in watch mode, which automatically re-runs tests when files change. This provides fast feedback during development.
 
 ### Coverage Reports
 The coverage report shows:
@@ -164,16 +164,16 @@ Tests can be integrated into CI/CD pipelines:
 ```yaml
 # Example GitHub Actions workflow
 - name: Run Tests
-  run: npm run test:run
+  run: pnpm run test:run
 
 - name: Generate Coverage
-  run: npm run test:coverage
+  run: pnpm run test:coverage
 ```
 
 ## Debugging Tests
 
 ### Using Test UI
-Run `npm run test:ui` to access the visual test interface for:
+Run `pnpm run test:ui` to access the visual test interface for:
 - Interactive test execution
 - Detailed error inspection
 - Coverage visualization
@@ -190,4 +190,4 @@ For debugging specific tests:
 - [Vitest Documentation](https://vitest.dev/)
 - [Convex Testing Guide](https://docs.convex.dev/functions/testing)
 - [Testing Library](https://testing-library.com/)
-- [Jest API Reference](https://jestjs.io/docs/api) (Vitest is Jest-compatible) 
+- [Jest API Reference](https://jestjs.io/docs/api) (Vitest is Jest-compatible)
