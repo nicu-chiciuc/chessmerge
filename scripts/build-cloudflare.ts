@@ -10,8 +10,8 @@ trigger, but Samebase keeps its API-created setup equivalent to the dashboard se
 
 This file has one job. It selects `CONVEX_DEPLOY_KEY` on `main` or
 `PREVIEW_CONVEX_DEPLOY_KEY` on another branch. It then gives only the selected value to Convex as
-`CONVEX_DEPLOY_KEY` and runs `build:app`. Keep application setup and provider migration work out of
-this file. Run `node --run build:app` directly for a local application build.
+`CONVEX_DEPLOY_KEY` and runs `build:frontend`. Keep application setup and provider migration work
+out of this file. Run `node --run build:app` directly for a local application build.
 */
 const PRODUCTION_BRANCH = "main";
 const PRODUCTION_KEY = "CONVEX_DEPLOY_KEY";
@@ -39,7 +39,7 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
       "deploy",
       ...(preview ? ["--preview-create", branch] : []),
       "--cmd",
-      "node --run build:app",
+      "pnpm run build:frontend",
     ],
     deployKey,
   };
