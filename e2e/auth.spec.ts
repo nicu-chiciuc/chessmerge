@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Authentication Flow", () => {
   test.describe("Sign Up", () => {
-    test("should show sign up form when clicking 'Sign up instead'", async ({
+    test("should show sign up form when clicking 'Create one'", async ({
       page,
     }) => {
       await page.goto("/login");
@@ -22,11 +22,19 @@ test.describe("Authentication Flow", () => {
       await expect(submitButton).toHaveText("Sign in");
 
       // Click to switch to sign up
-      await page.getByRole("button", { name: "Sign up instead" }).click();
+      await page.getByRole("button", { name: "Create one" }).click();
 
       // Now shows sign up form
-      await expect(page.getByText("Create account")).toBeVisible();
-      await expect(submitButton).toHaveText("Sign up");
+      await expect(page.locator('[data-slot="card-title"]')).toHaveText(
+        "Create account",
+      );
+      await expect(page.getByLabel("Confirm password")).toBeVisible();
+      await expect(
+        page.getByText(
+          "We will email you an 8-digit code before you can sign in.",
+        ),
+      ).toBeVisible();
+      await expect(submitButton).toHaveText("Create account");
     });
 
     test("should show loading state when submitting sign up form", async ({
@@ -46,17 +54,20 @@ test.describe("Authentication Flow", () => {
       const submitButton = authForm.locator('button[type="submit"]');
 
       // Switch to sign up
-      await page.getByRole("button", { name: "Sign up instead" }).click();
+      await page.getByRole("button", { name: "Create one" }).click();
 
       // Fill in the form
       await page.getByLabel("Email").fill("newuser@example.com");
-      await page.getByLabel("Password").fill("securepassword123");
+      await page
+        .getByLabel("Password", { exact: true })
+        .fill("securepassword123");
+      await page.getByLabel("Confirm password").fill("securepassword123");
 
       // Submit the form
       await submitButton.click();
 
       // Button should show loading state
-      await expect(submitButton).toHaveText("Loading...");
+      await expect(submitButton).toHaveText("Creating account...");
     });
   });
 
@@ -100,7 +111,7 @@ test.describe("Authentication Flow", () => {
         timeout: 10000,
       });
       await expect(
-        page.getByText("Enter your credentials to sign in to your account"),
+        page.getByText("Enter your email and password to continue."),
       ).toBeVisible();
     });
 
@@ -113,11 +124,16 @@ test.describe("Authentication Flow", () => {
       });
 
       // Switch to sign up
-      await page.getByRole("button", { name: "Sign up instead" }).click();
-      await expect(page.getByText("Create account")).toBeVisible();
+      await page.getByRole("button", { name: "Create one" }).click();
+      await expect(page.locator('[data-slot="card-title"]')).toHaveText(
+        "Create account",
+      );
 
       // Switch back to sign in
-      await page.getByRole("button", { name: "Sign in instead" }).click();
+      await page
+        .getByRole("main")
+        .getByRole("button", { name: "Sign in", exact: true })
+        .click();
       await expect(page.getByText("Welcome back")).toBeVisible();
     });
 
@@ -145,7 +161,21 @@ test.describe("Authentication Flow", () => {
       await submitButton.click();
 
       // Button should show loading state
-      await expect(submitButton).toHaveText("Loading...");
+      await expect(submitButton).toHaveText("Signing in...");
+    });
+
+    test("should open the password reset flow", async ({ page }) => {
+      await page.goto("/login");
+
+      await expect(page.getByText("Welcome back")).toBeVisible({
+        timeout: 10000,
+      });
+      await page.getByRole("button", { name: "Forgot password?" }).click();
+
+      await expect(page.getByText("Reset your password")).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Send reset code" }),
+      ).toBeVisible();
     });
   });
 });
