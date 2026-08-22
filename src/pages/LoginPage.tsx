@@ -1,6 +1,6 @@
 import { SignInForm } from "../SignInForm";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
@@ -12,7 +12,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (loggedInUser) {
-      void navigate("/");
+      void navigate({ to: "/" });
     }
   }, [loggedInUser, navigate]);
 
@@ -43,7 +43,7 @@ export function LoginPage() {
           </p>
           <Button
             variant="outline"
-            onClick={() => void navigate("/")}
+            onClick={() => void navigate({ to: "/" })}
             className="mb-3"
           >
             ← Back to Lobby

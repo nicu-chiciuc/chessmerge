@@ -18,6 +18,8 @@ dist-ssr
 
 # Test coverage reports
 coverage/
+playwright-report/
+test-results/
 
 # Editor directories and files
 .vscode/*

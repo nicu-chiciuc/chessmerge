@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from "convex/react";
+import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
 
@@ -26,16 +26,16 @@ export function GameLobby({
   const handleCreateGame = () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to create games");
-      void navigate("/login");
+      void navigate({ to: "/login" });
       return;
     }
-    void navigate("/new");
+    void navigate({ to: "/new" });
   };
 
   const handleCreatePracticeGame = async () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to create practice games");
-      void navigate("/login");
+      void navigate({ to: "/login" });
       return;
     }
     try {
@@ -50,7 +50,7 @@ export function GameLobby({
   const handleJoinGame = async (gameId: Id<"games">) => {
     if (!isAuthenticated) {
       toast.error("Please sign in to join games");
-      void navigate("/login");
+      void navigate({ to: "/login" });
       return;
     }
     try {
@@ -109,7 +109,7 @@ export function GameLobby({
           }
 
           <Button
-            onClick={() => void navigate("/practice")}
+            onClick={() => void navigate({ to: "/practice" })}
             variant="secondary"
             size="lg"
             className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
@@ -131,7 +131,7 @@ export function GameLobby({
                 <p className="text-gray-500 mb-4">Sign in to see your games</p>
                 <Button
                   variant="outline"
-                  onClick={() => void navigate("/login")}
+                  onClick={() => void navigate({ to: "/login" })}
                 >
                   Sign In
                 </Button>

@@ -4,7 +4,9 @@
   "compatibility_date": "2026-08-16",
   "preview_urls": true,
   "assets": {
-    "directory": "./dist",
+    "directory": "./dist/client",
+    "html_handling": "none",
+    // TanStack Start SPA mode emits its browser shell at /index.html.
     "not_found_handling": "single-page-application",
   },
 }
