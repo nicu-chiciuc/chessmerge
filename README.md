@@ -1,12 +1,12 @@
-# Welcome to your Convex + React (Vite) + Convex Auth app
+# ChessMerge
 
 This is a [Convex](https://convex.dev/) project created with [`pnpm create convex`](https://www.npmjs.com/package/create-convex).
 
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+ChessMerge uses:
 
 - Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Vite](https://vitest.dev/) for optimized web hosting
+- [TanStack Start](https://tanstack.com/start/latest) with file-based TanStack Router routes
+- [React](https://react.dev/) and [Vite](https://vite.dev/) for the frontend
 - [Tailwind](https://tailwindcss.com/) for building great looking UI
 - [Convex Auth](https://labs.convex.dev/auth) for authentication
 
@@ -41,10 +41,12 @@ This project includes several useful scripts for development:
 - `pnpm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
 - `pnpm run lint` - Run both TypeScript type checking and ESLint linting
 
-### Build & Deploy
+### Build and deploy
 
-- `pnpm run build` - Build the project for production
+- `pnpm run build:app` - Type-check and build the application locally
+- `pnpm run build` - Select the Convex deployment in Cloudflare Workers Builds, deploy the Convex functions, and build the application
 - `pnpm run preview` - Preview the production build locally
+- `pnpm run cf-typegen` - Regenerate types from `wrangler.jsonc`
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
@@ -55,6 +57,12 @@ This project includes several useful scripts for development:
 The generated Convex bindings in `convex/_generated` are committed so CI and
 Cloudflare can build without development deployment credentials. Run
 `pnpm exec convex codegen` after changing backend modules or the schema.
+
+TanStack Start runs in SPA mode for this application. It prerenders the browser
+shell to `dist/client/index.html`, and Cloudflare Workers Static Assets serves
+that shell for direct route loads. Convex Auth and all authenticated game data
+initialize in the browser; the Start prerender step does not read or recreate an
+authenticated session on the server.
 
 For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
 

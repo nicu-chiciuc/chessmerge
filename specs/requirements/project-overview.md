@@ -49,7 +49,7 @@ The defining feature of ChessMerge:
 
 ## Technical Architecture
 
-### Frontend (React + Vite)
+### Frontend (TanStack Start + React + Vite)
 
 ```
 src/
@@ -63,6 +63,8 @@ src/
 │   └── EmailSubscribe.tsx # Newsletter signup
 ├── pages/
 │   └── LoginPage.tsx      # Authentication page
+├── routes/                # Typed TanStack Router file routes
+├── router.tsx             # Router construction and registration
 └── pieces/                # SVG piece assets
 ```
 
@@ -165,15 +167,15 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 
 ## Technology Stack
 
-| Layer         | Technology                 |
-| ------------- | -------------------------- |
-| Frontend      | React 19, Vite, TypeScript |
-| Styling       | Tailwind CSS 4             |
-| Backend       | Convex (serverless)        |
-| Auth          | Convex Auth                |
-| UI Components | Radix UI, shadcn/ui        |
-| Routing       | React Router 7             |
-| Notifications | Sonner                     |
-| Email         | Cloudflare Email Sending   |
-| Unit Testing  | Vitest                     |
-| E2E Testing   | Playwright                 |
+| Layer         | Technology                                 |
+| ------------- | ------------------------------------------ |
+| Frontend      | TanStack Start, React 19, Vite, TypeScript |
+| Styling       | Tailwind CSS 4                             |
+| Backend       | Convex (serverless)                        |
+| Auth          | Convex Auth                                |
+| UI Components | Radix UI, shadcn/ui                        |
+| Routing       | TanStack Router                            |
+| Notifications | Sonner                                     |
+| Email         | Cloudflare Email Sending                   |
+| Unit Testing  | Vitest                                     |
+| E2E Testing   | Playwright                                 |
