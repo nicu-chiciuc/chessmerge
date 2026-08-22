@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -20,6 +22,10 @@ jobs:
         with:
           node-version: 24
           cache: "pnpm"
+
+      - name: Validate main build label
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node ./scripts/validate-main-build-label.ts
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
