@@ -28,32 +28,60 @@ function computeProjectedLabel(): string {
   return `v${mainCount + 1}`;
 }
 
-function readCurrentPullRequest(): CurrentPullRequest | null {
-  let raw: string;
-  try {
-    raw = run("gh", ["pr", "view", "--json", "number,title"]);
-  } catch {
+function readCurrentBranch(): string {
+  const branch = run("git", ["branch", "--show-current"]);
+  if (!branch) {
+    throw new Error("A current branch is required to find its pull request.");
+  }
+
+  return branch;
+}
+
+function readCurrentPullRequest(branch: string): CurrentPullRequest | null {
+  const raw = run("gh", [
+    "pr",
+    "list",
+    "--head",
+    branch,
+    "--state",
+    "open",
+    "--limit",
+    "2",
+    "--json",
+    "number,title",
+  ]);
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`Unexpected gh pr list payload: ${raw}`);
+  }
+  if (parsed.length === 0) {
     return null;
   }
-
-  const parsed: unknown = JSON.parse(raw);
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    !("number" in parsed) ||
-    !("title" in parsed) ||
-    typeof parsed.number !== "number" ||
-    typeof parsed.title !== "string"
-  ) {
-    throw new Error(`Unexpected gh pr view payload: ${raw}`);
+  if (parsed.length > 1) {
+    throw new Error(`Found multiple open pull requests for branch ${branch}.`);
   }
 
-  return { number: parsed.number, title: parsed.title };
+  const pullRequest: unknown = parsed[0];
+  if (
+    typeof pullRequest !== "object" ||
+    pullRequest === null ||
+    !("number" in pullRequest) ||
+    !("title" in pullRequest) ||
+    typeof pullRequest.number !== "number" ||
+    !Number.isSafeInteger(pullRequest.number) ||
+    pullRequest.number < 1 ||
+    typeof pullRequest.title !== "string"
+  ) {
+    throw new Error(`Unexpected gh pr list payload: ${raw}`);
+  }
+
+  return { number: pullRequest.number, title: pullRequest.title };
 }
 
 const printOnly = process.argv.includes("--print-only");
+const branch = readCurrentBranch();
 const label = computeProjectedLabel();
-const pullRequest = readCurrentPullRequest();
+const pullRequest = readCurrentPullRequest(branch);
 
 if (pullRequest === null) {
   console.log(
