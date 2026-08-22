@@ -14,26 +14,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: "24"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Convex types
-        run: npx convex codegen
+        run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: npm run type-check
+        run: pnpm run type-check
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Run unit tests
-        run: npm run test:run
+        run: pnpm run test:run
 
   # E2E tests require a running Convex backend
   # To enable: add CONVEX_DEPLOY_KEY secret and uncomment
@@ -42,21 +41,22 @@ jobs:
   #   timeout-minutes: 15
   #   steps:
   #     - uses: actions/checkout@v4
+  #     - uses: pnpm/action-setup@v4
   #     - name: Setup Node.js
   #       uses: actions/setup-node@v4
   #       with:
-  #         node-version: "20"
-  #         cache: "npm"
+  #         node-version: "24"
+  #         cache: "pnpm"
   #     - name: Install dependencies
-  #       run: npm ci
+  #       run: pnpm install --frozen-lockfile
   #     - name: Setup Convex
-  #       run: npx convex deploy --preview e2e-tests
+  #       run: pnpm exec convex deploy --preview e2e-tests
   #       env:
   #         CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
   #     - name: Install Playwright browsers
-  #       run: npx playwright install chromium --with-deps
+  #       run: pnpm exec playwright install chromium --with-deps
   #     - name: Run E2E tests
-  #       run: npm run test:e2e
+  #       run: pnpm run test:e2e
   #     - name: Upload test results
   #       uses: actions/upload-artifact@v4
   #       if: always()

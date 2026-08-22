@@ -1,6 +1,6 @@
 # Welcome to your Convex + React (Vite) + Convex Auth app
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+This is a [Convex](https://convex.dev/) project created with [`pnpm create convex`](https://www.npmjs.com/package/create-convex).
 
 After the initial setup (<2 minutes) you'll have a working full-stack app using:
 
@@ -12,17 +12,17 @@ After the initial setup (<2 minutes) you'll have a working full-stack app using:
 
 ## Get started
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+If you just cloned this codebase and didn't use `pnpm create convex`, run:
 
 ```
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 If you're reading this README on GitHub and want to use this template, run:
 
 ```
-npm create convex@latest -- -t react-vite-convexauth
+pnpm create convex@latest -- -t react-vite-convexauth
 ```
 
 ## Development Scripts
@@ -30,23 +30,31 @@ npm create convex@latest -- -t react-vite-convexauth
 This project includes several useful scripts for development:
 
 ### Core Development
-- `npm run dev` - Start both frontend and backend in development mode
-- `npm run dev:frontend` - Start only the Vite frontend development server
-- `npm run dev:backend` - Start only the Convex backend development server
+
+- `pnpm run dev` - Start both frontend and backend in development mode
+- `pnpm run dev:frontend` - Start only the Vite frontend development server
+- `pnpm run dev:backend` - Start only the Convex backend development server
 
 ### Type Checking
-- `npm run type-check` - Check TypeScript types across all projects (frontend, node tooling, and convex)
-- `npm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
-- `npm run lint` - Run both TypeScript type checking and ESLint linting
+
+- `pnpm run type-check` - Check TypeScript types across all projects (frontend, node tooling, and convex)
+- `pnpm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
+- `pnpm run lint` - Run both TypeScript type checking and ESLint linting
 
 ### Build & Deploy
-- `npm run build` - Build the project for production
-- `npm run preview` - Preview the production build locally
+
+- `pnpm run build` - Build the project for production
+- `pnpm run preview` - Preview the production build locally
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
+
 - `tsconfig.app.json` - Frontend React app (`src/` directory)
 - `tsconfig.node.json` - Node.js tooling (vite.config.ts, etc.)
 - `convex/tsconfig.json` - Convex backend functions
+
+The generated Convex bindings in `convex/_generated` are committed so CI and
+Cloudflare can build without development deployment credentials. Run
+`pnpm exec convex codegen` after changing backend modules or the schema.
 
 For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
 
@@ -72,27 +80,52 @@ Join thousands of developers building full-stack apps with Convex:
 1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
-3. Set up Convex:
+3. Start the development server. The first run configures the Convex
+   deployment and its auth keys:
    ```bash
-   npm run setup
+   pnpm run dev
    ```
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+
+### Authentication email setup
+
+ChessMerge uses Convex Auth with email/password accounts. A new account does
+not receive a session until the user enters the 8-digit code sent through
+Cloudflare Email Sending. The same setup handles password reset codes.
+
+If the automatic first-run setup did not complete, generate the required
+`SITE_URL`, `JWT_PRIVATE_KEY`, and `JWKS` values with:
+
+```bash
+pnpm exec @convex-dev/auth --skip-git-check --web-server-url http://localhost:5173
+```
+
+Onboard `chessmerge.com` in Cloudflare Email Sending, then set the Cloudflare
+account ID and an account-owned token with **Email Sending > Edit** on every
+Convex deployment:
+
+```bash
+pnpm exec convex env set CLOUDFLARE_EMAIL_ACCOUNT_ID <account-id>
+pnpm exec convex env set CLOUDFLARE_EMAIL_API_TOKEN <email-token>
+```
+
+For production, run the auth setup command with `--prod` and the production web
+URL, then set both email values again with `pnpm exec convex env set --prod`.
+Convex environment variables do not carry from development to production. All
+application email uses `ChessMerge <notifications@chessmerge.com>`. See
+[EMAIL_SETUP.md](./EMAIL_SETUP.md) for domain, token, and test instructions.
 
 ### Environment Variables
 
 For the email unsubscribe functionality to work properly, you need to set the following environment variable in your [Convex Dashboard](https://dashboard.convex.dev):
 
-- **`FRONTEND_URL`**: Your frontend site's URL (e.g., `http://localhost:5173` for development or `https://your-app.vercel.app` for production)
+- **`FRONTEND_URL`**: Your frontend site's URL (for example, `http://localhost:5173` for development or `https://chessmerge.com` for production)
 
 To set this:
+
 1. Go to your Convex Dashboard
 2. Navigate to Settings > Environment Variables
 3. Add `FRONTEND_URL` with your frontend site's URL
 
 Without this, unsubscribe links in emails will point to a placeholder URL and won't work.
-

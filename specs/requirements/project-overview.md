@@ -130,7 +130,7 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 ## Authentication
 
 - Powered by Convex Auth
-- Email/password authentication
+- Verified email/password authentication with password reset
 - Anonymous browsing supported (view-only for multiplayer)
 
 ## Time Controls
@@ -174,6 +174,6 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 | UI Components | Radix UI, shadcn/ui        |
 | Routing       | React Router 7             |
 | Notifications | Sonner                     |
-| Email         | Resend                     |
+| Email         | Cloudflare Email Sending   |
 | Unit Testing  | Vitest                     |
 | E2E Testing   | Playwright                 |

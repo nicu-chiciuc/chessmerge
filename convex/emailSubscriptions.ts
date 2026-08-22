@@ -1,6 +1,7 @@
 import { mutation, query, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { sendEmail } from "./email";
 
 export const subscribe = mutation({
   args: {
@@ -132,33 +133,24 @@ export const sendWelcomeEmail = internalAction({
   },
   returns: v.null(),
   handler: async (_ctx, args) => {
-    if (!process.env.RESEND_API_KEY) {
-      console.log("RESEND_API_KEY not configured, skipping email send");
-      return null;
-    }
-
     // Check if FRONTEND_URL is configured
     const frontendUrl = process.env.FRONTEND_URL;
     if (!frontendUrl) {
       console.warn(
-        "⚠️ FRONTEND_URL not configured. Unsubscribe links won't work properly.",
+        "FRONTEND_URL not configured. Unsubscribe links won't work properly.",
         "Please set FRONTEND_URL in your Convex dashboard environment variables.",
       );
     }
 
     try {
-      // Dynamic import to avoid errors when Resend is not configured
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-
       const unsubscribeUrl = frontendUrl
         ? `${frontendUrl}/unsubscribe?token=${args.unsubscribeToken}`
         : `[UNSUBSCRIBE_URL_NOT_CONFIGURED - Set FRONTEND_URL environment variable]`;
 
-      const result = await resend.emails.send({
-        from: "ChessMerge <contact@tsx.md>", // Use Resend's test domain if you haven't set up your own
+      await sendEmail({
         to: args.email,
         subject: "Welcome to ChessMerge Updates!",
+        text: `Welcome to ChessMerge Updates!\n\nThank you for subscribing.\n\nUnsubscribe: ${unsubscribeUrl}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #1a1a1a;">Welcome to ChessMerge!</h2>
@@ -187,14 +179,13 @@ export const sendWelcomeEmail = internalAction({
       });
 
       // Send email to me when new user subscribes
-      await resend.emails.send({
-        from: "ChessMerge <contact@tsx.md>",
+      await sendEmail({
         to: "nicuchiciuc@gmail.com",
         subject: "New user subscribed to ChessMerge",
-        html: `New user subscribed: ${args.email}`,
+        text: `New user subscribed: ${args.email}`,
       });
 
-      console.log("Welcome email sent successfully:", result);
+      console.log("Welcome email sent successfully");
     } catch (error) {
       console.error("Failed to send welcome email:", error);
       // Don't throw - we don't want to fail the subscription if email fails
