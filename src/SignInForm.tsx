@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ export function SignInForm() {
     try {
       const result = await signIn("password", formData);
       if (result.signingIn) {
-        void navigate("/");
+        void navigate({ to: "/" });
         return;
       }
 
@@ -90,7 +90,7 @@ export function SignInForm() {
         throw new Error("Email verification did not complete");
       }
       toast.success("Email verified. You are signed in.");
-      void navigate("/");
+      void navigate({ to: "/" });
     } catch {
       toast.error("That code is invalid or expired. Request a new one.");
       setSubmitting(false);
@@ -142,7 +142,7 @@ export function SignInForm() {
         throw new Error("Password reset did not complete");
       }
       toast.success("Password updated. You are signed in.");
-      void navigate("/");
+      void navigate({ to: "/" });
     } catch {
       toast.error(
         "That code is invalid or expired, or the new password is too short.",

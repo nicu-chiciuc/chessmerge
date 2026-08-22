@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
 
 interface NewGamePageProps {
   isAuthenticated?: boolean;
@@ -87,7 +87,7 @@ export function NewGamePage({ isAuthenticated = false }: NewGamePageProps) {
   const handleCreateGame = async () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to create games");
-      void navigate("/login");
+      void navigate({ to: "/login" });
       return;
     }
 
@@ -119,7 +119,7 @@ export function NewGamePage({ isAuthenticated = false }: NewGamePageProps) {
     try {
       const gameId = await createGame({ initialTimeMs, incrementMs });
       toast.success("Game created! Waiting for opponent...");
-      void navigate(`/game/${gameId}`);
+      void navigate({ to: "/game/$gameId", params: { gameId } });
     } catch {
       toast.error("Failed to create game");
     } finally {
@@ -139,8 +139,10 @@ export function NewGamePage({ isAuthenticated = false }: NewGamePageProps) {
           </p>
         </div>
         <div className="flex gap-4 justify-center">
-          <Button onClick={() => void navigate("/login")}>Sign In</Button>
-          <Button variant="outline" onClick={() => void navigate("/")}>
+          <Button onClick={() => void navigate({ to: "/login" })}>
+            Sign In
+          </Button>
+          <Button variant="outline" onClick={() => void navigate({ to: "/" })}>
             Back to Lobby
           </Button>
         </div>
@@ -267,7 +269,11 @@ export function NewGamePage({ isAuthenticated = false }: NewGamePageProps) {
         >
           {isCreating ? "Creating..." : "Create Game"}
         </Button>
-        <Button variant="outline" size="lg" onClick={() => void navigate("/")}>
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => void navigate({ to: "/" })}
+        >
           Cancel
         </Button>
       </div>

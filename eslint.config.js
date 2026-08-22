@@ -17,6 +17,7 @@ export default tseslint.config(
       "playwright.config.ts",
       "coverage",
       "e2e",
+      ".wrangler",
     ],
   },
   {

@@ -5,25 +5,35 @@ import {
   GameState,
   Move,
 } from "../../lib/chessmerge";
-import { useQueryState } from "nuqs";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ChessGame } from "./ChessGame";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 const defaultGameState = createInitialGameState();
 
 export function LocalPracticePage() {
-  // store game state in query params
-  const [gameState, setGameState] = useQueryState<GameState>("gameState", {
-    defaultValue: defaultGameState,
-    clearOnDefault: false,
-    parse: (femn: string) => {
-      return FEMN.fromFEMNGame(femn);
-    },
-
-    serialize: (gameState: GameState) => {
-      return FEMN.toFEMNGame(gameState, "_");
-    },
+  const serializedGameState = useSearch({
+    from: "/practice",
+    select: (search) => search.gameState,
   });
+  const navigate = useNavigate({ from: "/practice" });
+  const gameState = useMemo(
+    () => parseGameState(serializedGameState),
+    [serializedGameState],
+  );
+
+  const setGameState = useCallback(
+    async (nextGameState: GameState) => {
+      await navigate({
+        replace: true,
+        search: (previous) => ({
+          ...previous,
+          gameState: FEMN.toFEMNGame(nextGameState, "_"),
+        }),
+      });
+    },
+    [navigate],
+  );
 
   const makeMove = useCallback(
     async (move: Move) => {
@@ -45,4 +55,16 @@ export function LocalPracticePage() {
       renderedGameInfo={null}
     />
   );
+}
+
+function parseGameState(serializedGameState: string | undefined): GameState {
+  if (!serializedGameState) {
+    return defaultGameState;
+  }
+
+  try {
+    return FEMN.fromFEMNGame(serializedGameState);
+  } catch {
+    return defaultGameState;
+  }
 }

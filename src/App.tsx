@@ -1,10 +1,15 @@
 import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
+import {
+  Outlet,
+  useHydrated,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { Toaster } from "sonner";
-import { AppRoutes } from "./routes";
-import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./components/ui/button";
+import { AuthStateContext } from "./lib/auth-state-context";
 
 function AuthButton() {
   const { isAuthenticated } = useConvexAuth();
@@ -21,15 +26,20 @@ function AuthButton() {
     );
   }
 
-  return <Button onClick={() => void navigate("/login")}>Sign in</Button>;
+  return (
+    <Button onClick={() => void navigate({ to: "/login" })}>Sign in</Button>
+  );
 }
 
 export default function App() {
-  const location = useLocation();
   const navigate = useNavigate();
+  const isHydrated = useHydrated();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
   const isGameRoute =
-    location.pathname.startsWith("/game") ||
-    location.pathname.startsWith("/practice");
+    isHydrated &&
+    (pathname.startsWith("/game") || pathname.startsWith("/practice"));
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -37,7 +47,10 @@ export default function App() {
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-primary">ChessMerge</h2>
           {isGameRoute && (
-            <Button variant="outline" onClick={() => void navigate("/")}>
+            <Button
+              variant="outline"
+              onClick={() => void navigate({ to: "/" })}
+            >
               ← Lobby
             </Button>
           )}
@@ -67,7 +80,9 @@ function Content() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <AppRoutes isAuthenticated={isAuthenticated} />
+      <AuthStateContext.Provider value={isAuthenticated}>
+        <Outlet />
+      </AuthStateContext.Provider>
     </div>
   );
 }

@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 
-export function UnsubscribePage() {
-  const [searchParams] = useSearchParams();
+export function UnsubscribePage({ token }: { token?: string }) {
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
@@ -15,8 +14,6 @@ export function UnsubscribePage() {
   const unsubscribe = useMutation(api.emailSubscriptions.unsubscribe);
 
   useEffect(() => {
-    const token = searchParams.get("token");
-
     if (!token) {
       setStatus("error");
       setMessage("Invalid unsubscribe link");
@@ -33,12 +30,12 @@ export function UnsubscribePage() {
           setStatus("error");
           setMessage(result.message);
         }
-      } catch (error) {
+      } catch {
         setStatus("error");
         setMessage("Something went wrong. Please try again.");
       }
     })();
-  }, [searchParams, unsubscribe]);
+  }, [token, unsubscribe]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -70,7 +67,7 @@ export function UnsubscribePage() {
             </div>
             <p className="text-gray-700 mb-6">{message}</p>
 
-            <Button onClick={() => void navigate("/")}>
+            <Button onClick={() => void navigate({ to: "/" })}>
               Back to ChessMerge
             </Button>
           </>
@@ -95,7 +92,7 @@ export function UnsubscribePage() {
             </div>
             <p className="text-gray-700 mb-6">{message}</p>
             <button
-              onClick={() => void navigate("/")}
+              onClick={() => void navigate({ to: "/" })}
               className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
             >
               Back to ChessMerge

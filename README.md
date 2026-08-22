@@ -1,50 +1,41 @@
-# Welcome to your Convex + React (Vite) + Convex Auth app
+# ChessMerge
 
-This is a [Convex](https://convex.dev/) project created with [`pnpm create convex`](https://www.npmjs.com/package/create-convex).
-
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+ChessMerge uses:
 
 - Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Vite](https://vitest.dev/) for optimized web hosting
+- [TanStack Start](https://tanstack.com/start/latest) with file-based TanStack Router routes
+- [React](https://react.dev/) and [Vite](https://vite.dev/) for the frontend
 - [Tailwind](https://tailwindcss.com/) for building great looking UI
 - [Convex Auth](https://labs.convex.dev/auth) for authentication
 
 ## Get started
 
-If you just cloned this codebase and didn't use `pnpm create convex`, run:
+Install dependencies and start the frontend and Convex backend:
 
 ```
 pnpm install
 pnpm run dev
 ```
 
-If you're reading this README on GitHub and want to use this template, run:
+## Development scripts
 
-```
-pnpm create convex@latest -- -t react-vite-convexauth
-```
-
-## Development Scripts
-
-This project includes several useful scripts for development:
-
-### Core Development
+### Core development
 
 - `pnpm run dev` - Start both frontend and backend in development mode
 - `pnpm run dev:frontend` - Start only the Vite frontend development server
 - `pnpm run dev:backend` - Start only the Convex backend development server
 
-### Type Checking
+### Type checking
 
 - `pnpm run type-check` - Check TypeScript types across all projects (frontend, node tooling, and convex)
 - `pnpm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
 - `pnpm run lint` - Run both TypeScript type checking and ESLint linting
 
-### Build & Deploy
+### Build and deploy
 
-- `pnpm run build` - Build the project for production
-- `pnpm run preview` - Preview the production build locally
+- `pnpm run build:app` - Type-check and build the application locally
+- `pnpm run build` - Select the Convex deployment in Cloudflare Workers Builds, deploy the Convex functions, and build the application
+- `pnpm run preview` - Serve the current `dist/client` build through Wrangler's static-asset runtime
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
@@ -56,37 +47,11 @@ The generated Convex bindings in `convex/_generated` are committed so CI and
 Cloudflare can build without development deployment credentials. Run
 `pnpm exec convex codegen` after changing backend modules or the schema.
 
-For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
-
-For more examples of different Convex Auth flows, check out this [example repo](https://www.convex.dev/templates/convex-auth).
-
-## Learn more
-
-To learn more about developing your project with Convex, check out:
-
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
-
-## Development Setup
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-3. Start the development server. The first run configures the Convex
-   deployment and its auth keys:
-   ```bash
-   pnpm run dev
-   ```
+TanStack Start runs in SPA mode for this application. It prerenders the browser
+shell to `dist/client/index.html`, and Cloudflare Workers Static Assets serves
+that shell for direct route loads. Convex Auth and all authenticated game data
+initialize in the browser; the Start prerender step does not read or recreate an
+authenticated session on the server.
 
 ### Authentication email setup
 
