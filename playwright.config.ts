@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const isHydrationSmoke = process.env.CHESSMERGE_E2E_SMOKE === "1";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -20,7 +22,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm run build:app && pnpm run preview",
     url: "http://localhost:8787",
-    reuseExistingServer: true,
+    reuseExistingServer: !isHydrationSmoke,
     timeout: 120000,
   },
 });

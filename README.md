@@ -1,7 +1,5 @@
 # ChessMerge
 
-This is a [Convex](https://convex.dev/) project created with [`pnpm create convex`](https://www.npmjs.com/package/create-convex).
-
 ChessMerge uses:
 
 - Convex as your backend (database, server logic)
@@ -12,24 +10,22 @@ ChessMerge uses:
 
 ## Get started
 
-If you just cloned this codebase and didn't use `pnpm create convex`, run:
+Install dependencies and start the frontend and Convex backend:
 
 ```
 pnpm install
 pnpm run dev
 ```
 
-## Development Scripts
+## Development scripts
 
-This project includes several useful scripts for development:
-
-### Core Development
+### Core development
 
 - `pnpm run dev` - Start both frontend and backend in development mode
 - `pnpm run dev:frontend` - Start only the Vite frontend development server
 - `pnpm run dev:backend` - Start only the Convex backend development server
 
-### Type Checking
+### Type checking
 
 - `pnpm run type-check` - Check TypeScript types across all projects (frontend, node tooling, and convex)
 - `pnpm run type-check:convex` - Check TypeScript types specifically for Convex backend functions
@@ -56,38 +52,6 @@ shell to `dist/client/index.html`, and Cloudflare Workers Static Assets serves
 that shell for direct route loads. Convex Auth and all authenticated game data
 initialize in the browser; the Start prerender step does not read or recreate an
 authenticated session on the server.
-
-For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
-
-For more examples of different Convex Auth flows, check out this [example repo](https://www.convex.dev/templates/convex-auth).
-
-## Learn more
-
-To learn more about developing your project with Convex, check out:
-
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
-
-## Development Setup
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-3. Start the development server. The first run configures the Convex
-   deployment and its auth keys:
-   ```bash
-   pnpm run dev
-   ```
 
 ### Authentication email setup
 

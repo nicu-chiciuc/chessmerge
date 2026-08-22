@@ -1,8 +1,12 @@
 import { useQuery, useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import {
+  Outlet,
+  useHydrated,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { Button } from "./components/ui/button";
 import { AuthStateContext } from "./lib/auth-state-context";
@@ -29,19 +33,13 @@ function AuthButton() {
 
 export default function App() {
   const navigate = useNavigate();
-  const [isMounted, setIsMounted] = useState(false);
+  const isHydrated = useHydrated();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
   const isGameRoute =
-    isMounted &&
+    isHydrated &&
     (pathname.startsWith("/game") || pathname.startsWith("/practice"));
-
-  useEffect(() => {
-    // Cloudflare serves the prerendered root shell for direct SPA route loads.
-    // Read route-dependent header state only after that shell has hydrated.
-    setIsMounted(true);
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
