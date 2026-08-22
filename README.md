@@ -19,12 +19,6 @@ pnpm install
 pnpm run dev
 ```
 
-If you're reading this README on GitHub and want to use this template, run:
-
-```
-pnpm create convex@latest -- -t react-vite-convexauth
-```
-
 ## Development Scripts
 
 This project includes several useful scripts for development:
@@ -45,8 +39,7 @@ This project includes several useful scripts for development:
 
 - `pnpm run build:app` - Type-check and build the application locally
 - `pnpm run build` - Select the Convex deployment in Cloudflare Workers Builds, deploy the Convex functions, and build the application
-- `pnpm run preview` - Preview the production build locally
-- `pnpm run cf-typegen` - Regenerate types from `wrangler.jsonc`
+- `pnpm run preview` - Serve the current `dist/client` build through Wrangler's static-asset runtime
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
