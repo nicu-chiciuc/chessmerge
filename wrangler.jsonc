@@ -3,6 +3,12 @@
   "name": "chessmerge",
   "compatibility_date": "2026-08-16",
   "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "chessmerge.com",
+      "custom_domain": true,
+    },
+  ],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
