@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Challenge flow prototype · ChessMerge</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#screen-root">Skip to challenge</a>
+
+    <header class="site-header">
+      <button class="wordmark" type="button" data-view-target="create">
+        <span class="wordmark-mark" aria-hidden="true">♞<small>♝</small></span>
+        <span>ChessMerge</span>
+      </button>
+
+      <details class="prototype-switcher">
+        <summary>
+          <span class="prototype-dot" aria-hidden="true"></span>
+          <span id="prototype-current">Create</span>
+          <span aria-hidden="true">⌄</span>
+        </summary>
+        <nav class="prototype-menu" aria-label="Prototype views">
+          <button type="button" data-view-target="create">Create</button>
+          <button type="button" data-view-target="waiting">Waiting</button>
+          <button type="button" data-view-target="join">Join</button>
+          <button type="button" data-view-target="joined">Joined</button>
+          <button type="button" data-view-target="unavailable">
+            Unavailable
+          </button>
+        </nav>
+      </details>
+    </header>
+
+    <main id="screen-root" tabindex="-1"></main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
