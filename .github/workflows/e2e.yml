@@ -25,9 +25,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Convex types
-        run: pnpm exec convex codegen
-
       - name: Type check
         run: pnpm run type-check
 

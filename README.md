@@ -52,6 +52,10 @@ This project includes several useful scripts for development:
 - `tsconfig.node.json` - Node.js tooling (vite.config.ts, etc.)
 - `convex/tsconfig.json` - Convex backend functions
 
+The generated Convex bindings in `convex/_generated` are committed so CI and
+Cloudflare can build without development deployment credentials. Run
+`pnpm exec convex codegen` after changing backend modules or the schema.
+
 For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
 
 For more examples of different Convex Auth flows, check out this [example repo](https://www.convex.dev/templates/convex-auth).
