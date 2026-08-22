@@ -123,6 +123,9 @@ importers:
       globals:
         specifier: ^15.15.0
         version: 15.15.0
+      jose:
+        specifier: ^6.2.10
+        version: 6.2.10
       npm-run-all:
         specifier: ^4.1.5
         version: 4.1.5
