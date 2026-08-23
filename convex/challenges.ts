@@ -162,7 +162,6 @@ export const joinChallenge = mutation({
       gameState: JSON.stringify(createInitialGameState()),
       moveHistory: [],
       lastMoveAt: now,
-      gameStartedAt: now,
     });
 
     await ctx.db.replace(args.challengeId, {

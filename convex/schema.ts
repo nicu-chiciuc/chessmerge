@@ -6,6 +6,7 @@ const applicationTables = {
   games: defineTable({
     whitePlayerId: v.id("users"),
     blackPlayerId: v.optional(v.id("users")),
+    // Retained for stored remote-practice games. New practice is local.
     isPracticeGame: v.optional(v.boolean()),
     status: v.union(
       v.literal("waiting"),
@@ -28,7 +29,8 @@ const applicationTables = {
         v.literal("draw_agreement"),
       ),
     ),
-    // Time control settings
+    // Legacy clock fields stay optional so stored games continue to validate.
+    // New games are untimed challenges.
     timeControl: v.optional(
       v.object({
         initialTimeMs: v.number(), // Initial time in milliseconds
@@ -39,7 +41,6 @@ const applicationTables = {
     gameStartedAt: v.optional(v.number()), // When the game became active (black joined)
     scheduledTimeoutId: v.optional(v.id("_scheduled_functions")), // Timeout check scheduled function
   })
-    .index("by_status", ["status"])
     .index("by_player", ["whitePlayerId"])
     .index("by_black_player", ["blackPlayerId"]),
 

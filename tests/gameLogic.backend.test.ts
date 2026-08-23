@@ -1,10 +1,9 @@
 import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import schema from "../convex/schema";
 import {
-  boardToString,
   createEmptyGameState,
   createInitialGameState,
   type Move,
@@ -25,13 +24,115 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("public game lookup", () => {
+describe("participant game lookup", () => {
   it("returns null for a malformed game id", async () => {
     const t = convexTest(schema, modules);
+    const userId = await insertUser(t, "player@example.com");
+    const player = t.withIdentity({ subject: userId });
 
     await expect(
-      t.query(api.gameLogic.getGame, { gameId: "not-a-convex-id" }),
+      player.query(api.gameLogic.getGame, { gameId: "not-a-convex-id" }),
     ).resolves.toBeNull();
+  });
+
+  it("denies anonymous and unrelated callers while returning a participant DTO", async () => {
+    const t = convexTest(schema, modules);
+    const { white, black, gameId } = await createActiveGame(t);
+    const unrelatedId = await insertUser(t, "unrelated@example.com");
+    const unrelated = t.withIdentity({ subject: unrelatedId });
+
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toBeNull();
+    await expect(
+      unrelated.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toBeNull();
+    await expect(
+      white.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toEqual({
+      _id: gameId,
+      status: "active",
+      playerColor: "w",
+      gameState: JSON.stringify(createInitialGameState()),
+      moveHistory: [],
+      lastMoveAt: START_TIME.getTime(),
+    });
+    await expect(
+      black.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toEqual({
+      _id: gameId,
+      status: "active",
+      playerColor: "b",
+      gameState: JSON.stringify(createInitialGameState()),
+      moveHistory: [],
+      lastMoveAt: START_TIME.getTime(),
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(gameId, {
+        status: "completed",
+        winner: "w",
+        gameEndReason: "checkmate",
+      });
+    });
+    await expect(
+      white.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toEqual({
+      _id: gameId,
+      status: "completed",
+      playerColor: "w",
+      gameState: JSON.stringify(createInitialGameState()),
+      moveHistory: [],
+      lastMoveAt: START_TIME.getTime(),
+      winner: "w",
+      gameEndReason: "checkmate",
+    });
+  });
+
+  it("returns null for legacy and otherwise non-resumable records", async () => {
+    const t = convexTest(schema, modules);
+    const whiteId = await insertUser(t, "white@example.com");
+    const blackId = await insertUser(t, "black@example.com");
+    const white = t.withIdentity({ subject: whiteId });
+    const gameState = JSON.stringify(createInitialGameState());
+
+    const gameIds = await t.run(async (ctx) => {
+      const baseGame = {
+        whitePlayerId: whiteId,
+        blackPlayerId: blackId,
+        gameState,
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime(),
+      };
+
+      return await Promise.all([
+        ctx.db.insert("games", { ...baseGame, status: "waiting" }),
+        ctx.db.insert("games", {
+          ...baseGame,
+          status: "active",
+          timeControl: { initialTimeMs: 60_000, incrementMs: 0 },
+        }),
+        ctx.db.insert("games", {
+          ...baseGame,
+          status: "active",
+          isPracticeGame: true,
+        }),
+        ctx.db.insert("games", { ...baseGame, status: "abandoned" }),
+        ctx.db.insert("games", {
+          whitePlayerId: whiteId,
+          status: "active",
+          gameState,
+          moveHistory: [],
+          lastMoveAt: START_TIME.getTime(),
+        }),
+      ]);
+    });
+
+    for (const gameId of gameIds) {
+      await expect(
+        white.query(api.gameLogic.getGame, { gameId }),
+      ).resolves.toBeNull();
+    }
   });
 });
 
@@ -205,8 +306,6 @@ describe("game move authority", () => {
       await ctx.db.patch(gameId, {
         gameState: JSON.stringify(mateInOne),
         moveHistory: [],
-        moveTimestamps: [],
-        gameStartedAt: Date.now(),
         lastMoveAt: Date.now(),
       });
     });
@@ -236,96 +335,43 @@ describe("game move authority", () => {
     });
   });
 
-  it("rejects a move after expiry and lets the timeout job record the result", async () => {
-    const t = convexTest(schema, modules);
-    const { white, gameId } = await createActiveGame(t, {
-      initialTimeMs: 1_000,
-    });
+  it("rejects moves for legacy timed and remote-practice records", async () => {
+    for (const legacyFields of [
+      { timeControl: { initialTimeMs: 60_000, incrementMs: 0 } },
+      { isPracticeGame: true },
+    ]) {
+      const t = convexTest(schema, modules);
+      const { white, gameId } = await createActiveGame(t);
+      await t.run(async (ctx) => {
+        await ctx.db.patch(gameId, legacyFields);
+      });
 
-    vi.advanceTimersByTime(1_001);
-    await expect(
-      white.mutation(api.gameLogic.makeMove, {
-        gameId,
-        move: serializeMove(
-          { row: 6, col: 4 },
-          { row: 5, col: 4 },
-          "p",
-          "base",
-        ),
-      }),
-    ).rejects.toThrow("Clock expired");
-
-    const beforeTimeoutJob = await readGame(t, gameId);
-    expect(beforeTimeoutJob.status).toBe("active");
-    expect(beforeTimeoutJob.moveHistory).toEqual([]);
-
-    vi.runAllTimers();
-    await t.finishInProgressScheduledFunctions();
-
-    const timedOutGame = await readGame(t, gameId);
-    expect(timedOutGame.status).toBe("completed");
-    expect(timedOutGame.winner).toBe("b");
-    expect(timedOutGame.gameEndReason).toBe("timeout");
-    expect(timedOutGame.moveHistory).toEqual([]);
+      await expect(
+        white.mutation(api.gameLogic.makeMove, {
+          gameId,
+          move: serializeMove(
+            { row: 6, col: 4 },
+            { row: 5, col: 4 },
+            "p",
+            "base",
+          ),
+        }),
+      ).rejects.toThrow("Game unavailable");
+      expect((await readGame(t, gameId)).moveHistory).toEqual([]);
+    }
   });
 });
 
-describe("legacy remote practice security", () => {
-  it("keeps arbitrary positions and both-side play for the owner only", async () => {
+describe("legacy scheduled jobs", () => {
+  it("keeps checkTimeout callable without changing the game", async () => {
     const t = convexTest(schema, modules);
-    const ownerId = await insertUser(t, "owner@example.com");
-    const otherId = await insertUser(t, "other@example.com");
-    const owner = t.withIdentity({ subject: ownerId });
-    const other = t.withIdentity({ subject: otherId });
-    const gameId = await owner.mutation(api.gameLogic.createPracticeGame, {});
-
-    const practiceState = createEmptyGameState();
-    practiceState.board[0][0] = [{ color: "b", pieceType: "k" }];
-    practiceState.board[1][1] = [{ color: "b", pieceType: "p" }];
-    practiceState.board[7][7] = [{ color: "w", pieceType: "k" }];
-    const strBoard = boardToString(practiceState.board);
+    const { gameId } = await createActiveGame(t);
+    const before = await readGame(t, gameId);
 
     await expect(
-      t.mutation(api.gameLogic.setPracticeGameState, { gameId, strBoard }),
-    ).rejects.toThrow("Not authenticated");
-    await expect(
-      other.mutation(api.gameLogic.setPracticeGameState, {
-        gameId,
-        strBoard,
-      }),
-    ).rejects.toThrow("Not the practice game owner");
-    await expect(
-      owner.mutation(api.gameLogic.setPracticeGameState, {
-        gameId,
-        strBoard,
-      }),
-    ).resolves.toEqual({ success: true });
-
-    await expect(
-      owner.mutation(api.gameLogic.makeMove, {
-        gameId,
-        move: serializeMove(
-          { row: 1, col: 1 },
-          { row: 2, col: 1 },
-          "p",
-          "base",
-        ),
-      }),
-    ).resolves.toMatchObject({ success: true });
-
-    const game = await readGame(t, gameId);
-    expect(JSON.parse(game.gameState)).toMatchObject({
-      board: practiceState.board.map((row, rowIndex) =>
-        row.map((cell, colIndex) => {
-          if (rowIndex === 1 && colIndex === 1) return [];
-          if (rowIndex === 2 && colIndex === 1) {
-            return [{ color: "b", pieceType: "p" }];
-          }
-          return cell;
-        }),
-      ),
-      options: { turn: "b" },
-    });
+      t.mutation(internal.gameLogic.checkTimeout, { gameId }),
+    ).resolves.toBeNull();
+    expect(await readGame(t, gameId)).toEqual(before);
   });
 });
 
@@ -335,19 +381,18 @@ async function insertUser(t: ChessMergeTest, email: string) {
   });
 }
 
-async function createActiveGame(
-  t: ChessMergeTest,
-  options: { initialTimeMs?: number; incrementMs?: number } = {},
-) {
+async function createActiveGame(t: ChessMergeTest) {
   const whiteId = await insertUser(t, "white@example.com");
   const blackId = await insertUser(t, "black@example.com");
   const white = t.withIdentity({ subject: whiteId });
   const black = t.withIdentity({ subject: blackId });
-  const gameId = await white.mutation(api.gameLogic.createGame, {
-    initialTimeMs: options.initialTimeMs ?? 60_000,
-    incrementMs: options.incrementMs ?? 0,
+  const { challengeId } = await white.mutation(
+    api.challenges.createChallenge,
+    {},
+  );
+  const { gameId } = await black.mutation(api.challenges.joinChallenge, {
+    challengeId,
   });
-  await black.mutation(api.gameLogic.joinGame, { gameId });
   return { white, black, gameId };
 }
 

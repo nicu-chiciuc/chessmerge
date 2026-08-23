@@ -1,43 +1,21 @@
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
-import { toast } from "sonner";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { Button } from "@/components/ui/button";
 import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
 
-interface GameLobbyProps {
-  onJoinGame: (gameId: Id<"games">) => void;
-  isAuthenticated?: boolean;
-}
-
 export function GameLobby({
-  onJoinGame,
   isAuthenticated = false,
-}: GameLobbyProps) {
-  const myGames = useQuery(api.gameLogic.listGames) || [];
-  const createPracticeGame = useMutation(api.gameLogic.createPracticeGame);
+}: {
+  isAuthenticated?: boolean;
+}) {
+  const myGames = useQuery(api.gameLogic.listGames);
   const navigate = useNavigate();
 
   const handleCreateChallenge = () => {
     void navigate({ to: "/new" });
-  };
-
-  const handleCreatePracticeGame = async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to create practice games");
-      void navigate({ to: "/login" });
-      return;
-    }
-    try {
-      const gameId = await createPracticeGame();
-      onJoinGame(gameId);
-      toast.success("Practice game started! You can play both sides.");
-    } catch {
-      toast.error("Failed to create practice game");
-    }
   };
 
   return (
@@ -48,8 +26,8 @@ export function GameLobby({
         <p className="text-gray-600 mb-6">
           Welcome to ChessMerge!{" "}
           {isAuthenticated
-            ? "Create a challenge or resume one of your games."
-            : "Create a challenge or try local practice."}
+            ? "Create a challenge or resume a game."
+            : "Create a challenge or use the Sandbox."}
         </p>
 
         <div className="flex gap-4 justify-center flex-wrap">
@@ -61,28 +39,13 @@ export function GameLobby({
             Create challenge
           </Button>
 
-          {
-            // Only in dev
-            import.meta.env.DEV && (
-              <Button
-                onClick={() => void handleCreatePracticeGame()}
-                variant="secondary"
-                size="lg"
-                className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
-                disabled={!isAuthenticated}
-              >
-                Practice Game
-              </Button>
-            )
-          }
-
           <Button
             onClick={() => void navigate({ to: "/practice" })}
             variant="secondary"
             size="lg"
             className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white"
           >
-            Local Practice
+            Sandbox
           </Button>
         </div>
       </div>
@@ -104,57 +67,52 @@ export function GameLobby({
                   Sign In
                 </Button>
               </div>
+            ) : myGames === undefined ? (
+              <p className="text-gray-500">Loading games…</p>
             ) : myGames.length === 0 ? (
-              <p className="text-gray-500">
-                No games yet. Create one to get started!
-              </p>
+              <p className="text-gray-500">No games yet.</p>
             ) : (
               <div className="space-y-3">
                 {myGames.map((game) => (
-                  <div
+                  <button
+                    type="button"
                     key={game._id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                    onClick={() => onJoinGame(game._id)}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left hover:bg-gray-50"
+                    onClick={() =>
+                      void navigate({
+                        to: "/game/$gameId",
+                        params: { gameId: game._id },
+                      })
+                    }
                   >
-                    <div>
-                      <div className="font-medium">
-                        {game.isPracticeGame
-                          ? "Practice Game"
-                          : game.status === "waiting"
-                            ? "Waiting for opponent"
-                            : game.status === "active"
-                              ? "Active game"
-                              : "Completed"}
+                    <span className="min-w-0">
+                      <span className="block font-medium">
+                        {game.status === "active"
+                          ? "Active game"
+                          : "Completed game"}
 
                         <span className="text-gray-500">
                           {" "}
                           ({game._id.slice(0, 6)})
                         </span>
-                      </div>
+                      </span>
 
-                      <div className="text-sm text-gray-500">
+                      <span className="block text-sm text-gray-500">
                         {new Date(game.lastMoveAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {game.isPracticeGame && (
-                        <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
-                          Practice
-                        </span>
-                      )}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
                       <span
                         className={`px-2 py-1 rounded text-xs ${
-                          game.status === "waiting"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : game.status === "active"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
+                          game.status === "active"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
                         }`}
                       >
                         {game.status}
                       </span>
-                    </div>
-                  </div>
+                    </span>
+                  </button>
                 ))}
               </div>
             )}

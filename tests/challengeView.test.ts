@@ -47,6 +47,17 @@ describe("challenge view resolution", () => {
         {
           status: "joined",
           expiresAt: NOW + 1,
+          viewerRole: "opponent",
+          gameId: GAME_ID,
+        },
+        NOW,
+      ),
+    ).toEqual({ kind: "game", gameId: GAME_ID });
+    expect(
+      resolveChallengeView(
+        {
+          status: "joined",
+          expiresAt: NOW + 1,
           viewerRole: "guest",
         },
         NOW,

@@ -141,6 +141,31 @@ test.describe("shareable challenges", () => {
         guestPage.locator("h1", { hasText: "Chess game" }),
       ).toBeFocused();
 
+      const gameUrl = creatorPage.url();
+      await creatorPage.getByRole("button", { name: /Lobby/ }).click();
+      await expect(creatorPage).toHaveURL("/");
+      const resumeGame = creatorPage.getByRole("button", {
+        name: /Active game/,
+      });
+      await expect(resumeGame).toBeVisible();
+      await resumeGame.click();
+      await expect(creatorPage).toHaveURL(gameUrl);
+
+      const unrelatedContext = await browser.newContext();
+      const unrelatedPage = await unrelatedContext.newPage();
+      try {
+        await unrelatedPage.goto(challengeUrl);
+        await expect(
+          unrelatedPage.getByRole("heading", {
+            name: "Challenge unavailable",
+          }),
+        ).toBeVisible();
+        await expect(unrelatedPage).toHaveURL(challengeUrl);
+        await expect(unrelatedPage.getByText(/Game ID:/)).toHaveCount(0);
+      } finally {
+        await unrelatedContext.close();
+      }
+
       await guestPage.setViewportSize({ width: 320, height: 720 });
       await expect(
         guestPage.getByRole("button", { name: "Sign out" }),
@@ -168,6 +193,12 @@ test.describe("shareable challenges", () => {
       await expect(
         guestPage.locator('button[data-square="e2"] img'),
       ).toHaveCount(0);
+      await expect(
+        creatorPage.locator('button[data-square="e3"] img'),
+      ).toHaveCount(1);
+      await expect(
+        creatorPage.locator('button[data-square="e3"]'),
+      ).toBeFocused();
     } finally {
       await guestContext.close();
     }

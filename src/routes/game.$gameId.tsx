@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { useEffect, useRef } from "react";
 
 import { api } from "../../convex/_generated/api";
@@ -11,18 +11,36 @@ export const Route = createFileRoute("/game/$gameId")({
 
 function GameRoute() {
   const { gameId } = Route.useParams();
-  const game = useQuery(api.gameLogic.getGame, { gameId });
-  const invalidGame = game === null;
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const game = useQuery(
+    api.gameLogic.getGame,
+    isAuthenticated ? { gameId } : "skip",
+  );
   const heading = useRef<HTMLHeadingElement>(null);
+  const focusState =
+    isLoading || (isAuthenticated && game === undefined)
+      ? "loading"
+      : !isAuthenticated || game === null
+        ? "unavailable"
+        : "ready";
 
   useEffect(() => {
+    if (focusState === "loading") return;
     heading.current?.focus();
-  }, [gameId, invalidGame]);
+  }, [focusState, gameId]);
 
-  if (invalidGame) {
+  if (isLoading || (isAuthenticated && game === undefined)) {
+    return (
+      <p className="p-4 text-sm text-muted-foreground" aria-live="polite">
+        Opening game…
+      </p>
+    );
+  }
+
+  if (!isAuthenticated || game == null) {
     return (
       <h1 ref={heading} tabIndex={-1} className="p-4 text-xl font-semibold">
-        Invalid game link
+        Game unavailable
       </h1>
     );
   }
@@ -32,7 +50,7 @@ function GameRoute() {
       <h1 ref={heading} tabIndex={-1} className="sr-only">
         Chess game
       </h1>
-      {game ? <ChessGameWrapper game={game} /> : null}
+      <ChessGameWrapper game={game} />
     </>
   );
 }
