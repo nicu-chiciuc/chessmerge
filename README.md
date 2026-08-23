@@ -66,6 +66,18 @@ If the automatic first-run setup did not complete, generate the required
 pnpm exec @convex-dev/auth --skip-git-check --web-server-url http://localhost:5173
 ```
 
+The Convex project also keeps these three values as **Development** and
+**Preview** default environment variables. Convex copies project defaults into
+new deployments; it does not update deployments that already exist. Development
+uses `http://localhost:5173` for `SITE_URL`, while previews use
+`https://chessmerge.com` as the stable redirect fallback. Cloudflare preview
+builds recreate their named Convex deployment, so the next build inherits the
+defaults and guest authentication works without copying production secrets.
+
+Manage the defaults in Convex Project Settings or with
+`pnpm exec convex env default --help`. Keep `JWT_PRIVATE_KEY` and `JWKS` from the
+same generated key pair.
+
 Onboard `chessmerge.com` in Cloudflare Email Sending, then set the Cloudflare
 account ID and an account-owned token with **Email Sending > Edit** on every
 Convex deployment:
