@@ -5,6 +5,7 @@ import { resolveChallengeView } from "../src/components/challenge-view";
 
 const NOW = 1_000;
 const GAME_ID = "game-1" as Id<"games">;
+const CREATOR = { name: "HostPlayer", isGuest: false };
 
 describe("challenge view resolution", () => {
   it("keeps an unexpired waiting challenge public", () => {
@@ -14,20 +15,22 @@ describe("challenge view resolution", () => {
           status: "waiting",
           expiresAt: NOW + 1,
           viewerRole: "creator",
+          creator: CREATOR,
         },
         NOW,
       ),
-    ).toEqual({ kind: "creator" });
+    ).toEqual({ kind: "creator", creator: CREATOR });
     expect(
       resolveChallengeView(
         {
           status: "waiting",
           expiresAt: NOW + 1,
           viewerRole: "guest",
+          creator: CREATOR,
         },
         NOW,
       ),
-    ).toEqual({ kind: "guest" });
+    ).toEqual({ kind: "guest", creator: CREATOR });
   });
 
   it("sends both participants, and only participants, to the game", () => {
@@ -38,6 +41,7 @@ describe("challenge view resolution", () => {
           expiresAt: NOW + 1,
           viewerRole: "creator",
           gameId: GAME_ID,
+          creator: CREATOR,
         },
         NOW,
       ),
@@ -49,6 +53,7 @@ describe("challenge view resolution", () => {
           expiresAt: NOW + 1,
           viewerRole: "opponent",
           gameId: GAME_ID,
+          creator: CREATOR,
         },
         NOW,
       ),
@@ -59,6 +64,7 @@ describe("challenge view resolution", () => {
           status: "joined",
           expiresAt: NOW + 1,
           viewerRole: "guest",
+          creator: CREATOR,
         },
         NOW,
       ),
@@ -69,19 +75,34 @@ describe("challenge view resolution", () => {
     expect(resolveChallengeView(null, NOW)).toEqual({ kind: "unavailable" });
     expect(
       resolveChallengeView(
-        { status: "waiting", expiresAt: NOW, viewerRole: "guest" },
+        {
+          status: "waiting",
+          expiresAt: NOW,
+          viewerRole: "guest",
+          creator: CREATOR,
+        },
         NOW,
       ),
     ).toEqual({ kind: "unavailable" });
     expect(
       resolveChallengeView(
-        { status: "canceled", expiresAt: NOW + 1, viewerRole: "creator" },
+        {
+          status: "canceled",
+          expiresAt: NOW + 1,
+          viewerRole: "creator",
+          creator: CREATOR,
+        },
         NOW,
       ),
     ).toEqual({ kind: "unavailable" });
     expect(
       resolveChallengeView(
-        { status: "expired", expiresAt: NOW - 1, viewerRole: "guest" },
+        {
+          status: "expired",
+          expiresAt: NOW - 1,
+          viewerRole: "guest",
+          creator: CREATOR,
+        },
         NOW,
       ),
     ).toEqual({ kind: "unavailable" });

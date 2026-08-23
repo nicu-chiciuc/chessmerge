@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type QueryCtx,
+} from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   isInCheck,
@@ -16,6 +21,16 @@ import type {
   Position,
 } from "../lib/chessmerge";
 import type { Doc, Id } from "./_generated/dataModel";
+import {
+  getPublicPlayer,
+  publicPlayerValidator,
+  type PublicPlayer,
+} from "./publicPlayers";
+
+const playersValidator = v.object({
+  white: publicPlayerValidator,
+  black: publicPlayerValidator,
+});
 
 const gameViewValidator = v.union(
   v.object({
@@ -24,6 +39,7 @@ const gameViewValidator = v.union(
     gameState: v.string(),
     moveCount: v.number(),
     lastMoveAt: v.number(),
+    players: playersValidator,
     status: v.literal("active"),
   }),
   v.object({
@@ -32,6 +48,7 @@ const gameViewValidator = v.union(
     gameState: v.string(),
     moveCount: v.number(),
     lastMoveAt: v.number(),
+    players: playersValidator,
     status: v.literal("completed"),
     winner: v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
     gameEndReason: v.union(v.literal("checkmate"), v.literal("stalemate")),
@@ -43,6 +60,14 @@ const liveGameSummaryValidator = v.object({
   lastMoveAt: v.number(),
   moveCount: v.number(),
   turn: v.union(v.literal("w"), v.literal("b")),
+  players: playersValidator,
+});
+
+const gameSummaryValidator = v.object({
+  _id: v.id("games"),
+  lastMoveAt: v.number(),
+  status: v.union(v.literal("active"), v.literal("completed")),
+  players: playersValidator,
 });
 
 type ResumableGame = Doc<"games"> & { blackPlayerId: Id<"users"> } & (
@@ -327,6 +352,7 @@ export const getGame = query({
     const game = await ctx.db.get(gameId);
     if (!game || !isResumableGame(game)) return null;
     if (!parseStoredGameState(game.gameState)) return null;
+    const players = await getPlayers(ctx, game);
 
     const playerColor: "w" | "b" | null = userId
       ? game.whitePlayerId === userId
@@ -342,6 +368,7 @@ export const getGame = query({
       gameState: game.gameState,
       moveCount: game.moveHistory.length,
       lastMoveAt: game.lastMoveAt,
+      players,
     };
 
     if (game.status === "active") {
@@ -374,6 +401,7 @@ export const listLiveGames = query({
       lastMoveAt: number;
       moveCount: number;
       turn: "w" | "b";
+      players: { white: PublicPlayer; black: PublicPlayer };
     }> = [];
 
     for (const game of candidates) {
@@ -386,6 +414,7 @@ export const listLiveGames = query({
         lastMoveAt: game.lastMoveAt,
         moveCount: game.moveHistory.length,
         turn: gameState.options.turn,
+        players: await getPlayers(ctx, game),
       });
 
       if (liveGames.length === 6) break;
@@ -397,6 +426,7 @@ export const listLiveGames = query({
 
 export const listGames = query({
   args: {},
+  returns: v.array(gameSummaryValidator),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
@@ -419,11 +449,31 @@ export const listGames = query({
       if (isResumableGame(game)) resumableGames.set(game._id, game);
     }
 
-    return [...resumableGames.values()]
+    const games = [...resumableGames.values()]
       .sort((first, second) => second._creationTime - first._creationTime)
       .slice(0, 20);
+
+    return await Promise.all(
+      games.map(async (game) => ({
+        _id: game._id,
+        lastMoveAt: game.lastMoveAt,
+        status: game.status,
+        players: await getPlayers(ctx, game),
+      })),
+    );
   },
 });
+
+async function getPlayers(ctx: QueryCtx, game: ResumableGame) {
+  const [white, black] = await Promise.all([
+    ctx.db.get(game.whitePlayerId),
+    ctx.db.get(game.blackPlayerId),
+  ]);
+  return {
+    white: getPublicPlayer(white),
+    black: getPublicPlayer(black),
+  };
+}
 
 // Already-enqueued legacy timeout jobs must still resolve after deployment.
 export const checkTimeout = internalMutation({

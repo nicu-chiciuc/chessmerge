@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { createInitialGameState } from "../lib/chessmerge";
 import { mutation, query } from "./_generated/server";
+import { getPublicPlayer, publicPlayerValidator } from "./publicPlayers";
 
 const CHALLENGE_EXPIRY_MS = 24 * 60 * 60 * 1_000;
 const CREATION_COOLDOWN_MS = 30 * 1_000;
@@ -73,17 +74,20 @@ export const getChallenge = query({
       status: nonJoinedChallengeStatus,
       expiresAt: v.number(),
       viewerRole: v.union(v.literal("creator"), v.literal("guest")),
+      creator: publicPlayerValidator,
     }),
     v.object({
       status: v.literal("joined"),
       expiresAt: v.number(),
       viewerRole: v.literal("guest"),
+      creator: publicPlayerValidator,
     }),
     v.object({
       status: v.literal("joined"),
       expiresAt: v.number(),
       viewerRole: v.union(v.literal("creator"), v.literal("opponent")),
       gameId: v.id("games"),
+      creator: publicPlayerValidator,
     }),
   ),
   handler: async (ctx, args) => {
@@ -93,6 +97,7 @@ export const getChallenge = query({
     const viewerId = await getAuthUserId(ctx);
     const challenge = await ctx.db.get(challengeId);
     if (!challenge) return null;
+    const creator = getPublicPlayer(await ctx.db.get(challenge.creatorId));
 
     if (challenge.status === "joined") {
       const game = viewerId ? await ctx.db.get(challenge.gameId) : null;
@@ -107,6 +112,7 @@ export const getChallenge = query({
           expiresAt: challenge.expiresAt,
           viewerRole,
           gameId: challenge.gameId,
+          creator,
         };
       }
 
@@ -115,6 +121,7 @@ export const getChallenge = query({
         status: challenge.status,
         expiresAt: challenge.expiresAt,
         viewerRole,
+        creator,
       };
     }
 
@@ -125,6 +132,7 @@ export const getChallenge = query({
       status: challenge.status,
       expiresAt: challenge.expiresAt,
       viewerRole,
+      creator,
     };
   },
 });

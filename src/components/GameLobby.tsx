@@ -115,7 +115,7 @@ export function GameLobby({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">
-                      Game {game._id.slice(-6)}
+                      {game.players.white.name} vs {game.players.black.name}
                     </span>
                     <span className="block text-sm text-muted-foreground">
                       {game.turn === "w" ? "White" : "Black"} to move
@@ -170,12 +170,10 @@ export function GameLobby({
                     }
                   >
                     <span className="block truncate font-medium">
-                      {game.status === "active"
-                        ? "Active game"
-                        : "Completed game"}{" "}
-                      {game._id.slice(-6)}
+                      {game.players.white.name} vs {game.players.black.name}
                     </span>
                     <span className="block text-xs text-muted-foreground">
+                      {game.status === "active" ? "Active" : "Completed"} ·{" "}
                       {formatLastMove(game.lastMoveAt)}
                     </span>
                   </button>

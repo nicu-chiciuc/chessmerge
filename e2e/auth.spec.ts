@@ -28,6 +28,10 @@ test.describe("Authentication Flow", () => {
       await expect(page.locator('[data-slot="card-title"]')).toHaveText(
         "Create account",
       );
+      await expect(page.getByLabel("Username")).toHaveAttribute(
+        "minlength",
+        "4",
+      );
       await expect(page.getByLabel("Confirm password")).toBeVisible();
       await expect(
         page.getByText(
@@ -57,6 +61,7 @@ test.describe("Authentication Flow", () => {
       await page.getByRole("button", { name: "Create one" }).click();
 
       // Fill in the form
+      await page.getByLabel("Username").fill("NewPlayer");
       await page.getByLabel("Email").fill("newuser@example.com");
       await page
         .getByLabel("Password", { exact: true })
