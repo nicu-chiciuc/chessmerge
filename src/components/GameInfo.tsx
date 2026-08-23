@@ -93,7 +93,12 @@ export function GameInfo({
 
         <div className="my-3 border-t" />
 
-        <div className="flex justify-between">
+        <div
+          className="flex justify-between"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           <span className="text-gray-600">Status:</span>
           <span className={`font-medium ${getStatusColor()}`}>
             {getStatusText()}

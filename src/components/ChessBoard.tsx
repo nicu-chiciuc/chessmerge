@@ -249,7 +249,7 @@ export function ChessBoard({
       <button
         key={`${row}-${col}`}
         type="button"
-        disabled={readOnly || needsPromotion !== null}
+        disabled={readOnly || !isMyTurn || needsPromotion !== null}
         aria-label={getSquareLabel(
           square,
           cell,
