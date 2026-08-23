@@ -6,6 +6,65 @@ const promotionSetup = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const mergedPieceSetup = "4k3/8/8/3R:N4/8/8/8/4K3 w - - 0 1";
 
 test.describe("Sandbox", () => {
+  test("keeps board text and the visual board in sync", async ({ page }) => {
+    const editedBoard = [
+      ". . . . k . . .",
+      ". . . . . . . .",
+      ". . . . . . . .",
+      ". . . . . . . .",
+      "RN . . . . . . .",
+      ". . . . . . . .",
+      ". . . . . . . .",
+      ". . . . K . . .",
+    ].join("\n");
+
+    await page.goto("/practice");
+    await expect(page.getByRole("heading", { name: "Sandbox" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByText("Advanced", { exact: true }).click();
+
+    const boardText = page.getByLabel("Board text");
+
+    await square(page, "e2").click();
+    await square(page, "e3").click();
+    await expect(boardText).toHaveValue(/\.  \.  \.  \.  P  \.  \.  \. /);
+
+    await boardText.fill(editedBoard);
+    await expect(square(page, "a4")).toHaveAttribute(
+      "aria-label",
+      /white rook and white knight/i,
+    );
+    await expect(page.getByText("Black to move")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
+
+    const invalidBoard = editedBoard.replace("RN", "KN");
+    await boardText.fill(invalidBoard);
+    await expect(page.getByRole("alert")).toHaveText("Kings cannot be merged.");
+    await expect(square(page, "a4")).toHaveAttribute(
+      "aria-label",
+      /white rook and white knight/i,
+    );
+    await boardText.blur();
+    await expect(boardText).toHaveValue(invalidBoard);
+    await expect(page.getByRole("alert")).toHaveText("Kings cannot be merged.");
+
+    await square(page, "e8").click();
+    await square(page, "e7").click();
+    await expect(boardText).toHaveValue(/\.  \.  \.  \.  k  \.  \.  \. /);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+
+    await page.setViewportSize({ width: 320, height: 800 });
+    await expect
+      .poll(() =>
+        page.evaluate(() => ({
+          innerWidth: window.innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+        })),
+      )
+      .toEqual({ innerWidth: 320, scrollWidth: 320 });
+  });
+
   test("plays both turns, undoes, and resets without changing the setup URL", async ({
     page,
   }) => {

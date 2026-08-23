@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import {
   applyMove,
+  boardToString,
   createInitialGameState,
   getAllMovesForCell,
 } from "../../lib/chessmerge";
@@ -12,6 +13,7 @@ import { ChessBoard } from "./ChessBoard";
 import {
   formatSandboxPosition,
   isDefaultSandboxPosition,
+  parseSandboxBoard,
   parseSandboxPosition,
   serializeSandboxPosition,
 } from "./sandboxPosition";
@@ -80,6 +82,10 @@ function SandboxSessionView({
     formatSandboxPosition(initialSetup),
   );
   const [positionError, setPositionError] = useState<string | null>(null);
+  const [boardDraft, setBoardDraft] = useState(() =>
+    boardToString(initialSetup.board),
+  );
+  const [boardError, setBoardError] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   function clearInteraction() {
@@ -134,6 +140,7 @@ function SandboxSessionView({
       position: nextPosition,
       history: [...previous.history, previous.position],
     }));
+    setBoardError(null);
     clearInteraction();
   }
 
@@ -186,6 +193,7 @@ function SandboxSessionView({
       position: previousPosition,
       history: previous.history.slice(0, -1),
     }));
+    setBoardError(null);
     clearInteraction();
   }
 
@@ -193,6 +201,37 @@ function SandboxSessionView({
     setSession((previous) => ({
       ...previous,
       position: previous.setup,
+      history: [],
+    }));
+    setBoardError(null);
+    clearInteraction();
+  }
+
+  function updateBoardFromText(value: string) {
+    setBoardDraft(value);
+
+    const parsedBoard = parseSandboxBoard(value, session.position);
+
+    if (parsedBoard.kind === "invalid") {
+      setBoardError(parsedBoard.message);
+      return;
+    }
+
+    setBoardError(null);
+
+    if (
+      boardToString(parsedBoard.gameState.board) ===
+      boardToString(session.position.board)
+    ) {
+      return;
+    }
+
+    setSession((previous) => ({
+      ...previous,
+      position: {
+        ...previous.position,
+        board: parsedBoard.gameState.board,
+      },
       history: [],
     }));
     clearInteraction();
@@ -212,6 +251,7 @@ function SandboxSessionView({
     setSession({ setup: nextSetup, position: nextSetup, history: [] });
     setPositionDraft(formatSandboxPosition(nextSetup));
     setPositionError(null);
+    setBoardError(null);
     clearInteraction();
 
     void navigate({
@@ -251,6 +291,9 @@ function SandboxSessionView({
   }
 
   const turnName = session.position.options.turn === "w" ? "White" : "Black";
+  const boardText = boardError
+    ? boardDraft
+    : boardToString(session.position.board);
   const isAtSetup =
     serializeSandboxPosition(session.position) ===
     serializeSandboxPosition(session.setup);
@@ -291,7 +334,7 @@ function SandboxSessionView({
       </header>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_18rem] lg:gap-6">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto min-w-0 w-full max-w-3xl">
           <ChessBoard
             board={session.position.board}
             selectedSquare={selectedSquare}
@@ -305,7 +348,7 @@ function SandboxSessionView({
           />
         </div>
 
-        <aside className="rounded-xl border border-t-4 border-t-primary bg-card p-4 shadow-sm">
+        <aside className="min-w-0 rounded-xl border border-t-4 border-t-primary bg-card p-4 shadow-sm">
           {invalidLinkMessage && (
             <p
               className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive"
@@ -364,6 +407,37 @@ function SandboxSessionView({
             </summary>
 
             <div className="space-y-3 pt-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium" htmlFor="sandbox-board">
+                  Board text
+                </label>
+                <Textarea
+                  id="sandbox-board"
+                  aria-describedby="sandbox-board-note"
+                  aria-invalid={boardError ? true : undefined}
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  className="w-[26ch] max-w-full resize-none overflow-hidden whitespace-pre font-mono text-xs leading-relaxed"
+                  rows={8}
+                  spellCheck={false}
+                  value={boardText}
+                  wrap="off"
+                  onChange={(event) => updateBoardFromText(event.target.value)}
+                />
+                <p
+                  id="sandbox-board-note"
+                  className="text-xs text-muted-foreground"
+                >
+                  Use . for empty squares. Uppercase is White; lowercase is
+                  Black. Join merged pieces, such as RN.
+                </p>
+                {boardError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {boardError}
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" htmlFor="sandbox-femn">
                   FEMN position
