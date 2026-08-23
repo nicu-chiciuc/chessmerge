@@ -20,6 +20,8 @@ const applicationTables = {
     gameState: v.string(), // JSON serialized game state
     moveHistory: v.array(v.string()), // JSON serialized moves
     lastMoveAt: v.number(),
+    rematchOfferedBy: v.optional(v.id("users")),
+    rematchGameId: v.optional(v.id("games")),
     gameEndReason: v.optional(
       v.union(
         v.literal("checkmate"),

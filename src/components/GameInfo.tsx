@@ -10,6 +10,7 @@ interface GameInfoProps {
   game: GameView;
   gameState: GameState;
   onResign?: () => Promise<void>;
+  onRequestRematch?: () => Promise<void>;
   playerColor: "w" | "b" | null;
 }
 
@@ -17,11 +18,14 @@ export function GameInfo({
   game,
   gameState,
   onResign,
+  onRequestRematch,
   playerColor,
 }: GameInfoProps) {
   const [showResign, setShowResign] = useState(false);
   const [isResigning, setIsResigning] = useState(false);
   const [resignError, setResignError] = useState<string | null>(null);
+  const [isRequestingRematch, setIsRequestingRematch] = useState(false);
+  const [rematchError, setRematchError] = useState<string | null>(null);
   const resignButton = useRef<HTMLButtonElement>(null);
 
   const confirmResign = async () => {
@@ -36,6 +40,20 @@ export function GameInfo({
       setResignError("Could not resign. Try again.");
     } finally {
       setIsResigning(false);
+    }
+  };
+
+  const requestRematch = async () => {
+    if (!onRequestRematch || isRequestingRematch) return;
+
+    setIsRequestingRematch(true);
+    setRematchError(null);
+    try {
+      await onRequestRematch();
+    } catch {
+      setRematchError("Could not continue with the rematch. Try again.");
+    } finally {
+      setIsRequestingRematch(false);
     }
   };
 
@@ -195,6 +213,34 @@ export function GameInfo({
               Resign game
             </Button>
           )}
+        </div>
+      ) : null}
+
+      {game.status === "completed" &&
+      game.rematch !== null &&
+      onRequestRematch ? (
+        <div className="mt-4 border-t pt-3">
+          {game.rematch.status === "offered" && !isRequestingRematch ? (
+            <p className="mb-3 text-sm">Your opponent wants to play again.</p>
+          ) : null}
+          <Button
+            type="button"
+            disabled={isRequestingRematch || game.rematch.status === "waiting"}
+            onClick={() => void requestRematch()}
+          >
+            {game.rematch.status === "ready"
+              ? "Open rematch"
+              : isRequestingRematch && game.rematch.status === "offered"
+                ? "Starting rematch…"
+                : game.rematch.status === "waiting" || isRequestingRematch
+                  ? "Waiting for opponent…"
+                  : "Play again"}
+          </Button>
+          {rematchError ? (
+            <p className="mt-3 text-sm text-destructive" role="alert">
+              {rematchError}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

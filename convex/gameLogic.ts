@@ -10,6 +10,7 @@ import {
   isInCheck,
   applyMove,
   canAnyMoveCombatCheck,
+  createInitialGameState,
   equalPositions,
   getAllMovesForCell,
 } from "../lib/chessmerge";
@@ -40,6 +41,14 @@ const lastMoveValidator = v.union(
   v.null(),
 );
 
+const rematchStateValidator = v.union(
+  v.null(),
+  v.object({ status: v.literal("available") }),
+  v.object({ status: v.literal("waiting") }),
+  v.object({ status: v.literal("offered") }),
+  v.object({ status: v.literal("ready"), gameId: v.id("games") }),
+);
+
 const gameViewValidator = v.union(
   v.object({
     _id: v.id("games"),
@@ -49,6 +58,7 @@ const gameViewValidator = v.union(
     lastMove: lastMoveValidator,
     lastMoveAt: v.number(),
     players: playersValidator,
+    rematch: v.null(),
     status: v.literal("active"),
   }),
   v.object({
@@ -59,6 +69,7 @@ const gameViewValidator = v.union(
     lastMove: lastMoveValidator,
     lastMoveAt: v.number(),
     players: playersValidator,
+    rematch: rematchStateValidator,
     status: v.literal("completed"),
     winner: v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
     gameEndReason: v.union(
@@ -420,6 +431,54 @@ export const resignGame = mutation({
   },
 });
 
+export const requestRematch = mutation({
+  args: { gameId: v.id("games") },
+  returns: v.union(
+    v.object({ status: v.literal("waiting") }),
+    v.object({ status: v.literal("ready"), gameId: v.id("games") }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game || !isResumableGame(game)) throw new Error("Game unavailable");
+    if (game.status !== "completed") throw new Error("Game is not completed");
+
+    const isWhitePlayer = game.whitePlayerId === userId;
+    const isBlackPlayer = game.blackPlayerId === userId;
+    if (!isWhitePlayer && !isBlackPlayer) {
+      throw new Error("Not a player in this game");
+    }
+
+    if (game.rematchGameId) {
+      return { status: "ready" as const, gameId: game.rematchGameId };
+    }
+
+    if (!game.rematchOfferedBy) {
+      await ctx.db.patch(args.gameId, { rematchOfferedBy: userId });
+      return { status: "waiting" as const };
+    }
+
+    if (game.rematchOfferedBy === userId) {
+      return { status: "waiting" as const };
+    }
+
+    const now = Date.now();
+    const rematchGameId = await ctx.db.insert("games", {
+      whitePlayerId: game.blackPlayerId,
+      blackPlayerId: game.whitePlayerId,
+      status: "active",
+      gameState: JSON.stringify(createInitialGameState()),
+      moveHistory: [],
+      lastMoveAt: now,
+    });
+    await ctx.db.patch(args.gameId, { rematchGameId });
+
+    return { status: "ready" as const, gameId: rematchGameId };
+  },
+});
+
 export const getGame = query({
   args: { gameId: v.string() },
   returns: v.union(v.null(), gameViewValidator),
@@ -452,7 +511,7 @@ export const getGame = query({
     };
 
     if (game.status === "active") {
-      return { ...participantGame, status: game.status };
+      return { ...participantGame, status: game.status, rematch: null };
     }
 
     return {
@@ -460,6 +519,16 @@ export const getGame = query({
       status: game.status,
       winner: game.winner,
       gameEndReason: game.gameEndReason,
+      rematch:
+        playerColor === null
+          ? null
+          : game.rematchGameId
+            ? { status: "ready" as const, gameId: game.rematchGameId }
+            : !game.rematchOfferedBy
+              ? { status: "available" as const }
+              : game.rematchOfferedBy === userId
+                ? { status: "waiting" as const }
+                : { status: "offered" as const },
     };
   },
 });

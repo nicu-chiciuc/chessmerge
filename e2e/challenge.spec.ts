@@ -428,6 +428,77 @@ test.describe("shareable challenges", () => {
         ).toHaveAttribute("data-last-move", "to");
       }
 
+      await expect(
+        spectatorPage.getByRole("button", { name: "Play again" }),
+      ).toHaveCount(0);
+      const offerRematch = creatorPage.getByRole("button", {
+        name: "Play again",
+      });
+      await offerRematch.click();
+      await expect(
+        creatorPage.getByRole("button", { name: "Waiting for opponent…" }),
+      ).toBeDisabled();
+      await expect(
+        guestPage.getByText("Your opponent wants to play again."),
+      ).toBeVisible();
+
+      const acceptRematch = guestPage.getByRole("button", {
+        name: "Play again",
+      });
+      await observePendingLabel(
+        guestPage,
+        "starting-rematch-label",
+        "Starting rematch…",
+      );
+      await acceptRematch.click();
+      await expect.poll(() => creatorPage.url()).not.toBe(gameUrl);
+      const rematchUrl = creatorPage.url();
+      expect(rematchUrl).toMatch(/\/game\/[a-zA-Z0-9_-]+$/);
+      await expect(guestPage).toHaveURL(rematchUrl);
+      expect(
+        await guestPage.evaluate(() =>
+          sessionStorage.getItem("starting-rematch-label"),
+        ),
+      ).toBe("seen");
+      await expect(spectatorPage).toHaveURL(gameUrl);
+      await expect(
+        spectatorPage.getByRole("button", { name: "Play again" }),
+      ).toHaveCount(0);
+
+      await creatorPage.goto(gameUrl);
+      await expect(creatorPage).toHaveURL(gameUrl);
+      const openRematch = creatorPage.getByRole("button", {
+        name: "Open rematch",
+      });
+      await expect(openRematch).toBeEnabled();
+      await openRematch.click();
+      await expect(creatorPage).toHaveURL(rematchUrl);
+
+      const creatorRematchInfo = creatorPage
+        .getByRole("heading", { name: "Game Info" })
+        .locator("..");
+      const guestRematchInfo = guestPage
+        .getByRole("heading", { name: "Game Info" })
+        .locator("..");
+      await expect(
+        creatorRematchInfo.getByText("You are:").locator(".."),
+      ).toContainText("Black");
+      await expect(
+        guestRematchInfo.getByText("You are:").locator(".."),
+      ).toContainText("White");
+      await expect(creatorRematchInfo.getByRole("status")).toContainText(
+        "Opponent's turn",
+      );
+      await expect(guestRematchInfo.getByRole("status")).toContainText(
+        "Your turn",
+      );
+      await expect(
+        spectatorPage
+          .getByRole("heading", { name: "Game Info" })
+          .locator("..")
+          .getByRole("status"),
+      ).toContainText("White wins");
+
       await creatorPage.getByRole("button", { name: /Lobby/ }).click();
       const myGames = creatorPage
         .getByRole("heading", { name: "My games" })
