@@ -222,7 +222,7 @@ describe("shareable challenges", () => {
     ).rejects.toThrow("Joined challenges cannot be canceled");
   });
 
-  it("discloses a joined game only to its creator and opponent", async () => {
+  it("returns a joined game's public route to every viewer", async () => {
     const t = convexTest(schema, modules);
     const creatorId = await insertUser(t, "creator@example.com");
     const opponentId = await insertUser(t, "opponent@example.com");
@@ -238,45 +238,27 @@ describe("shareable challenges", () => {
       challengeId: challenge.challengeId,
     });
 
+    const joinedDto = { status: "joined", gameId } as const;
     await expect(
       creator.query(api.challenges.getChallenge, {
         challengeId: challenge.challengeId,
       }),
-    ).resolves.toEqual({
-      status: "joined",
-      expiresAt: challenge.expiresAt,
-      viewerRole: "creator",
-      gameId,
-      creator: CREATOR_PLAYER,
-    });
+    ).resolves.toEqual(joinedDto);
     await expect(
       opponent.query(api.challenges.getChallenge, {
         challengeId: challenge.challengeId,
       }),
-    ).resolves.toEqual({
-      status: "joined",
-      expiresAt: challenge.expiresAt,
-      viewerRole: "opponent",
-      gameId,
-      creator: CREATOR_PLAYER,
-    });
-
-    const guestDto = {
-      status: "joined",
-      expiresAt: challenge.expiresAt,
-      viewerRole: "guest",
-      creator: CREATOR_PLAYER,
-    };
+    ).resolves.toEqual(joinedDto);
     await expect(
       unrelated.query(api.challenges.getChallenge, {
         challengeId: challenge.challengeId,
       }),
-    ).resolves.toEqual(guestDto);
+    ).resolves.toEqual(joinedDto);
     await expect(
       t.query(api.challenges.getChallenge, {
         challengeId: challenge.challengeId,
       }),
-    ).resolves.toEqual(guestDto);
+    ).resolves.toEqual(joinedDto);
     await expect(
       unrelated.mutation(api.challenges.joinChallenge, {
         challengeId: challenge.challengeId,

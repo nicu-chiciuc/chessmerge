@@ -78,53 +78,22 @@ export const getChallenge = query({
     }),
     v.object({
       status: v.literal("joined"),
-      expiresAt: v.number(),
-      viewerRole: v.literal("guest"),
-      creator: publicPlayerValidator,
-    }),
-    v.object({
-      status: v.literal("joined"),
-      expiresAt: v.number(),
-      viewerRole: v.union(v.literal("creator"), v.literal("opponent")),
       gameId: v.id("games"),
-      creator: publicPlayerValidator,
     }),
   ),
   handler: async (ctx, args) => {
     const challengeId = ctx.db.normalizeId("challenges", args.challengeId);
     if (!challengeId) return null;
 
-    const viewerId = await getAuthUserId(ctx);
     const challenge = await ctx.db.get(challengeId);
     if (!challenge) return null;
-    const creator = getPublicPlayer(await ctx.db.get(challenge.creatorId));
 
     if (challenge.status === "joined") {
-      const game = viewerId ? await ctx.db.get(challenge.gameId) : null;
-      if (
-        game &&
-        (game.whitePlayerId === viewerId || game.blackPlayerId === viewerId)
-      ) {
-        const viewerRole: "creator" | "opponent" =
-          game.whitePlayerId === viewerId ? "creator" : "opponent";
-        return {
-          status: challenge.status,
-          expiresAt: challenge.expiresAt,
-          viewerRole,
-          gameId: challenge.gameId,
-          creator,
-        };
-      }
-
-      const viewerRole = "guest" as const;
-      return {
-        status: challenge.status,
-        expiresAt: challenge.expiresAt,
-        viewerRole,
-        creator,
-      };
+      return { status: challenge.status, gameId: challenge.gameId };
     }
 
+    const viewerId = await getAuthUserId(ctx);
+    const creator = getPublicPlayer(await ctx.db.get(challenge.creatorId));
     const viewerRole: "creator" | "guest" =
       challenge.creatorId === viewerId ? "creator" : "guest";
 

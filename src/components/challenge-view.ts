@@ -3,15 +3,18 @@ import type { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
 
 type PublicChallenge = FunctionReturnType<typeof api.challenges.getChallenge>;
-type ParticipantChallenge = Extract<
+type JoinedChallenge = Extract<
   NonNullable<PublicChallenge>,
-  { status: "joined"; viewerRole: "creator" | "opponent" }
+  { status: "joined" }
 >;
-type ChallengeCreator = NonNullable<PublicChallenge>["creator"];
+type ChallengeCreator = Exclude<
+  NonNullable<PublicChallenge>,
+  { status: "joined" }
+>["creator"];
 
 export type ChallengeView =
   | { kind: "creator"; creator: ChallengeCreator }
-  | { kind: "game"; gameId: ParticipantChallenge["gameId"] }
+  | { kind: "game"; gameId: JoinedChallenge["gameId"] }
   | { kind: "guest"; creator: ChallengeCreator }
   | { kind: "unavailable" };
 
@@ -29,7 +32,7 @@ export function resolveChallengeView(
       : { kind: "guest", creator: challenge.creator };
   }
 
-  if (challenge.status === "joined" && challenge.viewerRole !== "guest") {
+  if (challenge.status === "joined") {
     return { kind: "game", gameId: challenge.gameId };
   }
 
