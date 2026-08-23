@@ -80,7 +80,7 @@ describe("password authentication", () => {
     });
   });
 
-  it("requires a username with at least four characters", async () => {
+  it("requires four characters after trimming", async () => {
     const t = convexTest(schema, modules);
 
     await expect(
@@ -88,7 +88,7 @@ describe("password authentication", () => {
         provider: "password",
         params: {
           email: "short-name@example.com",
-          username: "abc",
+          username: "  abc  ",
           password: "secure-password",
           flow: "signUp",
         },
@@ -97,6 +97,27 @@ describe("password authentication", () => {
 
     await t.run(async (ctx) => {
       expect(await ctx.db.query("users").collect()).toEqual([]);
+    });
+  });
+
+  it("accepts and normalizes a four-character username", async () => {
+    const t = convexTest(schema, modules);
+
+    await captureAuthCode(() =>
+      t.action(api.auth.signIn, {
+        provider: "password",
+        params: {
+          email: "boundary-name@example.com",
+          username: "  Rook  ",
+          password: "secure-password",
+          flow: "signUp",
+        },
+      }),
+    );
+
+    await t.run(async (ctx) => {
+      const user = await ctx.db.query("users").first();
+      expect(user).toMatchObject({ name: "Rook", usernameKey: "rook" });
     });
   });
 

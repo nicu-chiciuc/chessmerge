@@ -25,6 +25,8 @@ type AuthStep =
 const PASSWORD_MIN_LENGTH = 8;
 const USERNAME_MIN_LENGTH = 4;
 const USERNAME_MAX_LENGTH = 24;
+const USERNAME_REQUIREMENTS =
+  "Username must be 4 to 24 characters and use only letters, numbers, underscores, or hyphens.";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -60,9 +62,7 @@ export function SignInForm() {
         username.length > USERNAME_MAX_LENGTH ||
         !/^[A-Za-z0-9_-]+$/.test(username))
     ) {
-      toast.error(
-        "Username must be 4–24 characters using letters, numbers, _ or -.",
-      );
+      toast.error(USERNAME_REQUIREMENTS);
       setSubmitting(false);
       return;
     }
@@ -196,12 +196,22 @@ export function SignInForm() {
                       name="username"
                       placeholder="Public in games"
                       autoComplete="username"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       minLength={USERNAME_MIN_LENGTH}
                       maxLength={USERNAME_MAX_LENGTH}
-                      pattern="[A-Za-z0-9_-]+"
+                      pattern={"[A-Za-z0-9_\\-]+"}
+                      title={USERNAME_REQUIREMENTS}
+                      aria-describedby="username-requirements"
                       required
                       className="w-full"
                     />
+                    <p
+                      id="username-requirements"
+                      className="text-sm text-muted-foreground"
+                    >
+                      {USERNAME_REQUIREMENTS}
+                    </p>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -484,7 +494,7 @@ function credentialsErrorMessage(
     return "Password must be at least 8 characters.";
   }
   if (flow === "signUp" && /invalid username/i.test(message)) {
-    return "Username must be 4–24 characters using letters, numbers, _ or -.";
+    return USERNAME_REQUIREMENTS;
   }
   if (flow === "signUp" && /username already taken/i.test(message)) {
     return "That username is already taken.";
