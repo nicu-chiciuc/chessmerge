@@ -1,5 +1,6 @@
-import { Board, Position, Piece } from "../../lib/chessmerge";
-import { useState } from "react";
+import { mapToName } from "../../lib/chessmerge";
+import type { Board, Position, Piece, PieceType } from "../../lib/chessmerge";
+import { useEffect, useRef, useState } from "react";
 
 // Import all chess piece SVGs
 import whiteKingSvg from "../pieces/Chess_klt45.svg";
@@ -15,6 +16,10 @@ import blackBishopSvg from "../pieces/Chess_bdt45.svg";
 import blackKnightSvg from "../pieces/Chess_ndt45.svg";
 import blackPawnSvg from "../pieces/Chess_pdt45.svg";
 import { Button } from "./ui/button";
+
+const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
+const promotionPieceTypes = ["q", "r", "b", "n"] satisfies PieceType[];
 
 interface ChessBoardProps {
   board: Board;
@@ -72,9 +77,26 @@ export function ChessBoard({
   const [selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
   >("both");
+  const boardElementRef = useRef<HTMLDivElement>(null);
+  const firstPromotionChoiceRef = useRef<HTMLButtonElement>(null);
+  const promotionDestinationRef = useRef<Position | null>(null);
 
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-  const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
+  useEffect(() => {
+    if (needsPromotion) {
+      firstPromotionChoiceRef.current?.focus();
+      return;
+    }
+
+    const destination = promotionDestinationRef.current;
+    promotionDestinationRef.current = null;
+
+    if (destination) {
+      const square = `${files[destination.col]}${ranks[destination.row]}`;
+      boardElementRef.current
+        ?.querySelector<HTMLButtonElement>(`button[data-square="${square}"]`)
+        ?.focus();
+    }
+  }, [needsPromotion]);
 
   // Get the selected cell and its pieces
   const selectedCell = selectedSquare
@@ -177,6 +199,7 @@ export function ChessBoard({
 
   const renderSquare = (row: number, col: number) => {
     const cell = board[row][col];
+    const square = `${files[col]}${ranks[row]}`;
 
     const isLight = (row + col) % 2 === 0;
     const isSelected =
@@ -191,12 +214,15 @@ export function ChessBoard({
       dragOverSquare?.row === row && dragOverSquare?.col === col;
 
     let squareClass = `
-      aspect-square flex items-center justify-center cursor-pointer relative
+      aspect-square flex items-center justify-center cursor-pointer relative border-0 p-0
       ${isLight ? "bg-amber-100" : "bg-amber-800"}
       ${isSelected ? "ring-2 sm:ring-4 ring-blue-500 z-20" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
       ${isDragOver ? "bg-blue-200" : ""}
-      hover:brightness-110 transition-all
+      hover:brightness-110 transition-[filter,opacity,background-color]
+      focus-visible:z-30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary
+      disabled:cursor-not-allowed disabled:hover:brightness-100
+      motion-reduce:transition-none
     `;
 
     // Highlight cells that can be unmerged (have 2 pieces)
@@ -210,12 +236,18 @@ export function ChessBoard({
     }
 
     const canDragAnyPiece = cell.some(
-      (piece) => piece.color === currentTurn && isMyTurn,
+      (piece) => !needsPromotion && piece.color === currentTurn && isMyTurn,
     );
 
     return (
-      <div
+      <button
         key={`${row}-${col}`}
+        type="button"
+        disabled={needsPromotion !== null}
+        aria-label={getSquareLabel(square, cell, isSelected, isValidMove)}
+        aria-pressed={isSelected}
+        data-legal-move={isValidMove ? "true" : undefined}
+        data-square={square}
         className={squareClass}
         onClick={() => handleSquareClick(row, col)}
         onContextMenu={(e) => {
@@ -239,48 +271,51 @@ export function ChessBoard({
 
         {/* Coordinate labels */}
         {col === 0 && (
-          <div
+          <span
+            aria-hidden="true"
             className={`absolute left-[5%] top-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
           >
             {ranks[row]}
-          </div>
+          </span>
         )}
         {row === 7 && (
-          <div
+          <span
+            aria-hidden="true"
             className={`absolute right-[5%] bottom-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
           >
             {files[col]}
-          </div>
+          </span>
         )}
 
         {/* Move indicators */}
         {isValidMove && cell.length === 0 && (
-          <div className="absolute inset-[10%] border-[0.2em] border-green-500 rounded-full pointer-events-none" />
+          <div
+            aria-hidden="true"
+            className="absolute inset-[10%] rounded-full border-[0.2em] border-green-500 pointer-events-none"
+          />
         )}
         {isValidMove && cell.length > 0 && (
-          <div className="absolute inset-0 border-[0.3em] border-green-500 rounded pointer-events-none" />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 rounded border-[0.3em] border-green-500 pointer-events-none"
+          />
         )}
-      </div>
+      </button>
     );
   };
 
-  const promotionPieces = [
-    { color: "w", pieceType: "q" },
-    { color: "w", pieceType: "r" },
-    { color: "w", pieceType: "b" },
-    { color: "w", pieceType: "n" },
-  ] as const;
-
   return (
     <div className="flex flex-col items-center justify-center w-full ">
-      <div className="chessBoard grid grid-cols-8 border-gray-800 w-full relative">
+      <div
+        ref={boardElementRef}
+        aria-label="Chess board"
+        className="chessBoard grid grid-cols-8 border-gray-800 w-full relative"
+        role="group"
+      >
         {needsPromotion && (
-          // Display a rectangle with width of a square and height of 4 pieces (Q, R, B, N)
-          // inside each square, display a possible promotion piece
-
-          // width should be just one square
           <div
-            // pointer cursor
+            aria-label="Choose a promotion piece"
+            role="dialog"
             className="absolute inset-0 z-100 flex flex-col bg-blue-400 w-1/8 h-4/8 rounded-2xl overflow-hidden cursor-pointer"
             style={{
               marginLeft: `calc(100% / 8 * ${
@@ -288,17 +323,25 @@ export function ChessBoard({
               })`,
             }}
           >
-            {promotionPieces.map((piece, index) => (
-              <div
-                key={index}
-                className="w-full h-1/4 hover:bg-blue-300"
-                onClick={() => {
-                  setSelectedPromotion(piece);
-                }}
-              >
-                <ChessPieceCell pieces={[piece]} canDrag={false} />
-              </div>
-            ))}
+            {promotionPieceTypes.map((pieceType, index) => {
+              const piece: Piece = { color: currentTurn, pieceType };
+
+              return (
+                <button
+                  key={pieceType}
+                  ref={index === 0 ? firstPromotionChoiceRef : undefined}
+                  type="button"
+                  aria-label={`Promote to ${mapToName(pieceType).toLowerCase()}`}
+                  className="w-full h-1/4 hover:bg-blue-300"
+                  onClick={() => {
+                    promotionDestinationRef.current = needsPromotion;
+                    setSelectedPromotion(piece);
+                  }}
+                >
+                  <ChessPieceCell pieces={[piece]} canDrag={false} />
+                </button>
+              );
+            })}
           </div>
         )}
         {Array.from({ length: 8 }, (_, row) =>
@@ -314,6 +357,8 @@ export function ChessBoard({
       {hasTwoPieces && selectedCell && isMyTurn ? (
         <div className="mt-4 flex gap-2 space-between">
           <Button
+            aria-label={`Move only the ${getPieceName(selectedCell[0]).toLowerCase()}`}
+            disabled={needsPromotion !== null}
             variant={selectedPieceMode === "first" ? "default" : "outline"}
             onClick={() => handlePieceSelectionChange("first")}
           >
@@ -322,6 +367,8 @@ export function ChessBoard({
           </Button>
 
           <Button
+            aria-label={`Move only the ${getPieceName(selectedCell[1]).toLowerCase()}`}
+            disabled={needsPromotion !== null}
             variant={selectedPieceMode === "second" ? "default" : "outline"}
             onClick={() => handlePieceSelectionChange("second")}
           >
@@ -330,6 +377,8 @@ export function ChessBoard({
           </Button>
 
           <Button
+            aria-label={`Move both the ${getPieceName(selectedCell[0]).toLowerCase()} and ${getPieceName(selectedCell[1]).toLowerCase()}`}
+            disabled={needsPromotion !== null}
             variant={selectedPieceMode === "both" ? "default" : "outline"}
             onClick={() => handlePieceSelectionChange("both")}
           >
@@ -341,9 +390,7 @@ export function ChessBoard({
           </Button>
         </div>
       ) : (
-        <div className="mt-4 opacity-0">
-          <Button />
-        </div>
+        <div aria-hidden="true" className="mt-4 h-9" />
       )}
     </div>
   );
@@ -402,12 +449,10 @@ function ChessPieceCell({
   if (pieces.length === 2) {
     // Two pieces merged - each takes 50% of cell, showing left half of each piece
     // Arrange pieces so that knights are on the left (head visible)
-    const [leftPiece, rightPiece] = pieces.some((p) => p.pieceType === "n")
-      ? [
-          pieces.find((p) => p.pieceType === "n")!,
-          pieces.find((p) => p.pieceType !== "n")!,
-        ]
-      : pieces;
+    const knight = pieces.find((piece) => piece.pieceType === "n");
+    const otherPiece = pieces.find((piece) => piece !== knight);
+    const [leftPiece, rightPiece] =
+      knight && otherPiece ? [knight, otherPiece] : pieces;
 
     // Apply visual highlighting based on selected piece mode
     const getOpacity = (pieceIndex: number) => {
@@ -477,8 +522,35 @@ function ChessPieceContent({ piece, size }: ChessPieceContentProps) {
   return (
     <img
       src={svgSrc}
-      alt={`${piece.color} ${piece.pieceType}`}
+      alt={getPieceName(piece)}
       className={`${sizeClasses[size]} object-contain`}
     />
   );
+}
+
+function getSquareLabel(
+  square: string,
+  pieces: Piece[],
+  isSelected: boolean,
+  isValidMove: boolean,
+): string {
+  const contents =
+    pieces.length === 0
+      ? "empty"
+      : pieces.map((piece) => getPieceName(piece).toLowerCase()).join(" and ");
+  const state = [
+    isSelected ? "selected" : null,
+    isValidMove ? "legal move" : null,
+  ]
+    .filter((value) => value !== null)
+    .join(", ");
+
+  return [square, contents, state]
+    .filter((value) => value.length > 0)
+    .join(", ");
+}
+
+function getPieceName(piece: Piece): string {
+  const color = piece.color === "w" ? "White" : "Black";
+  return `${color} ${mapToName(piece.pieceType).toLowerCase()}`;
 }

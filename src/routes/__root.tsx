@@ -1,4 +1,10 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  useHydrated,
+  useRouterState,
+} from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import App from "../App";
@@ -24,11 +30,19 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const isHydrated = useHydrated();
+  const isLocalPracticeRoute = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/practice"),
+  });
+  const app = <App />;
+
   return (
     <RootDocument>
-      <ConvexClientProvider>
-        <App />
-      </ConvexClientProvider>
+      {!isHydrated ? null : isLocalPracticeRoute ? (
+        app
+      ) : (
+        <ConvexClientProvider>{app}</ConvexClientProvider>
+      )}
     </RootDocument>
   );
 }
