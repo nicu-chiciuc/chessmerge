@@ -1,85 +1,47 @@
-import { GameState } from "lib/chessmerge";
-import { Doc } from "../../convex/_generated/dataModel";
+import type { GameState } from "lib/chessmerge";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "../../convex/_generated/api";
+
+type ParticipantGame = NonNullable<
+  FunctionReturnType<typeof api.gameLogic.getGame>
+>;
 
 interface GameInfoProps {
-  game: Doc<"games">;
+  game: ParticipantGame;
   gameState: GameState;
-  isWhitePlayer: boolean;
-  isBlackPlayer: boolean;
+  playerColor: "w" | "b";
 }
 
-export function GameInfo({
-  game,
-  gameState,
-  isWhitePlayer,
-  isBlackPlayer,
-}: GameInfoProps) {
+export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
   const getStatusText = () => {
-    if (game.isPracticeGame) {
-      switch (game.status) {
-        case "active":
-          return `${gameState.options.turn === "w" ? "White" : "Black"}'s turn`;
-        case "completed": {
-          if (game.winner === "draw") {
-            return "Practice game ended in a draw";
-          }
-          const winnerText = game.winner === "w" ? "White" : "Black";
-          return `Practice game complete - ${winnerText} wins!`;
-        }
-        default:
-          return "Practice game";
-      }
+    if (game.status === "active") {
+      return gameState.options.turn === playerColor
+        ? "Your turn"
+        : "Opponent's turn";
     }
 
-    switch (game.status) {
-      case "waiting":
-        return "Waiting for opponent";
-      case "active": {
-        if (gameState.options.turn === "w") {
-          return isWhitePlayer ? "Your turn" : "Opponent's turn";
-        } else {
-          return isBlackPlayer ? "Your turn" : "Opponent's turn";
-        }
-      }
-      case "completed": {
-        if (game.winner === "draw") {
-          return "Game ended in a draw";
-        }
-        const winnerText = game.winner === "w" ? "White" : "Black";
-        const youWon =
-          (game.winner === "w" && isWhitePlayer) ||
-          (game.winner === "b" && isBlackPlayer);
-        return `${winnerText} wins! ${youWon ? "You won!" : "You lost."}`;
-      }
-      default:
-        return "Unknown status";
-    }
+    if (game.winner === "draw") return "Game ended in a draw";
+    const winnerText = game.winner === "w" ? "White" : "Black";
+    const youWon = game.winner === playerColor;
+    return `${winnerText} wins! ${youWon ? "You won!" : "You lost."}`;
   };
 
   const getStatusColor = () => {
     if (game.status === "completed") {
       if (game.winner === "draw") return "text-yellow-600";
-      if (game.isPracticeGame) return "text-blue-600"; // Neutral color for practice games
-      const youWon =
-        (game.winner === "w" && isWhitePlayer) ||
-        (game.winner === "b" && isBlackPlayer);
+      const youWon = game.winner === playerColor;
       return youWon ? "text-primary-600" : "text-destructive-600";
     }
     return "text-blue-600";
   };
 
   const getPlayerText = () => {
-    if (game.isPracticeGame) {
-      return "Both sides (Practice)";
-    }
-    return isWhitePlayer ? "White" : isBlackPlayer ? "Black" : "Spectator";
+    return playerColor === "w" ? "White" : "Black";
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-4">
-      <h3 className="font-semibold mb-3">
-        {game.isPracticeGame ? "Practice Game" : "Game Info"}
-      </h3>
+      <h3 className="font-semibold mb-3">Game Info</h3>
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
@@ -110,7 +72,7 @@ export function GameInfo({
           </span>
         </div>
 
-        {game.status === "completed" && game.gameEndReason && (
+        {game.status === "completed" && (
           <div className="flex justify-between">
             <span className="text-gray-600">End reason:</span>
             <span className="font-medium capitalize">

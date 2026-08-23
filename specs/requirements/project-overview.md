@@ -56,9 +56,10 @@ src/
 ├── components/
 │   ├── ChessBoard.tsx     # Board rendering, piece display, move visualization
 │   ├── ChessGame.tsx      # Game state management, move handling
-│   ├── GameLobby.tsx      # Game creation, joining, listing
+│   ├── GameLobby.tsx      # Challenge entry point and resumable games
+│   ├── ChallengePage.tsx  # Share, join, cancel, and unavailable states
+│   ├── LocalPracticePage.tsx # Local Sandbox
 │   ├── GameInfo.tsx       # Player info, game status
-│   ├── GameTimer.tsx      # Time control display
 │   ├── MoveHistory.tsx    # Move notation display
 │   └── EmailSubscribe.tsx # Newsletter signup
 ├── pages/
@@ -72,6 +73,7 @@ src/
 
 ```
 convex/
+├── challenges.ts          # Shareable challenge lifecycle
 ├── gameLogic.ts           # Game mutations & queries
 ├── auth.ts                # Authentication config
 ├── emails.ts              # Email sending
@@ -83,29 +85,24 @@ convex/
 ```
 lib/
 ├── chessmerge.ts          # Core game rules, move generation, board state
-├── types.ts               # Shared TypeScript types
 └── utils.ts               # Utility functions
 ```
 
 ## Game Modes
 
-### 1. Online Multiplayer
+### 1. Shareable challenges
 
-- Create games and wait for opponents
+- Create an anonymous challenge and share its link
+- One opponent can join the untimed game
+- Resume participant games from My Games
 - Real-time synchronization via Convex
-- Time controls (initial time + increment)
-- Rated games (future)
 
-### 2. Practice Mode
+### 2. Sandbox
 
-- Play both sides
+- Runs locally without authentication
+- Play both sides from any position
 - Edit board state directly
-- Test positions and strategies
-
-### 3. Local Practice
-
-- Offline mode without authentication
-- Play against yourself locally
+- Share position links
 
 ## Game State Representation
 
@@ -133,14 +130,7 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 
 - Powered by Convex Auth
 - Verified email/password authentication with password reset
-- Anonymous browsing supported (view-only for multiplayer)
-
-## Time Controls
-
-- Configurable initial time (in milliseconds)
-- Configurable increment per move
-- Server-side timeout detection
-- Real-time countdown display
+- Anonymous challenge creation and joining
 
 ## Current Features
 
@@ -149,9 +139,8 @@ ChessMerge uses **FEMN** (FEN for Merge Notation):
 - [x] Castling
 - [x] Pawn promotion
 - [x] Check/checkmate detection
-- [x] Online multiplayer
-- [x] Practice mode with board editing
-- [x] Time controls
+- [x] Anonymous shareable challenges
+- [x] Local Sandbox with board editing
 - [x] Move history
 - [x] Real-time game sync
 - [x] Authentication

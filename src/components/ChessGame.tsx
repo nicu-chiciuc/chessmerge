@@ -1,148 +1,28 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-import { Textarea } from "@/components/ui/textarea";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
-import type { Doc } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
-import { GameTimer } from "./GameTimer";
 import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  FEMN,
+import { getAllMovesForCell } from "../../lib/chessmerge";
+import type {
   GameState,
   MergedPieceTypes,
   Move,
   Piece,
   Position,
-  boardToString,
-  getAllMovesForCell,
-  stringToBoard,
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 
-function useEditOnFocus({
-  serverState,
-  setServerState,
-}: {
-  logName?: string;
-  serverState: string;
-  setServerState: (strBoard: string) => Promise<unknown>;
-}) {
-  const [editingState, setEditingState] = useState(false);
-  const [localState, setLocalState] = useState("");
+type ParticipantGame = NonNullable<
+  FunctionReturnType<typeof api.gameLogic.getGame>
+>;
 
-  const setLocaleState = useCallback(
-    async (strBoard: string) => {
-      setEditingState(true);
-      setLocalState(strBoard);
-
-      try {
-        await setServerState(strBoard);
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [setServerState],
-  );
-
-  const onBlur = useCallback(() => {
-    setEditingState(false);
-  }, []);
-
-  const state = useMemo(() => {
-    return editingState ? localState : serverState;
-  }, [editingState, localState, serverState]);
-
-  return useMemo(() => {
-    return [state, setLocaleState, onBlur] as const;
-  }, [state, setLocaleState, onBlur]);
-}
-
-function GameControls({
-  setPracticeGameState,
-  gameState,
-}: {
-  setPracticeGameState: (gameState: GameState) => Promise<unknown>;
-  gameState: GameState;
-}) {
-  const [arrayBoard, setLocaleArrayBoard, onBlurArrayBoard] = useEditOnFocus({
-    logName: "Array",
-    serverState: boardToString(gameState.board),
-    setServerState: async (arrayStringBoard) => {
-      const newGameState = stringToBoard(arrayStringBoard);
-
-      await setPracticeGameState({
-        board: newGameState,
-        options: gameState.options,
-      });
-    },
-  });
-
-  const [femnBoard, setLocaleFemnBoard, onBlurFemnBoard] = useEditOnFocus({
-    logName: "FEMN",
-    serverState: FEMN.toFEMNGame(gameState),
-    setServerState: async (femn) => {
-      const newGameState = FEMN.fromFEMNGame(femn);
-
-      await setPracticeGameState(newGameState);
-    },
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Game Controls</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <span className="font-bold text-xs">FEMN</span>
-        <Textarea
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          value={femnBoard}
-          onBlur={onBlurFemnBoard}
-          onChange={(e) => setLocaleFemnBoard(e.target.value)}
-          className="font-mono resize-none w-full overflow-hidden"
-        />
-        <div className="h-4" />
-
-        {/* 
-        Add checkboxes to trigger casling rights, with labels for each
-         */}
-        <div className="flex flex-row gap-2">
-          <Checkbox id="white-short-castle" />
-        </div>
-
-        {/*
-          Textarea is monospace, no autocorrect, no spellcheck, no resize 
-          should contain all text without need to scroll
-          Width should contain exactly 8*3 (24) characters plus 2 so it doesn't wrap
-        NEVER has a scrollbar
-        */}
-        <span className="font-bold text-xs">String array</span>
-
-        <Textarea
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          rows={8}
-          onBlur={onBlurArrayBoard}
-          value={arrayBoard}
-          className="font-mono resize-none w-[26ch] overflow-hidden text-nowrap"
-          onChange={(e) => setLocaleArrayBoard(e.target.value)}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-export function ChessGameWrapper({ game }: { game: Doc<"games"> }) {
+export function ChessGameWrapper({ game }: { game: ParticipantGame }) {
   const gameId = game._id;
   const makeMoveApi = useMutation(api.gameLogic.makeMove);
-  const loggedInUser = useQuery(api.auth.loggedInUser);
 
   const makeMove = useCallback(
     async (move: Move) => {
@@ -154,41 +34,20 @@ export function ChessGameWrapper({ game }: { game: Doc<"games"> }) {
   const gameState = useMemo(() => {
     return JSON.parse(game.gameState);
   }, [game.gameState]);
-
-  const setPracticeGameStateApi = useMutation(
-    api.gameLogic.setPracticeGameState,
-  );
+  const winner = game.status === "completed" ? game.winner : undefined;
+  const gameEndReason =
+    game.status === "completed" ? game.gameEndReason : undefined;
 
   useEffect(() => {
-    if (game.status === "completed") {
-      if (game.gameEndReason === "checkmate") {
-        toast.success(
-          `Checkmate! ${game.winner === "w" ? "White" : "Black"} wins!`,
-        );
-      } else if (game.gameEndReason === "stalemate") {
-        toast.info("Stalemate! Game is a draw.");
-      }
+    if (gameEndReason === "checkmate") {
+      toast.success(`Checkmate! ${winner === "w" ? "White" : "Black"} wins!`);
+    } else if (gameEndReason === "stalemate") {
+      toast.info("Stalemate! Game is a draw.");
     }
-  }, [game.status, game.gameEndReason, game.winner]);
+  }, [gameEndReason, winner]);
 
-  const isWhitePlayer = game.whitePlayerId === loggedInUser?._id;
-  const isBlackPlayer = game.blackPlayerId === loggedInUser?._id;
-
-  // For practice games, user can play both sides, otherwise enforce turn order
-  const isMyTurn = game.isPracticeGame
-    ? isWhitePlayer || isBlackPlayer
-    : (gameState.options.turn === "w" && isWhitePlayer) ||
-      (gameState.options.turn === "b" && isBlackPlayer);
-
-  const setPracticeGameState = useCallback(
-    async (gameState: GameState) => {
-      await setPracticeGameStateApi({
-        gameId,
-        strBoard: boardToString(gameState.board),
-      });
-    },
-    [gameId, setPracticeGameStateApi],
-  );
+  const isMyTurn = gameState.options.turn === game.playerColor;
+  const isBlackPlayer = game.playerColor === "b";
 
   return (
     <ChessGame
@@ -196,19 +55,13 @@ export function ChessGameWrapper({ game }: { game: Doc<"games"> }) {
       gameState={gameState}
       makeMove={makeMove}
       isMyTurn={isMyTurn}
-      setPracticeGameState={setPracticeGameState}
-      isPracticeGame={!!game.isPracticeGame}
       isBlackPlayer={isBlackPlayer}
       renderedGameInfo={
         <div className="flex-1 space-y-4">
-          {game.timeControl && (
-            <GameTimer game={game} currentTurn={gameState.options.turn} />
-          )}
           <GameInfo
             game={game}
             gameState={gameState}
-            isWhitePlayer={isWhitePlayer}
-            isBlackPlayer={isBlackPlayer}
+            playerColor={game.playerColor}
           />
         </div>
       }
@@ -217,22 +70,18 @@ export function ChessGameWrapper({ game }: { game: Doc<"games"> }) {
 }
 
 export function ChessGame({
-  isPracticeGame,
   gameStatus,
   gameState,
   makeMove,
   isMyTurn,
   isBlackPlayer,
-  setPracticeGameState,
   renderedGameInfo,
 }: {
-  isPracticeGame: boolean;
   isBlackPlayer: boolean;
-  gameStatus: "waiting" | "active" | "completed" | "abandoned" | undefined;
+  gameStatus: ParticipantGame["status"];
   gameState: GameState;
   makeMove: (move: Move) => Promise<unknown>;
   isMyTurn: boolean;
-  setPracticeGameState: (gameState: GameState) => Promise<unknown>;
   renderedGameInfo: React.ReactNode;
 }) {
   const [selectedSquare, raw_setSelectedSquare] = useState<Position | null>(
@@ -371,7 +220,7 @@ export function ChessGame({
           // unmergePositions={unmergePositions}
           onSquareClick={handleSquareClick}
           onPieceSelectionChange={handlePieceSelectionChange}
-          flipped={isPracticeGame ? false : isBlackPlayer}
+          flipped={isBlackPlayer}
           isMyTurn={!!isMyTurn}
           currentTurn={gameState.options.turn}
           needsPromotion={needsPromotion ? needsPromotion.to : null}
@@ -380,15 +229,6 @@ export function ChessGame({
       </div>
 
       <div className="flex flex-col sm:flex-row xl:flex-col gap-4 xl:gap-6">
-        {isPracticeGame && (
-          <div className="flex-1">
-            <GameControls
-              gameState={gameState}
-              setPracticeGameState={setPracticeGameState}
-            />
-          </div>
-        )}
-
         {renderedGameInfo}
 
         {/* <div className="flex-1">

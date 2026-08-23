@@ -7,7 +7,7 @@ const directRoutes = [
   {
     path: "/game/not-a-convex-id",
     showsLobbyButton: true,
-    expectedHeading: "Invalid game link",
+    expectedHeading: "Game unavailable",
   },
   { path: "/challenge/not-a-convex-id", showsLobbyButton: false },
 ] as const;

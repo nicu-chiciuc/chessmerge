@@ -198,7 +198,6 @@ describe("shareable challenges", () => {
         gameState: JSON.stringify(createInitialGameState()),
         moveHistory: [],
         lastMoveAt: START_TIME.getTime(),
-        gameStartedAt: START_TIME.getTime(),
       });
 
       expect(await ctx.db.get(challenge.challengeId)).toEqual({
@@ -271,6 +270,94 @@ describe("shareable challenges", () => {
         challengeId: challenge.challengeId,
       }),
     ).resolves.toEqual(guestDto);
+    await expect(
+      unrelated.mutation(api.challenges.joinChallenge, {
+        challengeId: challenge.challengeId,
+      }),
+    ).rejects.toThrow("Challenge unavailable");
+    await t.run(async (ctx) => {
+      expect(await ctx.db.query("games").collect()).toHaveLength(1);
+    });
+  });
+
+  it("merges both player indexes and lists only resumable untimed games", async () => {
+    const t = convexTest(schema, modules);
+    const creatorId = await insertUser(t, "creator@example.com");
+    const opponentId = await insertUser(t, "opponent@example.com");
+    const unrelatedId = await insertUser(t, "unrelated@example.com");
+    const creator = t.withIdentity({ subject: creatorId });
+    const opponent = t.withIdentity({ subject: opponentId });
+    const unrelated = t.withIdentity({ subject: unrelatedId });
+    const challenge = await creator.mutation(
+      api.challenges.createChallenge,
+      {},
+    );
+    const { gameId } = await opponent.mutation(api.challenges.joinChallenge, {
+      challengeId: challenge.challengeId,
+    });
+
+    vi.advanceTimersByTime(1);
+    const reverseChallenge = await opponent.mutation(
+      api.challenges.createChallenge,
+      {},
+    );
+    const { gameId: reverseGameId } = await creator.mutation(
+      api.challenges.joinChallenge,
+      { challengeId: reverseChallenge.challengeId },
+    );
+
+    await t.run(async (ctx) => {
+      const gameState = JSON.stringify(createInitialGameState());
+      await ctx.db.patch(gameId, {
+        status: "completed",
+        winner: "w",
+        gameEndReason: "checkmate",
+      });
+      await ctx.db.insert("games", {
+        whitePlayerId: creatorId,
+        status: "waiting",
+        gameState,
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime(),
+      });
+      await ctx.db.insert("games", {
+        whitePlayerId: creatorId,
+        blackPlayerId: creatorId,
+        isPracticeGame: true,
+        status: "active",
+        gameState,
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime(),
+      });
+      await ctx.db.insert("games", {
+        whitePlayerId: creatorId,
+        blackPlayerId: opponentId,
+        timeControl: { initialTimeMs: 60_000, incrementMs: 0 },
+        status: "active",
+        gameState,
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime(),
+      });
+    });
+
+    const creatorGames = await creator.query(api.gameLogic.listGames, {});
+    const opponentGames = await opponent.query(api.gameLogic.listGames, {});
+    expect(
+      creatorGames.map((game) => ({ id: game._id, status: game.status })),
+    ).toEqual([
+      { id: reverseGameId, status: "active" },
+      { id: gameId, status: "completed" },
+    ]);
+    expect(
+      opponentGames.map((game) => ({ id: game._id, status: game.status })),
+    ).toEqual([
+      { id: reverseGameId, status: "active" },
+      { id: gameId, status: "completed" },
+    ]);
+    await expect(unrelated.query(api.gameLogic.listGames, {})).resolves.toEqual(
+      [],
+    );
+    await expect(t.query(api.gameLogic.listGames, {})).resolves.toEqual([]);
   });
 
   it("lets only one of two racing guests claim the seat", async () => {
@@ -304,6 +391,44 @@ describe("shareable challenges", () => {
     });
   });
 
+  it("settles a racing cancel and join without an orphan game", async () => {
+    const t = convexTest(schema, modules);
+    const creatorId = await insertUser(t, "creator@example.com");
+    const guestId = await insertUser(t, "guest@example.com");
+    const creator = t.withIdentity({ subject: creatorId });
+    const guest = t.withIdentity({ subject: guestId });
+    const { challengeId } = await creator.mutation(
+      api.challenges.createChallenge,
+      {},
+    );
+
+    const results = await Promise.allSettled([
+      creator.mutation(api.challenges.cancelChallenge, { challengeId }),
+      guest.mutation(api.challenges.joinChallenge, { challengeId }),
+    ]);
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      results.filter((result) => result.status === "rejected"),
+    ).toHaveLength(1);
+
+    await t.run(async (ctx) => {
+      const challenge = await ctx.db.get(challengeId);
+      if (!challenge) throw new Error("Expected challenge to exist");
+      const games = await ctx.db.query("games").collect();
+
+      if (challenge.status === "joined") {
+        expect(games).toHaveLength(1);
+        expect(games[0]._id).toBe(challenge.gameId);
+        return;
+      }
+
+      expect(challenge.status).toBe("canceled");
+      expect(games).toEqual([]);
+    });
+  });
+
   it("rejects an expired link and lets creation mark it expired", async () => {
     const t = convexTest(schema, modules);
     const creatorId = await insertUser(t, "creator@example.com");
@@ -326,6 +451,15 @@ describe("shareable challenges", () => {
         status: "expired",
       });
       expect(await ctx.db.query("games").collect()).toEqual([]);
+    });
+    await expect(
+      guest.query(api.challenges.getChallenge, {
+        challengeId: first.challengeId,
+      }),
+    ).resolves.toEqual({
+      status: "expired",
+      expiresAt: first.expiresAt,
+      viewerRole: "guest",
     });
   });
 
@@ -352,7 +486,11 @@ describe("shareable challenges", () => {
 
     await expect(
       creator.query(api.challenges.getChallenge, { challengeId }),
-    ).resolves.toMatchObject({ status: "canceled" });
+    ).resolves.toEqual({
+      status: "canceled",
+      expiresAt: START_TIME.getTime() + CHALLENGE_EXPIRY_MS,
+      viewerRole: "creator",
+    });
     await expect(
       guest.mutation(api.challenges.joinChallenge, { challengeId }),
     ).rejects.toThrow("Challenge unavailable");
