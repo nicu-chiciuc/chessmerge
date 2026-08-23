@@ -69,7 +69,12 @@ test.describe("shareable challenges", () => {
     const copy = page.getByRole("button", { name: "Copy link" });
     await expect(copy).toBeFocused();
     const canonicalUrl = page.url();
+    const agentInvitation = page.getByLabel("Agent invitation");
+    const expectedAgentInvitation = `Open this ChessMerge challenge in your browser, join as a guest, and play the full game against me: ${canonicalUrl}\n\nDo not stop while the game is active. When the page says "Opponent's turn," wait and check again. When the page says "Your turn," make a move. Continue until the page shows the final result.`;
     await expect(page.getByLabel("Challenge link")).toHaveValue(canonicalUrl);
+    await expect(agentInvitation).toBeVisible();
+    await expect(agentInvitation).toHaveValue(expectedAgentInvitation);
+    await expect(agentInvitation).toHaveAttribute("readonly", "");
     await copy.click();
     await expect(
       page.getByRole("button", { name: "Link copied" }),
@@ -105,11 +110,20 @@ test.describe("shareable challenges", () => {
     ).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("fallback-copy")))
-      .toBe(
-        `Open this ChessMerge challenge, join as a guest, and play against me: ${canonicalUrl}`,
-      );
+      .toBe(await agentInvitation.inputValue());
 
     await page.setViewportSize({ width: 320, height: 720 });
+    await expect(agentInvitation).toBeVisible();
+    await expect
+      .poll(() =>
+        agentInvitation.evaluate((element) => ({
+          insideViewport:
+            element.getBoundingClientRect().left >= 0 &&
+            element.getBoundingClientRect().right <= window.innerWidth,
+          overflowsHorizontally: element.scrollWidth > element.clientWidth,
+        })),
+      )
+      .toEqual({ insideViewport: true, overflowsHorizontally: false });
     await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Agent invite copied" }),
@@ -289,6 +303,24 @@ test.describe("shareable challenges", () => {
 
       await expect(creatorPage.locator("button[data-square]")).toHaveCount(64);
       await expect(guestPage.locator("button[data-square]")).toHaveCount(64);
+      const creatorStatus = creatorPage
+        .getByRole("heading", { name: "Game Info" })
+        .locator("..")
+        .getByRole("status");
+      const guestStatus = guestPage
+        .getByRole("heading", { name: "Game Info" })
+        .locator("..")
+        .getByRole("status");
+      await expect(creatorStatus).toHaveAttribute("aria-live", "polite");
+      await expect(creatorStatus).toHaveAttribute("aria-atomic", "true");
+      await expect(creatorStatus).toContainText("Your turn");
+      await expect(guestStatus).toContainText("Opponent's turn");
+      await expect(
+        creatorPage.locator("button[data-square]:not(:disabled)"),
+      ).toHaveCount(64);
+      await expect(
+        guestPage.locator("button[data-square]:disabled"),
+      ).toHaveCount(64);
 
       await creatorPage.locator('button[data-square="e2"]').click();
       await expect(
@@ -304,9 +336,14 @@ test.describe("shareable challenges", () => {
       await expect(
         creatorPage.locator('button[data-square="e3"] img'),
       ).toHaveCount(1);
+      await expect(creatorStatus).toContainText("Opponent's turn");
+      await expect(guestStatus).toContainText("Your turn");
       await expect(
-        creatorPage.locator('button[data-square="e3"]'),
-      ).toBeFocused();
+        creatorPage.locator("button[data-square]:disabled"),
+      ).toHaveCount(64);
+      await expect(
+        guestPage.locator("button[data-square]:not(:disabled)"),
+      ).toHaveCount(64);
       await expect(
         spectatorPage.locator('button[data-square="e3"] img'),
       ).toHaveCount(1);
@@ -368,15 +405,14 @@ test.describe("shareable challenges", () => {
         .getByRole("button", { name: "Resign game" })
         .click();
 
+      await expect(creatorStatus).toContainText("White wins! You won!");
+      await expect(guestStatus).toContainText("White wins! You lost.");
       await expect(
-        creatorPage.getByText("White wins! You won!", { exact: true }),
-      ).toBeVisible();
-      await expect(
-        guestPage.getByText("White wins! You lost.", { exact: true }),
-      ).toBeVisible();
-      await expect(
-        spectatorPage.getByText("White wins", { exact: true }),
-      ).toBeVisible();
+        spectatorPage
+          .getByRole("heading", { name: "Game Info" })
+          .locator("..")
+          .getByRole("status"),
+      ).toContainText("White wins");
       for (const gamePage of [creatorPage, guestPage, spectatorPage]) {
         await expect(
           gamePage.getByText("resignation", { exact: true }),

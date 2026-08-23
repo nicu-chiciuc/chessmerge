@@ -48,7 +48,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
     typeof window === "undefined"
       ? ""
       : `${window.location.origin}/challenge/${encodeURIComponent(challengeId)}`;
-  const agentInvite = `Open this ChessMerge challenge, join as a guest, and play against me: ${canonicalUrl}`;
+  const agentInvite = `Open this ChessMerge challenge in your browser, join as a guest, and play the full game against me: ${canonicalUrl}\n\nDo not stop while the game is active. When the page says "Opponent's turn," wait and check again. When the page says "Your turn," make a move. Continue until the page shows the final result.`;
   const canShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
   const view: PageView = locallyUnavailable
@@ -290,6 +290,19 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
                   {copiedItem === "link" ? "Link copied" : "Copy link"}
                 </Button>
               </div>
+              <label
+                className="mb-2 mt-4 block text-sm font-medium"
+                htmlFor="agent-invitation"
+              >
+                Agent invitation
+              </label>
+              <textarea
+                id="agent-invitation"
+                className="h-44 w-full min-w-0 resize-none overflow-x-hidden whitespace-pre-wrap rounded-md border bg-background px-3 py-2 font-mono text-xs outline-none [overflow-wrap:anywhere] focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-36"
+                value={agentInvite}
+                readOnly
+                wrap="soft"
+              />
               <div className="mt-4 flex flex-wrap gap-2">
                 {canShare ? (
                   <Button
