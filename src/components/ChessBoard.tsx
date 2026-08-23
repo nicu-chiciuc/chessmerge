@@ -32,6 +32,7 @@ interface ChessBoardProps {
   currentTurn?: "w" | "b";
   needsPromotion: Position | null;
   setSelectedPromotion: (piece: Piece) => void;
+  readOnly?: boolean;
 }
 
 const getPieceSvg = (piece: Piece) => {
@@ -67,6 +68,7 @@ export function ChessBoard({
   currentTurn = "w",
   needsPromotion,
   setSelectedPromotion,
+  readOnly = false,
 }: ChessBoardProps) {
   const [draggedPiece, setDraggedPiece] = useState<{
     piece: Piece;
@@ -116,6 +118,8 @@ export function ChessBoard({
   };
 
   const handleSquareClick = (row: number, col: number) => {
+    if (readOnly) return;
+
     // Reset piece mode when selecting a different square
     if (
       !selectedSquare ||
@@ -243,7 +247,7 @@ export function ChessBoard({
       <button
         key={`${row}-${col}`}
         type="button"
-        disabled={needsPromotion !== null}
+        disabled={readOnly || needsPromotion !== null}
         aria-label={getSquareLabel(square, cell, isSelected, isValidMove)}
         aria-pressed={isSelected}
         data-legal-move={isValidMove ? "true" : undefined}
@@ -308,7 +312,7 @@ export function ChessBoard({
     <div className="flex flex-col items-center justify-center w-full ">
       <div
         ref={boardElementRef}
-        aria-label="Chess board"
+        aria-label={readOnly ? "Chess board, read only" : "Chess board"}
         className="chessBoard grid grid-cols-8 border-gray-800 w-full relative"
         role="group"
       >

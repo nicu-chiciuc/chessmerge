@@ -24,7 +24,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("participant game lookup", () => {
+describe("public game lookup", () => {
   it("returns null for a malformed game id", async () => {
     const t = convexTest(schema, modules);
     const userId = await insertUser(t, "player@example.com");
@@ -35,18 +35,26 @@ describe("participant game lookup", () => {
     ).resolves.toBeNull();
   });
 
-  it("denies anonymous and unrelated callers while returning a participant DTO", async () => {
+  it("returns a read-only DTO publicly and identifies participants", async () => {
     const t = convexTest(schema, modules);
     const { white, black, gameId } = await createActiveGame(t);
     const unrelatedId = await insertUser(t, "unrelated@example.com");
     const unrelated = t.withIdentity({ subject: unrelatedId });
 
-    await expect(
-      t.query(api.gameLogic.getGame, { gameId }),
-    ).resolves.toBeNull();
+    const spectatorGame = {
+      _id: gameId,
+      status: "active",
+      playerColor: null,
+      gameState: JSON.stringify(createInitialGameState()),
+      moveCount: 0,
+      lastMoveAt: START_TIME.getTime(),
+    };
+    await expect(t.query(api.gameLogic.getGame, { gameId })).resolves.toEqual(
+      spectatorGame,
+    );
     await expect(
       unrelated.query(api.gameLogic.getGame, { gameId }),
-    ).resolves.toBeNull();
+    ).resolves.toEqual(spectatorGame);
     await expect(
       white.query(api.gameLogic.getGame, { gameId }),
     ).resolves.toEqual({
@@ -54,7 +62,7 @@ describe("participant game lookup", () => {
       status: "active",
       playerColor: "w",
       gameState: JSON.stringify(createInitialGameState()),
-      moveHistory: [],
+      moveCount: 0,
       lastMoveAt: START_TIME.getTime(),
     });
     await expect(
@@ -64,7 +72,7 @@ describe("participant game lookup", () => {
       status: "active",
       playerColor: "b",
       gameState: JSON.stringify(createInitialGameState()),
-      moveHistory: [],
+      moveCount: 0,
       lastMoveAt: START_TIME.getTime(),
     });
 
@@ -82,8 +90,14 @@ describe("participant game lookup", () => {
       status: "completed",
       playerColor: "w",
       gameState: JSON.stringify(createInitialGameState()),
-      moveHistory: [],
+      moveCount: 0,
       lastMoveAt: START_TIME.getTime(),
+      winner: "w",
+      gameEndReason: "checkmate",
+    });
+    await expect(t.query(api.gameLogic.getGame, { gameId })).resolves.toEqual({
+      ...spectatorGame,
+      status: "completed",
       winner: "w",
       gameEndReason: "checkmate",
     });
@@ -134,6 +148,116 @@ describe("participant game lookup", () => {
       ).resolves.toBeNull();
     }
   });
+
+  it("hides records with corrupt stored state", async () => {
+    const t = convexTest(schema, modules);
+    const { white, gameId } = await createActiveGame(t);
+    const mixedColorState = createInitialGameState();
+    mixedColorState.board[6][4] = [
+      { color: "w", pieceType: "p" },
+      { color: "b", pieceType: "p" },
+    ];
+    const whitePawnMove = serializeMove(
+      { row: 6, col: 4 },
+      { row: 5, col: 4 },
+      "p",
+      "base",
+    );
+
+    for (const gameState of [
+      "{",
+      JSON.stringify({ board: [], options: { turn: "w" } }),
+      JSON.stringify(mixedColorState),
+    ]) {
+      await t.run(async (ctx) => {
+        await ctx.db.patch(gameId, { gameState });
+      });
+
+      await expect(
+        t.query(api.gameLogic.getGame, { gameId }),
+      ).resolves.toBeNull();
+      await expect(
+        white.query(api.gameLogic.getGame, { gameId }),
+      ).resolves.toBeNull();
+      await expect(t.query(api.gameLogic.listLiveGames, {})).resolves.toEqual(
+        [],
+      );
+      await expect(
+        white.mutation(api.gameLogic.makeMove, {
+          gameId,
+          move: whitePawnMove,
+        }),
+      ).rejects.toThrow("Game unavailable");
+      await expect(
+        t.run(async (ctx) => (await ctx.db.get(gameId))?.moveHistory),
+      ).resolves.toEqual([]);
+    }
+  });
+});
+
+describe("live game list", () => {
+  it("returns recent challenge games without player identities", async () => {
+    const t = convexTest(schema, modules);
+    const whiteId = await insertUser(t, "white@example.com");
+    const blackId = await insertUser(t, "black@example.com");
+    const whiteTurn = createInitialGameState();
+    const blackTurn = createInitialGameState();
+    blackTurn.options.turn = "b";
+
+    const { olderGameId, newerGameId } = await t.run(async (ctx) => {
+      const olderGameId = await ctx.db.insert("games", {
+        whitePlayerId: whiteId,
+        blackPlayerId: blackId,
+        status: "active",
+        gameState: JSON.stringify(whiteTurn),
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime() - 1_000,
+      });
+      const newerGameId = await ctx.db.insert("games", {
+        whitePlayerId: whiteId,
+        blackPlayerId: blackId,
+        status: "active",
+        gameState: JSON.stringify(blackTurn),
+        moveHistory: ["move"],
+        lastMoveAt: START_TIME.getTime(),
+      });
+      await ctx.db.insert("games", {
+        whitePlayerId: whiteId,
+        blackPlayerId: blackId,
+        status: "active",
+        gameState: JSON.stringify(whiteTurn),
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime() + 1_000,
+        timeControl: { initialTimeMs: 60_000, incrementMs: 0 },
+      });
+      await ctx.db.insert("games", {
+        whitePlayerId: whiteId,
+        blackPlayerId: blackId,
+        status: "completed",
+        gameState: JSON.stringify(whiteTurn),
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime() + 2_000,
+        winner: "w",
+        gameEndReason: "checkmate",
+      });
+      return { olderGameId, newerGameId };
+    });
+
+    await expect(t.query(api.gameLogic.listLiveGames, {})).resolves.toEqual([
+      {
+        _id: newerGameId,
+        lastMoveAt: START_TIME.getTime(),
+        moveCount: 1,
+        turn: "b",
+      },
+      {
+        _id: olderGameId,
+        lastMoveAt: START_TIME.getTime() - 1_000,
+        moveCount: 0,
+        turn: "w",
+      },
+    ]);
+  });
 });
 
 describe("game move authority", () => {
@@ -181,12 +305,33 @@ describe("game move authority", () => {
   it("rejects the wrong identity, opponent pieces, and consecutive turns", async () => {
     const t = convexTest(schema, modules);
     const { white, black, gameId } = await createActiveGame(t);
+    const unrelatedId = await insertUser(t, "unrelated@example.com");
+    const unrelated = t.withIdentity({ subject: unrelatedId });
     const blackPawnMove = serializeMove(
       { row: 1, col: 4 },
       { row: 2, col: 4 },
       "p",
       "base",
     );
+    const whitePawnMove = serializeMove(
+      { row: 6, col: 4 },
+      { row: 5, col: 4 },
+      "p",
+      "base",
+    );
+
+    await expect(
+      t.mutation(api.gameLogic.makeMove, {
+        gameId,
+        move: whitePawnMove,
+      }),
+    ).rejects.toThrow("Not authenticated");
+    await expect(
+      unrelated.mutation(api.gameLogic.makeMove, {
+        gameId,
+        move: whitePawnMove,
+      }),
+    ).rejects.toThrow("Not a player in this game");
 
     await expect(
       black.mutation(api.gameLogic.makeMove, {

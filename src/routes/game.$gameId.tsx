@@ -11,16 +11,13 @@ export const Route = createFileRoute("/game/$gameId")({
 
 function GameRoute() {
   const { gameId } = Route.useParams();
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const game = useQuery(
-    api.gameLogic.getGame,
-    isAuthenticated ? { gameId } : "skip",
-  );
+  const { isLoading } = useConvexAuth();
+  const game = useQuery(api.gameLogic.getGame, { gameId });
   const heading = useRef<HTMLHeadingElement>(null);
   const focusState =
-    isLoading || (isAuthenticated && game === undefined)
+    isLoading || game === undefined
       ? "loading"
-      : !isAuthenticated || game === null
+      : game === null
         ? "unavailable"
         : "ready";
 
@@ -29,7 +26,7 @@ function GameRoute() {
     heading.current?.focus();
   }, [focusState, gameId]);
 
-  if (isLoading || (isAuthenticated && game === undefined)) {
+  if (isLoading || game === undefined) {
     return (
       <p className="p-4 text-sm text-muted-foreground" aria-live="polite">
         Opening game…
@@ -37,7 +34,7 @@ function GameRoute() {
     );
   }
 
-  if (!isAuthenticated || game == null) {
+  if (game == null) {
     return (
       <h1 ref={heading} tabIndex={-1} className="p-4 text-xl font-semibold">
         Game unavailable
@@ -48,7 +45,7 @@ function GameRoute() {
   return (
     <>
       <h1 ref={heading} tabIndex={-1} className="sr-only">
-        Chess game
+        {game.playerColor === null ? "Watching chess game" : "Chess game"}
       </h1>
       <ChessGameWrapper game={game} />
     </>

@@ -16,11 +16,9 @@ import type {
 } from "../../lib/chessmerge";
 import { toast } from "sonner";
 
-type ParticipantGame = NonNullable<
-  FunctionReturnType<typeof api.gameLogic.getGame>
->;
+type GameView = NonNullable<FunctionReturnType<typeof api.gameLogic.getGame>>;
 
-export function ChessGameWrapper({ game }: { game: ParticipantGame }) {
+export function ChessGameWrapper({ game }: { game: GameView }) {
   const gameId = game._id;
   const makeMoveApi = useMutation(api.gameLogic.makeMove);
 
@@ -56,6 +54,7 @@ export function ChessGameWrapper({ game }: { game: ParticipantGame }) {
       makeMove={makeMove}
       isMyTurn={isMyTurn}
       isBlackPlayer={isBlackPlayer}
+      readOnly={game.playerColor === null}
       renderedGameInfo={
         <div className="flex-1 space-y-4">
           <GameInfo
@@ -75,10 +74,12 @@ export function ChessGame({
   makeMove,
   isMyTurn,
   isBlackPlayer,
+  readOnly,
   renderedGameInfo,
 }: {
   isBlackPlayer: boolean;
-  gameStatus: ParticipantGame["status"];
+  readOnly: boolean;
+  gameStatus: GameView["status"];
   gameState: GameState;
   makeMove: (move: Move) => Promise<unknown>;
   isMyTurn: boolean;
@@ -225,6 +226,7 @@ export function ChessGame({
           currentTurn={gameState.options.turn}
           needsPromotion={needsPromotion ? needsPromotion.to : null}
           setSelectedPromotion={setSelectedPromotion}
+          readOnly={readOnly}
         />
       </div>
 

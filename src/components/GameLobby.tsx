@@ -11,7 +11,11 @@ export function GameLobby({
 }: {
   isAuthenticated?: boolean;
 }) {
-  const myGames = useQuery(api.gameLogic.listGames);
+  const liveGames = useQuery(api.gameLogic.listLiveGames);
+  const myGames = useQuery(
+    api.gameLogic.listGames,
+    isAuthenticated ? {} : "skip",
+  );
   const navigate = useNavigate();
 
   const handleCreateChallenge = () => {
@@ -24,10 +28,9 @@ export function GameLobby({
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary mb-4">Game Lobby</h1>
         <p className="text-gray-600 mb-6">
-          Welcome to ChessMerge!{" "}
           {isAuthenticated
-            ? "Create a challenge or resume a game."
-            : "Create a challenge or use the Sandbox."}
+            ? "Create a challenge, watch a live game, or resume yours."
+            : "Create a challenge, watch a live game, or use the Sandbox."}
         </p>
 
         <div className="flex gap-4 justify-center flex-wrap">
@@ -54,30 +57,19 @@ export function GameLobby({
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left Column - Games Section */}
         <div className="lg:col-span-2 space-y-6">
-          {/* My Games */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold mb-4">My Games</h2>
-            {!isAuthenticated ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">Sign in to see your games</p>
-                <Button
-                  variant="outline"
-                  onClick={() => void navigate({ to: "/login" })}
-                >
-                  Sign In
-                </Button>
-              </div>
-            ) : myGames === undefined ? (
+            <h2 className="text-xl font-semibold mb-4">Live games</h2>
+            {liveGames === undefined ? (
               <p className="text-gray-500">Loading games…</p>
-            ) : myGames.length === 0 ? (
-              <p className="text-gray-500">No games yet.</p>
+            ) : liveGames.length === 0 ? (
+              <p className="text-gray-500">No games are live right now.</p>
             ) : (
               <div className="space-y-3">
-                {myGames.map((game) => (
+                {liveGames.map((game) => (
                   <button
                     type="button"
                     key={game._id}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left hover:bg-gray-50"
+                    className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     onClick={() =>
                       void navigate({
                         to: "/game/$gameId",
@@ -85,38 +77,86 @@ export function GameLobby({
                       })
                     }
                   >
-                    <span className="min-w-0">
-                      <span className="block font-medium">
-                        {game.status === "active"
-                          ? "Active game"
-                          : "Completed game"}
-
-                        <span className="text-gray-500">
-                          {" "}
-                          ({game._id.slice(0, 6)})
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500"
+                      />
+                      <span className="min-w-0">
+                        <span className="block font-medium">
+                          Game {game._id.slice(-6)}
+                        </span>
+                        <span className="block text-sm text-gray-500">
+                          {game.turn === "w" ? "White" : "Black"} to move
+                          {game.moveCount > 0
+                            ? ` · ${game.moveCount} ${game.moveCount === 1 ? "move" : "moves"}`
+                            : ""}
                         </span>
                       </span>
-
-                      <span className="block text-sm text-gray-500">
-                        {new Date(game.lastMoveAt).toLocaleDateString()}
-                      </span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          game.status === "active"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {game.status}
-                      </span>
+                    <span className="hidden shrink-0 text-xs text-gray-500 sm:block">
+                      {formatLastMove(game.lastMoveAt)}
                     </span>
                   </button>
                 ))}
               </div>
             )}
           </div>
+
+          {isAuthenticated && (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold mb-4">My games</h2>
+              {myGames === undefined ? (
+                <p className="text-gray-500">Loading games…</p>
+              ) : myGames.length === 0 ? (
+                <p className="text-gray-500">No games yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {myGames.map((game) => (
+                    <button
+                      type="button"
+                      key={game._id}
+                      className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left hover:bg-gray-50"
+                      onClick={() =>
+                        void navigate({
+                          to: "/game/$gameId",
+                          params: { gameId: game._id },
+                        })
+                      }
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-medium">
+                          {game.status === "active"
+                            ? "Active game"
+                            : "Completed game"}
+
+                          <span className="text-gray-500">
+                            {" "}
+                            ({game._id.slice(0, 6)})
+                          </span>
+                        </span>
+
+                        <span className="block text-sm text-gray-500">
+                          {new Date(game.lastMoveAt).toLocaleDateString()}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            game.status === "active"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {game.status}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Column - Email Subscription */}
@@ -125,10 +165,6 @@ export function GameLobby({
             <h3 className="text-lg font-semibold mb-2 text-gray-900">
               Stay Updated
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Get the latest ChessMerge news and updates delivered to your
-              inbox.
-            </p>
             <EmailSubscribe compact={true} hideCard={true} />
           </div>
         </div>
@@ -212,4 +248,13 @@ export function GameLobby({
       </div>
     </div>
   );
+}
+
+function formatLastMove(lastMoveAt: number) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(lastMoveAt);
 }

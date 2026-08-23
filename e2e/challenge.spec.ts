@@ -104,6 +104,8 @@ test.describe("shareable challenges", () => {
 
     const guestContext = await browser.newContext();
     const guestPage = await guestContext.newPage();
+    const spectatorContext = await browser.newContext();
+    const spectatorPage = await spectatorContext.newPage();
 
     try {
       await guestPage.goto(challengeUrl);
@@ -151,20 +153,41 @@ test.describe("shareable challenges", () => {
       await resumeGame.click();
       await expect(creatorPage).toHaveURL(gameUrl);
 
-      const unrelatedContext = await browser.newContext();
-      const unrelatedPage = await unrelatedContext.newPage();
-      try {
-        await unrelatedPage.goto(challengeUrl);
-        await expect(
-          unrelatedPage.getByRole("heading", {
-            name: "Challenge unavailable",
-          }),
-        ).toBeVisible();
-        await expect(unrelatedPage).toHaveURL(challengeUrl);
-        await expect(unrelatedPage.getByText(/Game ID:/)).toHaveCount(0);
-      } finally {
-        await unrelatedContext.close();
-      }
+      await spectatorPage.goto(challengeUrl);
+      await expect(
+        spectatorPage.getByRole("heading", {
+          name: "Challenge unavailable",
+        }),
+      ).toBeVisible();
+      await expect(spectatorPage).toHaveURL(challengeUrl);
+      await expect(spectatorPage.getByText(/Game ID:/)).toHaveCount(0);
+
+      await spectatorPage.goto(gameUrl);
+      await expect(
+        spectatorPage.getByRole("heading", { name: "Watching chess game" }),
+      ).toBeFocused();
+      await expect(
+        spectatorPage.getByRole("group", {
+          name: "Chess board, read only",
+        }),
+      ).toBeVisible();
+      await expect(spectatorPage.locator("button[data-square]")).toHaveCount(
+        64,
+      );
+      await expect(
+        spectatorPage.locator("button[data-square]:not(:disabled)"),
+      ).toHaveCount(0);
+
+      await spectatorPage.goto("/");
+      await expect(
+        spectatorPage.getByRole("heading", { name: "Live games" }),
+      ).toBeVisible();
+      const watchLiveGame = spectatorPage.getByRole("button", {
+        name: new RegExp(gameUrl.slice(-6)),
+      });
+      await expect(watchLiveGame).toBeVisible();
+      await watchLiveGame.click();
+      await expect(spectatorPage).toHaveURL(gameUrl);
 
       await guestPage.setViewportSize({ width: 320, height: 720 });
       await expect(
@@ -199,8 +222,17 @@ test.describe("shareable challenges", () => {
       await expect(
         creatorPage.locator('button[data-square="e3"]'),
       ).toBeFocused();
+      await expect(
+        spectatorPage.locator('button[data-square="e3"] img'),
+      ).toHaveCount(1);
+      await expect(
+        spectatorPage.locator('button[data-square="e2"] img'),
+      ).toHaveCount(0);
+      await expect(
+        spectatorPage.locator("button[data-square]:not(:disabled)"),
+      ).toHaveCount(0);
     } finally {
-      await guestContext.close();
+      await Promise.all([guestContext.close(), spectatorContext.close()]);
     }
   });
 });

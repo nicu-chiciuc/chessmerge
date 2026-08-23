@@ -2,19 +2,22 @@ import type { GameState } from "lib/chessmerge";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../convex/_generated/api";
 
-type ParticipantGame = NonNullable<
-  FunctionReturnType<typeof api.gameLogic.getGame>
->;
+type GameView = NonNullable<FunctionReturnType<typeof api.gameLogic.getGame>>;
 
 interface GameInfoProps {
-  game: ParticipantGame;
+  game: GameView;
   gameState: GameState;
-  playerColor: "w" | "b";
+  playerColor: "w" | "b" | null;
 }
 
 export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
   const getStatusText = () => {
     if (game.status === "active") {
+      if (playerColor === null) {
+        return gameState.options.turn === "w"
+          ? "White to move"
+          : "Black to move";
+      }
       return gameState.options.turn === playerColor
         ? "Your turn"
         : "Opponent's turn";
@@ -22,6 +25,7 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
 
     if (game.winner === "draw") return "Game ended in a draw";
     const winnerText = game.winner === "w" ? "White" : "Black";
+    if (playerColor === null) return `${winnerText} wins`;
     const youWon = game.winner === playerColor;
     return `${winnerText} wins! ${youWon ? "You won!" : "You lost."}`;
   };
@@ -29,6 +33,7 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
   const getStatusColor = () => {
     if (game.status === "completed") {
       if (game.winner === "draw") return "text-yellow-600";
+      if (playerColor === null) return "text-gray-900";
       const youWon = game.winner === playerColor;
       return youWon ? "text-primary-600" : "text-destructive-600";
     }
@@ -36,6 +41,7 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
   };
 
   const getPlayerText = () => {
+    if (playerColor === null) return "Spectator";
     return playerColor === "w" ? "White" : "Black";
   };
 
@@ -51,25 +57,25 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
           </span>
         </div>
 
-        <div className="flex justify-between">
-          <span className="text-gray-600">You are:</span>
-          <span className="font-medium">{getPlayerText()}</span>
-        </div>
+        {playerColor !== null && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">You are:</span>
+            <span className="font-medium">{getPlayerText()}</span>
+          </div>
+        )}
 
-        {game.status === "active" && (
+        {game.status === "active" && playerColor !== null && (
           <div className="flex justify-between">
             <span className="text-gray-600">Current turn:</span>
-            <span className="font-medium capitalize">
-              {gameState.options.turn}
+            <span className="font-medium">
+              {gameState.options.turn === "w" ? "White" : "Black"}
             </span>
           </div>
         )}
 
         <div className="flex justify-between">
           <span className="text-gray-600">Moves:</span>
-          <span className="font-medium">
-            {Math.floor(game.moveHistory.length / 2) + 1}
-          </span>
+          <span className="font-medium">{game.moveCount}</span>
         </div>
 
         {game.status === "completed" && (
