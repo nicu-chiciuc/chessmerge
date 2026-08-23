@@ -218,7 +218,7 @@ export function ChessBoard({
       dragOverSquare?.row === row && dragOverSquare?.col === col;
 
     let squareClass = `
-      aspect-square flex items-center justify-center cursor-pointer relative border-0 p-0
+      aspect-square min-w-0 flex items-center justify-center cursor-pointer relative border-0 p-0
       ${isLight ? "bg-amber-100" : "bg-amber-800"}
       ${isSelected ? "ring-2 sm:ring-4 ring-blue-500 z-20" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
@@ -313,7 +313,7 @@ export function ChessBoard({
       <div
         ref={boardElementRef}
         aria-label={readOnly ? "Chess board, read only" : "Chess board"}
-        className="chessBoard grid grid-cols-8 border-gray-800 w-full relative"
+        className="chessBoard grid aspect-square grid-cols-8 border-gray-800 w-full relative"
         role="group"
       >
         {needsPromotion && (
@@ -393,9 +393,9 @@ export function ChessBoard({
             </div>
           </Button>
         </div>
-      ) : (
+      ) : !readOnly ? (
         <div aria-hidden="true" className="mt-4 h-9" />
-      )}
+      ) : null}
     </div>
   );
 }
@@ -427,6 +427,21 @@ function ChessPieceCell({
   const mergedInnerWidth = (100 / MERGED_PIECE_VISIBLE_PERCENT) * 100;
 
   if (pieces.length === 1) {
+    const piece = pieces[0];
+
+    if (piece.pieceType === "k") {
+      return (
+        <div
+          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} h-full w-full p-[10%]`}
+          draggable={canDrag}
+          onDragStart={(e) => onDragStart?.(e, 0)}
+          onDragEnd={onDragEnd}
+        >
+          <ChessPieceContent piece={piece} size="responsive" />
+        </div>
+      );
+    }
+
     // Single piece - show left portion (so knight's head is visible)
     return (
       <div
@@ -443,7 +458,7 @@ function ChessPieceCell({
             className="absolute left-0 top-0 h-full flex items-center justify-center"
             style={{ width: `${singleInnerWidth}%` }}
           >
-            <ChessPieceContent piece={pieces[0]} size="responsive" />
+            <ChessPieceContent piece={piece} size="responsive" />
           </div>
         </div>
       </div>
