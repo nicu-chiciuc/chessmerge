@@ -126,6 +126,34 @@ describe("Game Cases", () => {
     expect(moves).toHaveLength(2);
   });
 
+  it("only moves a pinned merged pawn and rook when it captures the attacker", () => {
+    const board = stringToBoard(`
+      .  .  .  .  .  .  .  .
+      .  k  .  .  .  .  .  .
+      .  .  .  .  .  .  .  .
+      .  .  .  .  .  .  .  .
+      .  .  .  .  .  .  .  .
+      .  .  .  .  .  .  bq .
+      .  .  .  .  .  PR .  .
+      .  .  .  .  K  .  .  .
+    `);
+    const gameState: GameState = {
+      board,
+      options: FEMN.fromFEMNWithoutBoard("w - - 0 1"),
+    };
+
+    const moves = getAllMovesForCell(parsePosition("f2"), gameState);
+    const mergedMoves = moves.filter((move) => move.piece === "pr");
+
+    expect(mergedMoves.map((move) => move.to)).toEqual([parsePosition("g3")]);
+    expect(moves).toContainEqual(
+      expect.objectContaining({ piece: "p", to: parsePosition("f3") }),
+    );
+    expect(moves).toContainEqual(
+      expect.objectContaining({ piece: "r", to: parsePosition("f3") }),
+    );
+  });
+
   describe("castling", () => {
     it("requires the same-color rook on its original corner", () => {
       const gameState = createCastlingState();
