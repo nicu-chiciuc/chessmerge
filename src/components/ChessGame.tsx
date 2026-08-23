@@ -64,6 +64,7 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
     <ChessGame
       gameStatus={game.status}
       gameState={gameState}
+      lastMove={game.lastMove}
       makeMove={makeMove}
       isMyTurn={game.status === "active" && isMyTurn}
       isBlackPlayer={isBlackPlayer}
@@ -85,6 +86,7 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
 export function ChessGame({
   gameStatus,
   gameState,
+  lastMove,
   makeMove,
   isMyTurn,
   isBlackPlayer,
@@ -95,6 +97,7 @@ export function ChessGame({
   readOnly: boolean;
   gameStatus: GameView["status"];
   gameState: GameState;
+  lastMove: GameView["lastMove"];
   makeMove: (move: Move) => Promise<unknown>;
   isMyTurn: boolean;
   renderedGameInfo: React.ReactNode;
@@ -229,6 +232,7 @@ export function ChessGame({
       <div className="w-full max-w-3xl xl:col-span-3 mx-auto">
         <ChessBoard
           board={gameState.board}
+          lastMove={lastMove}
           selectedSquare={selectedSquare}
           validMoves={validPositions}
           // fullMoves={validMoves}

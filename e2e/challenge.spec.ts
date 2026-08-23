@@ -316,6 +316,38 @@ test.describe("shareable challenges", () => {
       await expect(
         spectatorPage.locator("button[data-square]:not(:disabled)"),
       ).toHaveCount(0);
+      for (const gamePage of [creatorPage, guestPage, spectatorPage]) {
+        await expect(
+          gamePage.locator('button[data-square="e2"]'),
+        ).toHaveAttribute("data-last-move", "from");
+        await expect(
+          gamePage.locator('button[data-square="e3"]'),
+        ).toHaveAttribute("data-last-move", "to");
+        await expect(
+          gamePage.getByRole("button", { name: /e2.*last move from/ }),
+        ).toBeVisible();
+        await expect(
+          gamePage.getByRole("button", { name: /e3.*last move to/ }),
+        ).toBeVisible();
+      }
+      const squareBackground = async (square: string) =>
+        guestPage
+          .locator(`button[data-square="${square}"]`)
+          .evaluate((element) => getComputedStyle(element).backgroundColor);
+      expect(await squareBackground("e2")).not.toBe(
+        await squareBackground("e4"),
+      );
+      expect(await squareBackground("e3")).not.toBe(
+        await squareBackground("e5"),
+      );
+
+      await spectatorPage.reload();
+      await expect(
+        spectatorPage.locator('button[data-square="e2"]'),
+      ).toHaveAttribute("data-last-move", "from");
+      await expect(
+        spectatorPage.locator('button[data-square="e3"]'),
+      ).toHaveAttribute("data-last-move", "to");
 
       await expect(
         spectatorPage.getByRole("button", { name: "Resign game" }),
@@ -352,6 +384,12 @@ test.describe("shareable challenges", () => {
         await expect(
           gamePage.getByRole("group", { name: "Chess board, read only" }),
         ).toBeVisible();
+        await expect(
+          gamePage.locator('button[data-square="e2"]'),
+        ).toHaveAttribute("data-last-move", "from");
+        await expect(
+          gamePage.locator('button[data-square="e3"]'),
+        ).toHaveAttribute("data-last-move", "to");
       }
 
       await creatorPage.getByRole("button", { name: /Lobby/ }).click();

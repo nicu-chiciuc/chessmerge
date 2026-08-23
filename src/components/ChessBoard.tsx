@@ -23,6 +23,7 @@ const promotionPieceTypes = ["q", "r", "b", "n"] satisfies PieceType[];
 
 interface ChessBoardProps {
   board: Board;
+  lastMove?: { from: Position; to: Position } | null;
   selectedSquare: Position | null;
   validMoves: Position[];
   onSquareClick: (row: number, col: number) => void;
@@ -59,6 +60,7 @@ const getPieceSvg = (piece: Piece) => {
 
 export function ChessBoard({
   board,
+  lastMove = null,
   selectedSquare,
   validMoves,
   onSquareClick,
@@ -201,6 +203,14 @@ export function ChessBoard({
     const isValidMove = validMoves.some(
       (move) => move.row === row && move.col === col,
     );
+    const lastMoveRole =
+      lastMove?.from.row === row && lastMove.from.col === col
+        ? "from"
+        : lastMove?.to.row === row && lastMove.to.col === col
+          ? "to"
+          : null;
+    const coordinateColor =
+      lastMoveRole !== null || isLight ? "text-amber-800" : "text-amber-100";
 
     const isDraggedSquare =
       draggedFrom?.row === row && draggedFrom?.col === col;
@@ -209,7 +219,7 @@ export function ChessBoard({
 
     let squareClass = `
       aspect-square min-w-0 flex items-center justify-center cursor-pointer relative border-0 p-0
-      ${isLight ? "bg-amber-100" : "bg-amber-800"}
+      ${lastMoveRole ? "bg-yellow-300" : isLight ? "bg-amber-100" : "bg-amber-800"}
       ${isSelected ? "ring-2 sm:ring-4 ring-blue-500 z-20" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
       ${isDragOver ? "bg-blue-200" : ""}
@@ -240,8 +250,15 @@ export function ChessBoard({
         key={`${row}-${col}`}
         type="button"
         disabled={readOnly || needsPromotion !== null}
-        aria-label={getSquareLabel(square, cell, isSelected, isValidMove)}
+        aria-label={getSquareLabel(
+          square,
+          cell,
+          isSelected,
+          isValidMove,
+          lastMoveRole,
+        )}
         aria-pressed={isSelected}
+        data-last-move={lastMoveRole ?? undefined}
         data-legal-move={isValidMove ? "true" : undefined}
         data-square={square}
         className={squareClass}
@@ -267,7 +284,7 @@ export function ChessBoard({
         {col === 0 && (
           <span
             aria-hidden="true"
-            className={`absolute left-[5%] top-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
+            className={`absolute left-[5%] top-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${coordinateColor}`}
           >
             {ranks[row]}
           </span>
@@ -275,7 +292,7 @@ export function ChessBoard({
         {row === 7 && (
           <span
             aria-hidden="true"
-            className={`absolute right-[5%] bottom-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${isLight ? "text-amber-800" : "text-amber-100"}`}
+            className={`absolute right-[5%] bottom-[5%] text-[0.6em] sm:text-[0.7em] font-bold ${coordinateColor}`}
           >
             {files[col]}
           </span>
@@ -537,6 +554,7 @@ function getSquareLabel(
   pieces: Piece[],
   isSelected: boolean,
   isValidMove: boolean,
+  lastMoveRole: "from" | "to" | null,
 ): string {
   const contents =
     pieces.length === 0
@@ -545,6 +563,7 @@ function getSquareLabel(
   const state = [
     isSelected ? "selected" : null,
     isValidMove ? "legal move" : null,
+    lastMoveRole ? `last move ${lastMoveRole}` : null,
   ]
     .filter((value) => value !== null)
     .join(", ");
