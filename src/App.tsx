@@ -37,6 +37,7 @@ export default function App() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const isLocalPracticeRoute = isHydrated && pathname.startsWith("/practice");
   const isGameRoute =
     isHydrated &&
     (pathname.startsWith("/game") || pathname.startsWith("/practice"));
@@ -55,10 +56,16 @@ export default function App() {
             </Button>
           )}
         </div>
-        <AuthButton />
+        {!isLocalPracticeRoute && <AuthButton />}
       </header>
       <main>
-        <Content />
+        {isLocalPracticeRoute ? (
+          <div className="max-w-6xl mx-auto">
+            <Outlet />
+          </div>
+        ) : (
+          <Content />
+        )}
       </main>
       <Toaster />
     </div>
