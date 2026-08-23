@@ -41,6 +41,10 @@ test.describe("shareable challenges", () => {
 
     const create = page.getByRole("button", { name: "Create challenge" });
     await expect(create).toBeFocused();
+    await expectPreviewBoardGeometry(page);
+    await page.setViewportSize({ width: 320, height: 720 });
+    await expectPreviewBoardGeometry(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
     await observePendingLabel(page, "creating-label", "Creating…");
     await create.click();
     await expect(page).toHaveURL(/\/challenge\/[a-zA-Z0-9_-]+$/);
@@ -104,6 +108,8 @@ test.describe("shareable challenges", () => {
 
     const guestContext = await browser.newContext();
     const guestPage = await guestContext.newPage();
+    const spectatorContext = await browser.newContext();
+    const spectatorPage = await spectatorContext.newPage();
 
     try {
       await guestPage.goto(challengeUrl);
@@ -121,8 +127,10 @@ test.describe("shareable challenges", () => {
       await expect(
         guestPage.getByRole("img", { name: /Static ChessMerge board/ }),
       ).toBeVisible();
-      await expect(guestPage.locator("[data-square]")).toHaveCount(64);
-      await expect(guestPage.locator("button[data-square]")).toHaveCount(0);
+      await expectPreviewBoardGeometry(guestPage);
+      await expect(
+        guestPage.locator("[data-preview-board] button[data-square]:disabled"),
+      ).toHaveCount(64);
       await expect(
         guestPage.getByRole("button", { name: "Sign in" }),
       ).toBeVisible();
@@ -151,20 +159,41 @@ test.describe("shareable challenges", () => {
       await resumeGame.click();
       await expect(creatorPage).toHaveURL(gameUrl);
 
-      const unrelatedContext = await browser.newContext();
-      const unrelatedPage = await unrelatedContext.newPage();
-      try {
-        await unrelatedPage.goto(challengeUrl);
-        await expect(
-          unrelatedPage.getByRole("heading", {
-            name: "Challenge unavailable",
-          }),
-        ).toBeVisible();
-        await expect(unrelatedPage).toHaveURL(challengeUrl);
-        await expect(unrelatedPage.getByText(/Game ID:/)).toHaveCount(0);
-      } finally {
-        await unrelatedContext.close();
-      }
+      await spectatorPage.goto(challengeUrl);
+      await expect(
+        spectatorPage.getByRole("heading", {
+          name: "Challenge unavailable",
+        }),
+      ).toBeVisible();
+      await expect(spectatorPage).toHaveURL(challengeUrl);
+      await expect(spectatorPage.getByText(/Game ID:/)).toHaveCount(0);
+
+      await spectatorPage.goto(gameUrl);
+      await expect(
+        spectatorPage.getByRole("heading", { name: "Watching chess game" }),
+      ).toBeFocused();
+      await expect(
+        spectatorPage.getByRole("group", {
+          name: "Chess board, read only",
+        }),
+      ).toBeVisible();
+      await expect(spectatorPage.locator("button[data-square]")).toHaveCount(
+        64,
+      );
+      await expect(
+        spectatorPage.locator("button[data-square]:not(:disabled)"),
+      ).toHaveCount(0);
+
+      await spectatorPage.goto("/");
+      await expect(
+        spectatorPage.getByRole("heading", { name: "Live games" }),
+      ).toBeVisible();
+      const watchLiveGame = spectatorPage.getByRole("button", {
+        name: new RegExp(gameUrl.slice(-6)),
+      });
+      await expect(watchLiveGame).toBeVisible();
+      await watchLiveGame.click();
+      await expect(spectatorPage).toHaveURL(gameUrl);
 
       await guestPage.setViewportSize({ width: 320, height: 720 });
       await expect(
@@ -199,8 +228,17 @@ test.describe("shareable challenges", () => {
       await expect(
         creatorPage.locator('button[data-square="e3"]'),
       ).toBeFocused();
+      await expect(
+        spectatorPage.locator('button[data-square="e3"] img'),
+      ).toHaveCount(1);
+      await expect(
+        spectatorPage.locator('button[data-square="e2"] img'),
+      ).toHaveCount(0);
+      await expect(
+        spectatorPage.locator("button[data-square]:not(:disabled)"),
+      ).toHaveCount(0);
     } finally {
-      await guestContext.close();
+      await Promise.all([guestContext.close(), spectatorContext.close()]);
     }
   });
 });
@@ -229,4 +267,44 @@ async function observePendingLabel(page: Page, key: string, label: string) {
     },
     { storageKey: key, text: label },
   );
+}
+
+async function expectPreviewBoardGeometry(page: Page) {
+  const squares = page.locator("[data-preview-board] [data-square]");
+  await expect(squares).toHaveCount(64);
+
+  const sizes = await squares.evaluateAll((elements) =>
+    elements.map((element) => {
+      const { width, height } = element.getBoundingClientRect();
+      return { width, height };
+    }),
+  );
+
+  expect(Math.min(...sizes.map(({ width }) => width))).toBeGreaterThan(0);
+  expect(
+    Math.max(...sizes.map(({ width }) => width)) -
+      Math.min(...sizes.map(({ width }) => width)),
+  ).toBeLessThan(1);
+  expect(
+    Math.max(...sizes.map(({ height }) => height)) -
+      Math.min(...sizes.map(({ height }) => height)),
+  ).toBeLessThan(1);
+  expect(
+    Math.max(...sizes.map(({ width, height }) => Math.abs(width - height))),
+  ).toBeLessThan(1);
+
+  const kingIsClipped = await page
+    .locator('[data-preview-board] [data-square="e1"] img[alt="White king"]')
+    .evaluate((king) => {
+      const square = king.closest("[data-square]");
+      for (
+        let ancestor = king.parentElement;
+        ancestor && ancestor !== square;
+        ancestor = ancestor.parentElement
+      ) {
+        if (getComputedStyle(ancestor).overflow === "hidden") return true;
+      }
+      return false;
+    });
+  expect(kingIsClipped).toBe(false);
 }

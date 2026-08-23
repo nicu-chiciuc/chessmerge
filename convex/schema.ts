@@ -42,7 +42,8 @@ const applicationTables = {
     scheduledTimeoutId: v.optional(v.id("_scheduled_functions")), // Timeout check scheduled function
   })
     .index("by_player", ["whitePlayerId"])
-    .index("by_black_player", ["blackPlayerId"]),
+    .index("by_black_player", ["blackPlayerId"])
+    .index("by_status_and_last_move", ["status", "lastMoveAt"]),
 
   challenges: defineTable(
     v.union(

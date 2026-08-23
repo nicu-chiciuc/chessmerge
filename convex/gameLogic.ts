@@ -8,29 +8,42 @@ import {
   equalPositions,
   getAllMovesForCell,
 } from "../lib/chessmerge";
-import type { GameState, Move, PieceType, Position } from "../lib/chessmerge";
+import type {
+  GameState,
+  Move,
+  Piece,
+  PieceType,
+  Position,
+} from "../lib/chessmerge";
 import type { Doc, Id } from "./_generated/dataModel";
 
-const participantGameValidator = v.union(
+const gameViewValidator = v.union(
   v.object({
     _id: v.id("games"),
-    playerColor: v.union(v.literal("w"), v.literal("b")),
+    playerColor: v.union(v.literal("w"), v.literal("b"), v.null()),
     gameState: v.string(),
-    moveHistory: v.array(v.string()),
+    moveCount: v.number(),
     lastMoveAt: v.number(),
     status: v.literal("active"),
   }),
   v.object({
     _id: v.id("games"),
-    playerColor: v.union(v.literal("w"), v.literal("b")),
+    playerColor: v.union(v.literal("w"), v.literal("b"), v.null()),
     gameState: v.string(),
-    moveHistory: v.array(v.string()),
+    moveCount: v.number(),
     lastMoveAt: v.number(),
     status: v.literal("completed"),
     winner: v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
     gameEndReason: v.union(v.literal("checkmate"), v.literal("stalemate")),
   }),
 );
+
+const liveGameSummaryValidator = v.object({
+  _id: v.id("games"),
+  lastMoveAt: v.number(),
+  moveCount: v.number(),
+  turn: v.union(v.literal("w"), v.literal("b")),
+});
 
 type ResumableGame = Doc<"games"> & { blackPlayerId: Id<"users"> } & (
     | { status: "active"; winner?: undefined; gameEndReason?: undefined }
@@ -71,6 +84,71 @@ type SubmittedMove = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPiece(value: unknown): value is Piece {
+  if (!isRecord(value)) return false;
+  const pieceType = value.pieceType;
+  return (
+    (value.color === "w" || value.color === "b") &&
+    (pieceType === "p" ||
+      pieceType === "r" ||
+      pieceType === "n" ||
+      pieceType === "b" ||
+      pieceType === "q" ||
+      pieceType === "k")
+  );
+}
+
+function isCell(value: unknown): value is Piece[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 2 &&
+    value.every(isPiece) &&
+    (value.length < 2 || value[0].color === value[1].color)
+  );
+}
+
+function parseStoredGameState(serializedState: string): GameState | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(serializedState);
+  } catch {
+    return null;
+  }
+
+  if (!isRecord(value) || !Array.isArray(value.board)) return null;
+  if (
+    value.board.length !== 8 ||
+    !value.board.every(
+      (row) => Array.isArray(row) && row.length === 8 && row.every(isCell),
+    )
+  ) {
+    return null;
+  }
+
+  const options = value.options;
+  if (!isRecord(options)) return null;
+  const castlingRights = options.castlingRights;
+  if (!isRecord(castlingRights)) return null;
+  const whiteRights = castlingRights.w;
+  const blackRights = castlingRights.b;
+  if (
+    (options.turn !== "w" && options.turn !== "b") ||
+    !isRecord(whiteRights) ||
+    typeof whiteRights.short !== "boolean" ||
+    typeof whiteRights.long !== "boolean" ||
+    !isRecord(blackRights) ||
+    typeof blackRights.short !== "boolean" ||
+    typeof blackRights.long !== "boolean" ||
+    options.enPassantTarget !== null ||
+    typeof options.halfMoveClock !== "number" ||
+    typeof options.fullMoveClock !== "number"
+  ) {
+    return null;
+  }
+
+  return value as GameState;
 }
 
 function parsePosition(value: unknown): Position {
@@ -168,7 +246,8 @@ export const makeMove = mutation({
     if (!isWhitePlayer && !isBlackPlayer)
       throw new Error("Not a player in this game");
 
-    const gameState: GameState = JSON.parse(game.gameState);
+    const gameState = parseStoredGameState(game.gameState);
+    if (!gameState) throw new Error("Game unavailable");
 
     if (gameState.options.turn !== (isWhitePlayer ? "w" : "b")) {
       throw new Error("Not your turn");
@@ -239,29 +318,29 @@ export const makeMove = mutation({
 
 export const getGame = query({
   args: { gameId: v.string() },
-  returns: v.union(v.null(), participantGameValidator),
+  returns: v.union(v.null(), gameViewValidator),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
 
     const gameId = ctx.db.normalizeId("games", args.gameId);
     if (!gameId) return null;
     const game = await ctx.db.get(gameId);
     if (!game || !isResumableGame(game)) return null;
+    if (!parseStoredGameState(game.gameState)) return null;
 
-    const playerColor: "w" | "b" | null =
-      game.whitePlayerId === userId
+    const playerColor: "w" | "b" | null = userId
+      ? game.whitePlayerId === userId
         ? "w"
         : game.blackPlayerId === userId
           ? "b"
-          : null;
-    if (!playerColor) return null;
+          : null
+      : null;
 
     const participantGame = {
       _id: game._id,
       playerColor,
       gameState: game.gameState,
-      moveHistory: game.moveHistory,
+      moveCount: game.moveHistory.length,
       lastMoveAt: game.lastMoveAt,
     };
 
@@ -275,6 +354,42 @@ export const getGame = query({
       winner: game.winner,
       gameEndReason: game.gameEndReason,
     };
+  },
+});
+
+export const listLiveGames = query({
+  args: {},
+  returns: v.array(liveGameSummaryValidator),
+  handler: async (ctx) => {
+    const candidates = await ctx.db
+      .query("games")
+      .withIndex("by_status_and_last_move", (q) => q.eq("status", "active"))
+      .order("desc")
+      .take(24);
+
+    const liveGames: Array<{
+      _id: Id<"games">;
+      lastMoveAt: number;
+      moveCount: number;
+      turn: "w" | "b";
+    }> = [];
+
+    for (const game of candidates) {
+      if (!isResumableGame(game)) continue;
+
+      const gameState = parseStoredGameState(game.gameState);
+      if (!gameState) continue;
+      liveGames.push({
+        _id: game._id,
+        lastMoveAt: game.lastMoveAt,
+        moveCount: game.moveHistory.length,
+        turn: gameState.options.turn,
+      });
+
+      if (liveGames.length === 6) break;
+    }
+
+    return liveGames;
   },
 });
 
