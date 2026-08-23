@@ -31,7 +31,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
   const [joinState, setJoinState] = useState<JoinState>({ kind: "idle" });
   const [cancelState, setCancelState] = useState<CancelState>({ kind: "idle" });
   const [showCancel, setShowCancel] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedItem, setCopiedItem] = useState<"agent" | "link" | null>(null);
   const [shareError, setShareError] = useState("");
   const [locallyUnavailable, setLocallyUnavailable] = useState(false);
   const signInStarted = useRef(false);
@@ -48,6 +48,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
     typeof window === "undefined"
       ? ""
       : `${window.location.origin}/challenge/${encodeURIComponent(challengeId)}`;
+  const agentInvite = `Open this ChessMerge challenge, join as a guest, and play against me: ${canonicalUrl}`;
   const canShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
   const view: PageView = locallyUnavailable
@@ -155,12 +156,25 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
 
   const copyLink = async () => {
     setShareError("");
+    setCopiedItem(null);
     try {
       await copyText(canonicalUrl);
-      setCopied(true);
+      setCopiedItem("link");
     } catch (error: unknown) {
       console.error("Challenge link copy failed", error);
       setShareError("Select the challenge link and copy it.");
+    }
+  };
+
+  const copyAgentInvite = async () => {
+    setShareError("");
+    setCopiedItem(null);
+    try {
+      await copyText(agentInvite);
+      setCopiedItem("agent");
+    } catch (error: unknown) {
+      console.error("Agent invite copy failed", error);
+      setShareError("Copy the challenge link and send it to your agent.");
     }
   };
 
@@ -269,7 +283,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
                   className="rounded-l-none border-l-0"
                   onClick={() => void copyLink()}
                 >
-                  {copied ? "Copied" : "Copy"}
+                  {copiedItem === "link" ? "Link copied" : "Copy link"}
                 </Button>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -282,6 +296,15 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
                     Share
                   </Button>
                 ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void copyAgentInvite()}
+                >
+                  {copiedItem === "agent"
+                    ? "Agent invite copied"
+                    : "Copy for agent"}
+                </Button>
                 <Button
                   ref={cancelButton}
                   type="button"

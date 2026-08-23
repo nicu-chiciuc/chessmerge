@@ -58,17 +58,66 @@ test.describe("shareable challenges", () => {
       page.getByText("Guest", { exact: true }).first(),
     ).toBeVisible();
 
-    const copy = page.getByRole("button", { name: "Copy" });
+    const copy = page.getByRole("button", { name: "Copy link" });
     await expect(copy).toBeFocused();
     const canonicalUrl = page.url();
     await expect(page.getByLabel("Challenge link")).toHaveValue(canonicalUrl);
     await copy.click();
-    await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Link copied" }),
+    ).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(canonicalUrl);
 
     await page.getByRole("button", { name: "Share" }).click();
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("shared-challenge")))
       .toContain(canonicalUrl);
+
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: undefined,
+      });
+      Object.defineProperty(document, "execCommand", {
+        configurable: true,
+        value: (command: string) => {
+          const field = Array.from(document.querySelectorAll("textarea")).at(
+            -1,
+          );
+          localStorage.setItem("fallback-copy", field?.value ?? "");
+          return command === "copy";
+        },
+      });
+    });
+    await page.getByRole("button", { name: "Copy for agent" }).click();
+    await expect(
+      page.getByRole("button", { name: "Agent invite copied" }),
+    ).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("fallback-copy")))
+      .toBe(
+        `Open this ChessMerge challenge, join as a guest, and play against me: ${canonicalUrl}`,
+      );
+
+    await page.setViewportSize({ width: 320, height: 720 });
+    await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Agent invite copied" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Cancel challenge" }),
+    ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => ({
+          pageWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        })),
+      )
+      .toEqual({ pageWidth: 320, viewportWidth: 320 });
+    await page.setViewportSize({ width: 1280, height: 720 });
 
     const cancel = page.getByRole("button", { name: "Cancel challenge" });
     await cancel.click();
