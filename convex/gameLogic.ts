@@ -451,9 +451,11 @@ export const setPracticeGameState = mutation({
 });
 
 export const getGame = query({
-  args: { gameId: v.id("games") },
+  args: { gameId: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.gameId);
+    const gameId = ctx.db.normalizeId("games", args.gameId);
+    if (!gameId) return null;
+    return await ctx.db.get(gameId);
   },
 });
 

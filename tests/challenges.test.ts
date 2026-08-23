@@ -43,17 +43,28 @@ describe("shareable challenges", () => {
     ).rejects.toThrow("Not authenticated");
   });
 
-  it("allows only one unexpired waiting challenge per creator", async () => {
+  it("returns the existing unexpired waiting challenge on duplicate create", async () => {
     const t = convexTest(schema, modules);
     const creatorId = await insertUser(t, "creator@example.com");
     const creator = t.withIdentity({ subject: creatorId });
 
-    await creator.mutation(api.challenges.createChallenge, {});
-    vi.advanceTimersByTime(CREATION_COOLDOWN_MS);
+    const first = await creator.mutation(api.challenges.createChallenge, {});
+    const duplicate = await creator.mutation(
+      api.challenges.createChallenge,
+      {},
+    );
 
-    await expect(
-      creator.mutation(api.challenges.createChallenge, {}),
-    ).rejects.toThrow("You already have an open challenge");
+    expect(duplicate).toEqual(first);
+    await t.run(async (ctx) => {
+      const challenges = await ctx.db.query("challenges").collect();
+      expect(challenges).toHaveLength(1);
+      expect(challenges[0]).toMatchObject({
+        _id: first.challengeId,
+        creatorId,
+        status: "waiting",
+        expiresAt: first.expiresAt,
+      });
+    });
   });
 
   it("enforces a 30-second creation cooldown from the latest challenge", async () => {
@@ -128,6 +139,16 @@ describe("shareable challenges", () => {
     });
   });
 
+  it("returns null for a malformed public challenge id", async () => {
+    const t = convexTest(schema, modules);
+
+    await expect(
+      t.query(api.challenges.getChallenge, {
+        challengeId: "not-a-convex-id",
+      }),
+    ).resolves.toBeNull();
+  });
+
   it("rejects the creator from claiming the guest seat", async () => {
     const t = convexTest(schema, modules);
     const creatorId = await insertUser(t, "creator@example.com");
@@ -146,7 +167,7 @@ describe("shareable challenges", () => {
     });
   });
 
-  it("creates exactly one active untimed game when a guest joins", async () => {
+  it("returns the existing game when the same guest joins twice", async () => {
     const t = convexTest(schema, modules);
     const creatorId = await insertUser(t, "creator@example.com");
     const guestId = await insertUser(t, "guest@example.com");
@@ -160,6 +181,11 @@ describe("shareable challenges", () => {
     const { gameId } = await guest.mutation(api.challenges.joinChallenge, {
       challengeId: challenge.challengeId,
     });
+    await expect(
+      guest.mutation(api.challenges.joinChallenge, {
+        challengeId: challenge.challengeId,
+      }),
+    ).resolves.toEqual({ gameId });
 
     await t.run(async (ctx) => {
       const game = await ctx.db.get(gameId);
