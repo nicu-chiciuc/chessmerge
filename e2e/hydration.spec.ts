@@ -41,6 +41,10 @@ test.describe("production deep links", () => {
         browserErrors.push(error.message);
       });
 
+      if (path === "/game/not-a-convex-id") {
+        await page.setViewportSize({ width: 320, height: 720 });
+      }
+
       const response = await page.goto(path);
 
       expect(response?.status()).toBe(200);
@@ -59,6 +63,24 @@ test.describe("production deep links", () => {
         await expect(
           page.getByRole("heading", { name: route.expectedHeading }),
         ).toBeVisible();
+      }
+
+      if (path === "/game/not-a-convex-id") {
+        const recovery = page.locator("article");
+        await expect(
+          recovery.getByRole("button", { name: "Create challenge" }),
+        ).toBeVisible();
+        await expect(
+          recovery.getByRole("button", { name: "Lobby" }),
+        ).toBeVisible();
+        await expect
+          .poll(() =>
+            page.evaluate(() => ({
+              pageWidth: document.documentElement.scrollWidth,
+              viewportWidth: window.innerWidth,
+            })),
+          )
+          .toEqual({ pageWidth: 320, viewportWidth: 320 });
       }
 
       expect(browserErrors).toEqual([]);
