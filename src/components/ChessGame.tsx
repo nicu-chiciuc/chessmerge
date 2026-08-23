@@ -21,6 +21,7 @@ type GameView = NonNullable<FunctionReturnType<typeof api.gameLogic.getGame>>;
 export function ChessGameWrapper({ game }: { game: GameView }) {
   const gameId = game._id;
   const makeMoveApi = useMutation(api.gameLogic.makeMove);
+  const resignGameApi = useMutation(api.gameLogic.resignGame);
 
   const makeMove = useCallback(
     async (move: Move) => {
@@ -28,6 +29,10 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
     },
     [gameId, makeMoveApi],
   );
+
+  const resignGame = useCallback(async () => {
+    await resignGameApi({ gameId });
+  }, [gameId, resignGameApi]);
 
   const gameState = useMemo(() => {
     return JSON.parse(game.gameState);
@@ -41,8 +46,16 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
       toast.success(`Checkmate! ${winner === "w" ? "White" : "Black"} wins!`);
     } else if (gameEndReason === "stalemate") {
       toast.info("Stalemate! Game is a draw.");
+    } else if (gameEndReason === "resignation") {
+      if (game.playerColor === null) {
+        toast.info(`${winner === "w" ? "White" : "Black"} won by resignation.`);
+      } else if (winner === game.playerColor) {
+        toast.success("Your opponent resigned. You won.");
+      } else {
+        toast.info("You resigned.");
+      }
     }
-  }, [gameEndReason, winner]);
+  }, [game.playerColor, gameEndReason, winner]);
 
   const isMyTurn = gameState.options.turn === game.playerColor;
   const isBlackPlayer = game.playerColor === "b";
@@ -52,14 +65,15 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
       gameStatus={game.status}
       gameState={gameState}
       makeMove={makeMove}
-      isMyTurn={isMyTurn}
+      isMyTurn={game.status === "active" && isMyTurn}
       isBlackPlayer={isBlackPlayer}
-      readOnly={game.playerColor === null}
+      readOnly={game.playerColor === null || game.status !== "active"}
       renderedGameInfo={
         <div className="flex-1 space-y-4">
           <GameInfo
             game={game}
             gameState={gameState}
+            onResign={game.playerColor === null ? undefined : resignGame}
             playerColor={game.playerColor}
           />
         </div>

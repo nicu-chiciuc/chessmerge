@@ -1,16 +1,44 @@
 import type { GameState } from "lib/chessmerge";
 import type { FunctionReturnType } from "convex/server";
+import { useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
+import { Button } from "@/components/ui/button";
 
 type GameView = NonNullable<FunctionReturnType<typeof api.gameLogic.getGame>>;
 
 interface GameInfoProps {
   game: GameView;
   gameState: GameState;
+  onResign?: () => Promise<void>;
   playerColor: "w" | "b" | null;
 }
 
-export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
+export function GameInfo({
+  game,
+  gameState,
+  onResign,
+  playerColor,
+}: GameInfoProps) {
+  const [showResign, setShowResign] = useState(false);
+  const [isResigning, setIsResigning] = useState(false);
+  const [resignError, setResignError] = useState<string | null>(null);
+  const resignButton = useRef<HTMLButtonElement>(null);
+
+  const confirmResign = async () => {
+    if (!onResign || isResigning) return;
+
+    setIsResigning(true);
+    setResignError(null);
+    try {
+      await onResign();
+      setShowResign(false);
+    } catch {
+      setResignError("Could not resign. Try again.");
+    } finally {
+      setIsResigning(false);
+    }
+  };
+
   const getStatusText = () => {
     if (game.status === "active") {
       if (playerColor === null) {
@@ -108,9 +136,62 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
           Game ID: {game._id.slice(-8)}
         </div>
         <div className="text-xs text-gray-500">
-          Last move: {new Date(game.lastMoveAt).toLocaleTimeString()}
+          {game.status === "completed" ? "Ended" : "Last move"}:{" "}
+          {new Date(game.lastMoveAt).toLocaleTimeString()}
         </div>
       </div>
+
+      {game.status === "active" && playerColor !== null && onResign ? (
+        <div className="mt-4 border-t pt-3">
+          {showResign ? (
+            <div className="rounded-lg border border-destructive/35 bg-destructive/5 p-3">
+              <p className="text-sm text-destructive">
+                Resign this game? Your opponent will win.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  autoFocus
+                  disabled={isResigning}
+                  onClick={() => {
+                    setShowResign(false);
+                    setResignError(null);
+                    window.requestAnimationFrame(() =>
+                      resignButton.current?.focus(),
+                    );
+                  }}
+                >
+                  Keep playing
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={isResigning}
+                  onClick={() => void confirmResign()}
+                >
+                  {isResigning ? "Resigning…" : "Resign game"}
+                </Button>
+              </div>
+              {resignError ? (
+                <p className="mt-3 text-sm text-destructive" role="alert">
+                  {resignError}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <Button
+              ref={resignButton}
+              type="button"
+              variant="ghost"
+              className="h-auto px-0 py-1 text-destructive hover:bg-transparent hover:text-destructive"
+              onClick={() => setShowResign(true)}
+            >
+              Resign game
+            </Button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -536,6 +536,71 @@ describe("game move authority", () => {
   });
 });
 
+describe("game resignation", () => {
+  it("lets either player resign and awards the game to the opponent", async () => {
+    for (const resignation of [
+      { color: "w", winner: "b" },
+      { color: "b", winner: "w" },
+    ] as const) {
+      const t = convexTest(schema, modules);
+      const { white, black, gameId } = await createActiveGame(t);
+      const before = await readGame(t, gameId);
+      vi.advanceTimersByTime(1_000);
+
+      const resigningPlayer = resignation.color === "w" ? white : black;
+      await expect(
+        resigningPlayer.mutation(api.gameLogic.resignGame, { gameId }),
+      ).resolves.toBeNull();
+
+      const game = await readGame(t, gameId);
+      expect(game).toMatchObject({
+        status: "completed",
+        winner: resignation.winner,
+        gameEndReason: "resignation",
+        lastMoveAt: before.lastMoveAt + 1_000,
+        gameState: before.gameState,
+        moveHistory: before.moveHistory,
+      });
+      await expect(
+        t.query(api.gameLogic.getGame, { gameId }),
+      ).resolves.toMatchObject({
+        status: "completed",
+        winner: resignation.winner,
+        gameEndReason: "resignation",
+      });
+      await expect(
+        resigningPlayer.query(api.gameLogic.listGames, {}),
+      ).resolves.toMatchObject([
+        {
+          _id: gameId,
+          status: "completed",
+          winner: resignation.winner,
+          gameEndReason: "resignation",
+        },
+      ]);
+    }
+  });
+
+  it("rejects non-players and completed games", async () => {
+    const t = convexTest(schema, modules);
+    const { white, black, gameId } = await createActiveGame(t);
+    const unrelatedId = await insertUser(t, "spectator@example.com");
+    const unrelated = t.withIdentity({ subject: unrelatedId });
+
+    await expect(
+      t.mutation(api.gameLogic.resignGame, { gameId }),
+    ).rejects.toThrow("Not authenticated");
+    await expect(
+      unrelated.mutation(api.gameLogic.resignGame, { gameId }),
+    ).rejects.toThrow("Not a player in this game");
+
+    await black.mutation(api.gameLogic.resignGame, { gameId });
+    await expect(
+      white.mutation(api.gameLogic.resignGame, { gameId }),
+    ).rejects.toThrow("Game is not active");
+  });
+});
+
 describe("legacy scheduled jobs", () => {
   it("keeps checkTimeout callable without changing the game", async () => {
     const t = convexTest(schema, modules);

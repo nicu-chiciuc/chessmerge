@@ -51,7 +51,11 @@ const gameViewValidator = v.union(
     players: playersValidator,
     status: v.literal("completed"),
     winner: v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
-    gameEndReason: v.union(v.literal("checkmate"), v.literal("stalemate")),
+    gameEndReason: v.union(
+      v.literal("checkmate"),
+      v.literal("stalemate"),
+      v.literal("resignation"),
+    ),
   }),
 );
 
@@ -63,19 +67,33 @@ const liveGameSummaryValidator = v.object({
   players: playersValidator,
 });
 
-const gameSummaryValidator = v.object({
-  _id: v.id("games"),
-  lastMoveAt: v.number(),
-  status: v.union(v.literal("active"), v.literal("completed")),
-  players: playersValidator,
-});
+const gameSummaryValidator = v.union(
+  v.object({
+    _id: v.id("games"),
+    lastMoveAt: v.number(),
+    status: v.literal("active"),
+    players: playersValidator,
+  }),
+  v.object({
+    _id: v.id("games"),
+    lastMoveAt: v.number(),
+    status: v.literal("completed"),
+    winner: v.union(v.literal("w"), v.literal("b"), v.literal("draw")),
+    gameEndReason: v.union(
+      v.literal("checkmate"),
+      v.literal("stalemate"),
+      v.literal("resignation"),
+    ),
+    players: playersValidator,
+  }),
+);
 
 type ResumableGame = Doc<"games"> & { blackPlayerId: Id<"users"> } & (
     | { status: "active"; winner?: undefined; gameEndReason?: undefined }
     | {
         status: "completed";
         winner: "w" | "b" | "draw";
-        gameEndReason: "checkmate" | "stalemate";
+        gameEndReason: "checkmate" | "stalemate" | "resignation";
       }
   );
 
@@ -96,7 +114,9 @@ function isResumableGame(game: Doc<"games">): game is ResumableGame {
   return (
     game.status === "completed" &&
     game.winner !== undefined &&
-    (game.gameEndReason === "checkmate" || game.gameEndReason === "stalemate")
+    (game.gameEndReason === "checkmate" ||
+      game.gameEndReason === "stalemate" ||
+      game.gameEndReason === "resignation")
   );
 }
 
@@ -341,6 +361,35 @@ export const makeMove = mutation({
   },
 });
 
+export const resignGame = mutation({
+  args: { gameId: v.id("games") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+    if (!isResumableGame(game)) throw new Error("Game unavailable");
+    if (game.status !== "active") throw new Error("Game is not active");
+
+    const isWhitePlayer = game.whitePlayerId === userId;
+    const isBlackPlayer = game.blackPlayerId === userId;
+    if (!isWhitePlayer && !isBlackPlayer) {
+      throw new Error("Not a player in this game");
+    }
+
+    await ctx.db.patch(args.gameId, {
+      status: "completed",
+      winner: isWhitePlayer ? "b" : "w",
+      gameEndReason: "resignation",
+      lastMoveAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
 export const getGame = query({
   args: { gameId: v.string() },
   returns: v.union(v.null(), gameViewValidator),
@@ -454,12 +503,22 @@ export const listGames = query({
       .slice(0, 20);
 
     return await Promise.all(
-      games.map(async (game) => ({
-        _id: game._id,
-        lastMoveAt: game.lastMoveAt,
-        status: game.status,
-        players: await getPlayers(ctx, game),
-      })),
+      games.map(async (game) => {
+        const summary = {
+          _id: game._id,
+          lastMoveAt: game.lastMoveAt,
+          players: await getPlayers(ctx, game),
+        };
+
+        return game.status === "active"
+          ? { ...summary, status: game.status }
+          : {
+              ...summary,
+              status: game.status,
+              winner: game.winner,
+              gameEndReason: game.gameEndReason,
+            };
+      }),
     );
   },
 });

@@ -295,6 +295,49 @@ test.describe("shareable challenges", () => {
       await expect(
         spectatorPage.locator("button[data-square]:not(:disabled)"),
       ).toHaveCount(0);
+
+      await expect(
+        spectatorPage.getByRole("button", { name: "Resign game" }),
+      ).toHaveCount(0);
+      const resign = guestPage.getByRole("button", { name: "Resign game" });
+      await resign.click();
+      const keepPlaying = guestPage.getByRole("button", {
+        name: "Keep playing",
+      });
+      await expect(keepPlaying).toBeFocused();
+      await keepPlaying.click();
+      await expect(resign).toBeFocused();
+
+      await resign.click();
+      await guestPage
+        .getByText("Resign this game? Your opponent will win.")
+        .locator("..")
+        .getByRole("button", { name: "Resign game" })
+        .click();
+
+      await expect(
+        creatorPage.getByText("White wins! You won!", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        guestPage.getByText("White wins! You lost.", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        spectatorPage.getByText("White wins", { exact: true }),
+      ).toBeVisible();
+      for (const gamePage of [creatorPage, guestPage, spectatorPage]) {
+        await expect(
+          gamePage.getByText("resignation", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          gamePage.getByRole("group", { name: "Chess board, read only" }),
+        ).toBeVisible();
+      }
+
+      await creatorPage.getByRole("button", { name: /Lobby/ }).click();
+      const myGames = creatorPage
+        .getByRole("heading", { name: "My games" })
+        .locator("..");
+      await expect(myGames.getByText("won by resignation")).toBeVisible();
     } finally {
       await Promise.all([guestContext.close(), spectatorContext.close()]);
     }
