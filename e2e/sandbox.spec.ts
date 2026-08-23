@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const chosenSetup = "4k3/8/8/8/8/8/4P3/4K3 b - - 0 1";
 const serializedChosenSetup = "4k3/8/8/8/8/8/4P3/4K3_b_-_-_0_1";
 const promotionSetup = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
+const mergedPieceSetup = "4k3/8/8/3R:N4/8/8/8/4K3 w - - 0 1";
 
 test.describe("Sandbox", () => {
   test("plays both turns, undoes, and resets without changing the setup URL", async ({
@@ -134,6 +135,60 @@ test.describe("Sandbox", () => {
     await expect(square(page, "e8")).toBeFocused();
     await expect(square(page, "a8")).toBeEnabled();
     await expect(page.getByText("Black to move")).toBeVisible();
+  });
+
+  test("drags single pieces but requires controls for merged pieces", async ({
+    page,
+  }) => {
+    await page.goto("/practice");
+    await expect(page.getByRole("heading", { name: "Sandbox" })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.getByText("Advanced", { exact: true }).click();
+    await page.getByLabel("FEMN position").fill(mergedPieceSetup);
+    await page.getByRole("button", { name: "Apply position" }).click();
+
+    const whiteKing = square(page, "e1").locator('[draggable="true"]');
+    await expect(whiteKing).toHaveCount(1);
+    await whiteKing.dragTo(square(page, "e2"));
+    await expect(square(page, "e2")).toHaveAttribute(
+      "aria-label",
+      /white king/i,
+    );
+
+    await page.getByRole("button", { name: "Reset" }).click();
+
+    const mergedSquare = square(page, "d5");
+    await expect(mergedSquare.locator('[draggable="true"]')).toHaveCount(0);
+    await expect(mergedSquare.locator('img[draggable="false"]')).toHaveCount(2);
+
+    await mergedSquare.click();
+    await expect(
+      page.getByRole("button", { name: "Move only the white rook" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Move only the white knight" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: "Move both the white rook and white knight",
+      }),
+    ).toBeVisible();
+
+    await page
+      .getByRole("button", { name: "Move only the white knight" })
+      .click();
+    await expect(square(page, "f6")).toHaveAttribute("data-legal-move", "true");
+    await square(page, "f6").click();
+    await expect(square(page, "d5")).toHaveAttribute(
+      "aria-label",
+      /white rook/i,
+    );
+    await expect(square(page, "f6")).toHaveAttribute(
+      "aria-label",
+      /white knight/i,
+    );
   });
 });
 

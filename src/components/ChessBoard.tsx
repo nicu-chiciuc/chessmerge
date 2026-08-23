@@ -70,11 +70,7 @@ export function ChessBoard({
   setSelectedPromotion,
   readOnly = false,
 }: ChessBoardProps) {
-  const [draggedPiece, setDraggedPiece] = useState<{
-    piece: Piece;
-    pieceIndex: number;
-    position: Position;
-  } | null>(null);
+  const [draggedFrom, setDraggedFrom] = useState<Position | null>(null);
   const [dragOverSquare, setDragOverSquare] = useState<Position | null>(null);
   const [selectedPieceMode, setSelectedPieceMode] = useState<
     "both" | "first" | "second"
@@ -131,20 +127,14 @@ export function ChessBoard({
     onSquareClick(row, col);
   };
 
-  const handleDragStart = (
-    e: React.DragEvent,
-    row: number,
-    col: number,
-    pieceIndex: number,
-  ) => {
-    const cell = board[row][col];
-    const piece = cell[pieceIndex];
+  const handleDragStart = (e: React.DragEvent, row: number, col: number) => {
+    const piece = board[row][col][0];
     if (!piece || !isMyTurn || piece.color !== currentTurn) {
       e.preventDefault();
       return;
     }
 
-    setDraggedPiece({ piece, pieceIndex, position: { row, col } });
+    setDraggedFrom({ row, col });
 
     // Create a custom drag image using SVG
     const dragImage = document.createElement("div");
@@ -175,7 +165,7 @@ export function ChessBoard({
   };
 
   const handleDragEnd = () => {
-    setDraggedPiece(null);
+    setDraggedFrom(null);
     setDragOverSquare(null);
   };
 
@@ -193,12 +183,12 @@ export function ChessBoard({
     e.preventDefault();
     setDragOverSquare(null);
 
-    if (draggedPiece) {
+    if (draggedFrom) {
       // Trigger the move by clicking on the target square
       onSquareClick(row, col);
     }
 
-    setDraggedPiece(null);
+    setDraggedFrom(null);
   };
 
   const renderSquare = (row: number, col: number) => {
@@ -213,7 +203,7 @@ export function ChessBoard({
     );
 
     const isDraggedSquare =
-      draggedPiece?.position.row === row && draggedPiece?.position.col === col;
+      draggedFrom?.row === row && draggedFrom?.col === col;
     const isDragOver =
       dragOverSquare?.row === row && dragOverSquare?.col === col;
 
@@ -239,9 +229,11 @@ export function ChessBoard({
       squareClass += " ring-2 ring-orange-300 z-10";
     }
 
-    const canDragAnyPiece = cell.some(
-      (piece) => !needsPromotion && piece.color === currentTurn && isMyTurn,
-    );
+    const canDragPiece =
+      cell.length === 1 &&
+      !needsPromotion &&
+      cell[0].color === currentTurn &&
+      isMyTurn;
 
     return (
       <button
@@ -264,10 +256,8 @@ export function ChessBoard({
         {cell.length > 0 && (
           <ChessPieceCell
             pieces={cell}
-            canDrag={canDragAnyPiece}
-            onDragStart={(e, pieceIndex) =>
-              handleDragStart(e, row, col, pieceIndex)
-            }
+            canDrag={canDragPiece}
+            onDragStart={(e) => handleDragStart(e, row, col)}
             onDragEnd={handleDragEnd}
             selectedPieceMode={isSelected ? selectedPieceMode : "both"}
           />
@@ -403,7 +393,7 @@ export function ChessBoard({
 interface ChessPieceCellProps {
   pieces: Piece[];
   canDrag?: boolean;
-  onDragStart?: (e: React.DragEvent, pieceIndex: number) => void;
+  onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: () => void;
   selectedPieceMode?: "both" | "first" | "second";
 }
@@ -434,7 +424,7 @@ function ChessPieceCell({
         <div
           className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} h-full w-full p-[10%]`}
           draggable={canDrag}
-          onDragStart={(e) => onDragStart?.(e, 0)}
+          onDragStart={onDragStart}
           onDragEnd={onDragEnd}
         >
           <ChessPieceContent piece={piece} size="responsive" />
@@ -447,7 +437,7 @@ function ChessPieceCell({
       <div
         className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-full h-full p-[10%]`}
         draggable={canDrag}
-        onDragStart={(e) => onDragStart?.(e, 0)}
+        onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
         <div
@@ -485,10 +475,7 @@ function ChessPieceCell({
       <div className="relative w-full h-full flex p-[10%]">
         {/* Left piece - show left side */}
         <div
-          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
-          draggable={canDrag}
-          onDragStart={(e) => onDragStart?.(e, pieces.indexOf(leftPiece))}
-          onDragEnd={onDragEnd}
+          className={`w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(leftPiece))}`}
         >
           <div
             className="absolute left-0 top-0 h-full flex items-center justify-center"
@@ -499,10 +486,7 @@ function ChessPieceCell({
         </div>
         {/* Right piece - show right side */}
         <div
-          className={`${canDrag ? "cursor-grab active:cursor-grabbing" : ""} w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(rightPiece))}`}
-          draggable={canDrag}
-          onDragStart={(e) => onDragStart?.(e, pieces.indexOf(rightPiece))}
-          onDragEnd={onDragEnd}
+          className={`w-1/2 h-full overflow-hidden relative ${getOpacity(pieces.indexOf(rightPiece))}`}
         >
           <div
             className="absolute right-0 top-0 h-full flex items-center justify-center"
@@ -542,6 +526,7 @@ function ChessPieceContent({ piece, size }: ChessPieceContentProps) {
     <img
       src={svgSrc}
       alt={getPieceName(piece)}
+      draggable={false}
       className={`${sizeClasses[size]} object-contain`}
     />
   );
