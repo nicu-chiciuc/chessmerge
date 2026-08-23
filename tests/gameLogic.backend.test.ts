@@ -47,6 +47,7 @@ describe("public game lookup", () => {
       playerColor: null,
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
+      lastMove: null,
       lastMoveAt: START_TIME.getTime(),
       players: {
         white: { name: "white", isGuest: false },
@@ -67,6 +68,7 @@ describe("public game lookup", () => {
       playerColor: "w",
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
+      lastMove: null,
       lastMoveAt: START_TIME.getTime(),
       players: spectatorGame.players,
     });
@@ -78,6 +80,7 @@ describe("public game lookup", () => {
       playerColor: "b",
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
+      lastMove: null,
       lastMoveAt: START_TIME.getTime(),
       players: spectatorGame.players,
     });
@@ -97,6 +100,7 @@ describe("public game lookup", () => {
       playerColor: "w",
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
+      lastMove: null,
       lastMoveAt: START_TIME.getTime(),
       winner: "w",
       gameEndReason: "checkmate",
@@ -107,6 +111,57 @@ describe("public game lookup", () => {
       status: "completed",
       winner: "w",
       gameEndReason: "checkmate",
+    });
+  });
+
+  it("returns the persisted last move to players and spectators through completion", async () => {
+    const t = convexTest(schema, modules);
+    const { white, black, gameId } = await createActiveGame(t);
+    const lastMove = {
+      from: { row: 6, col: 4 },
+      to: { row: 5, col: 4 },
+    };
+
+    await white.mutation(api.gameLogic.makeMove, {
+      gameId,
+      move: serializeMove(lastMove.from, lastMove.to, "p", "base"),
+    });
+
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ status: "active", playerColor: null, lastMove });
+    await expect(
+      black.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ status: "active", playerColor: "b", lastMove });
+
+    await black.mutation(api.gameLogic.resignGame, { gameId });
+
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ status: "completed", lastMove });
+  });
+
+  it("omits a malformed legacy last move without hiding the game", async () => {
+    const t = convexTest(schema, modules);
+    const { gameId } = await createActiveGame(t);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(gameId, {
+        moveHistory: [
+          JSON.stringify({
+            from: { row: 8, col: 4 },
+            to: { row: 5, col: 4 },
+          }),
+        ],
+      });
+    });
+
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({
+      status: "active",
+      moveCount: 1,
+      lastMove: null,
     });
   });
 

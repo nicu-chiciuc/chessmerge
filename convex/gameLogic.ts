@@ -32,12 +32,21 @@ const playersValidator = v.object({
   black: publicPlayerValidator,
 });
 
+const lastMoveValidator = v.union(
+  v.object({
+    from: v.object({ row: v.number(), col: v.number() }),
+    to: v.object({ row: v.number(), col: v.number() }),
+  }),
+  v.null(),
+);
+
 const gameViewValidator = v.union(
   v.object({
     _id: v.id("games"),
     playerColor: v.union(v.literal("w"), v.literal("b"), v.null()),
     gameState: v.string(),
     moveCount: v.number(),
+    lastMove: lastMoveValidator,
     lastMoveAt: v.number(),
     players: playersValidator,
     status: v.literal("active"),
@@ -47,6 +56,7 @@ const gameViewValidator = v.union(
     playerColor: v.union(v.literal("w"), v.literal("b"), v.null()),
     gameState: v.string(),
     moveCount: v.number(),
+    lastMove: lastMoveValidator,
     lastMoveAt: v.number(),
     players: playersValidator,
     status: v.literal("completed"),
@@ -211,6 +221,26 @@ function parsePosition(value: unknown): Position {
     throw new Error("Malformed move");
   }
   return { row: value.row, col: value.col };
+}
+
+function parseLastMove(moveHistory: string[]): {
+  from: Position;
+  to: Position;
+} | null {
+  const serializedMove = moveHistory.at(-1);
+  if (!serializedMove) return null;
+
+  try {
+    const value: unknown = JSON.parse(serializedMove);
+    if (!isRecord(value)) return null;
+
+    return {
+      from: parsePosition(value.from),
+      to: parsePosition(value.to),
+    };
+  } catch {
+    return null;
+  }
 }
 
 function parseSubmittedMove(serializedMove: string): SubmittedMove {
@@ -416,6 +446,7 @@ export const getGame = query({
       playerColor,
       gameState: game.gameState,
       moveCount: game.moveHistory.length,
+      lastMove: parseLastMove(game.moveHistory),
       lastMoveAt: game.lastMoveAt,
       players,
     };
