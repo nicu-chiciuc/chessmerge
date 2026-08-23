@@ -28,10 +28,14 @@ test.describe("Authentication Flow", () => {
       await expect(page.locator('[data-slot="card-title"]')).toHaveText(
         "Create account",
       );
-      await expect(page.getByLabel("Username")).toHaveAttribute(
-        "minlength",
-        "4",
-      );
+      const username = page.getByLabel("Username");
+      await expect(username).toHaveAttribute("minlength", "4");
+      await username.fill("bad name");
+      expect(
+        await username.evaluate((input: HTMLInputElement) =>
+          input.checkValidity(),
+        ),
+      ).toBe(false);
       await expect(page.getByLabel("Confirm password")).toBeVisible();
       await expect(
         page.getByText(
