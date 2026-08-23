@@ -33,7 +33,10 @@ export const createChallenge = mutation({
       latestChallenge?.status === "waiting" &&
       latestChallenge.expiresAt > now
     ) {
-      throw new Error("You already have an open challenge");
+      return {
+        challengeId: latestChallenge._id,
+        expiresAt: latestChallenge.expiresAt,
+      };
     }
 
     if (
@@ -63,7 +66,7 @@ export const createChallenge = mutation({
 });
 
 export const getChallenge = query({
-  args: { challengeId: v.id("challenges") },
+  args: { challengeId: v.string() },
   returns: v.union(
     v.null(),
     v.object({
@@ -84,8 +87,11 @@ export const getChallenge = query({
     }),
   ),
   handler: async (ctx, args) => {
+    const challengeId = ctx.db.normalizeId("challenges", args.challengeId);
+    if (!challengeId) return null;
+
     const viewerId = await getAuthUserId(ctx);
-    const challenge = await ctx.db.get(args.challengeId);
+    const challenge = await ctx.db.get(challengeId);
     if (!challenge) return null;
 
     if (challenge.status === "joined") {
@@ -134,6 +140,14 @@ export const joinChallenge = mutation({
     if (!challenge) throw new Error("Challenge unavailable");
     if (challenge.creatorId === guestId) {
       throw new Error("Cannot join your own challenge");
+    }
+
+    if (challenge.status === "joined") {
+      const game = await ctx.db.get(challenge.gameId);
+      if (game?.blackPlayerId === guestId) {
+        return { gameId: challenge.gameId };
+      }
+      throw new Error("Challenge unavailable");
     }
 
     const now = Date.now();

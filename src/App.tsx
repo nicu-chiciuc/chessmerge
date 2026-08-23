@@ -17,10 +17,17 @@ function AuthButton() {
   const navigate = useNavigate();
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
-  if (isAuthenticated && loggedInUser) {
+  if (isAuthenticated) {
+    const identity = loggedInUser?.email ?? "Guest";
+
     return (
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-600">{loggedInUser.email}</span>
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <span
+          className="hidden max-w-56 truncate text-sm text-gray-600 sm:block"
+          title={identity}
+        >
+          {identity}
+        </span>
         <Button onClick={() => void signOut()}>Sign out</Button>
       </div>
     );
@@ -44,9 +51,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm h-16 flex justify-between items-center border-b shadow-sm px-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-primary">ChessMerge</h2>
+      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white/80 px-2 shadow-sm backdrop-blur-sm sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          <h2 className="shrink-0 text-lg font-semibold text-primary sm:text-xl">
+            ChessMerge
+          </h2>
           {isGameRoute && (
             <Button
               variant="outline"
@@ -73,17 +82,7 @@ export default function App() {
 }
 
 function Content() {
-  const loggedInUser = useQuery(api.auth.loggedInUser);
-
-  if (loggedInUser === undefined) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const isAuthenticated = loggedInUser !== null;
+  const { isAuthenticated } = useConvexAuth();
 
   return (
     <div className="max-w-6xl mx-auto">

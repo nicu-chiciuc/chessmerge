@@ -18,17 +18,10 @@ export function GameLobby({
   isAuthenticated = false,
 }: GameLobbyProps) {
   const myGames = useQuery(api.gameLogic.listGames) || [];
-  const waitingGames = useQuery(api.gameLogic.getWaitingGames) || [];
   const createPracticeGame = useMutation(api.gameLogic.createPracticeGame);
-  const joinGame = useMutation(api.gameLogic.joinGame);
   const navigate = useNavigate();
 
-  const handleCreateGame = () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to create games");
-      void navigate({ to: "/login" });
-      return;
-    }
+  const handleCreateChallenge = () => {
     void navigate({ to: "/new" });
   };
 
@@ -47,21 +40,6 @@ export function GameLobby({
     }
   };
 
-  const handleJoinGame = async (gameId: Id<"games">) => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to join games");
-      void navigate({ to: "/login" });
-      return;
-    }
-    try {
-      await joinGame({ gameId });
-      onJoinGame(gameId);
-      toast.success("Joined game!");
-    } catch {
-      toast.error("Failed to join game");
-    }
-  };
-
   return (
     <div className="space-y-6 pt-8">
       {/* Header Section */}
@@ -70,27 +48,17 @@ export function GameLobby({
         <p className="text-gray-600 mb-6">
           Welcome to ChessMerge!{" "}
           {isAuthenticated
-            ? "Create a new game, practice, or join an existing one."
-            : "Try local practice or sign in to play online games."}
+            ? "Create a challenge or resume one of your games."
+            : "Create a challenge or try local practice."}
         </p>
-
-        {!isAuthenticated && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
-            <p className="text-blue-800 text-sm">
-              You're browsing as a guest. Sign in to create and join online
-              games!
-            </p>
-          </div>
-        )}
 
         <div className="flex gap-4 justify-center flex-wrap">
           <Button
-            onClick={handleCreateGame}
+            onClick={handleCreateChallenge}
             size="lg"
             className="px-6 py-3"
-            disabled={!isAuthenticated}
           >
-            Create New Game
+            Create challenge
           </Button>
 
           {
@@ -186,45 +154,6 @@ export function GameLobby({
                         {game.status}
                       </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Available Games */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold mb-4">Available Games</h2>
-            {waitingGames.length === 0 ? (
-              <p className="text-gray-500">No games waiting for players.</p>
-            ) : (
-              <div className="space-y-3">
-                {waitingGames.map((game) => (
-                  <div
-                    key={game._id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div>
-                      <div className="font-medium">
-                        {isAuthenticated
-                          ? "Waiting for opponent"
-                          : "Game available (spectate only)"}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Created{" "}
-                        {new Date(game._creationTime).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() =>
-                        void (isAuthenticated
-                          ? handleJoinGame(game._id)
-                          : onJoinGame(game._id))
-                      }
-                      size="sm"
-                    >
-                      {isAuthenticated ? "Join" : "Spectate"}
-                    </Button>
                   </div>
                 ))}
               </div>

@@ -2,7 +2,7 @@
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import type { Doc } from "../../convex/_generated/dataModel";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { GameTimer } from "./GameTimer";
@@ -16,7 +16,6 @@ import {
   Piece,
   Position,
   boardToString,
-  createEmptyGameState,
   getAllMovesForCell,
   stringToBoard,
 } from "../../lib/chessmerge";
@@ -140,8 +139,8 @@ function GameControls({
   );
 }
 
-export function ChessGameWrapper({ gameId }: { gameId: Id<"games"> }) {
-  const game = useQuery(api.gameLogic.getGame, { gameId });
+export function ChessGameWrapper({ game }: { game: Doc<"games"> }) {
+  const gameId = game._id;
   const makeMoveApi = useMutation(api.gameLogic.makeMove);
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
@@ -153,15 +152,15 @@ export function ChessGameWrapper({ gameId }: { gameId: Id<"games"> }) {
   );
 
   const gameState = useMemo(() => {
-    return game ? JSON.parse(game.gameState) : createEmptyGameState();
-  }, [game]);
+    return JSON.parse(game.gameState);
+  }, [game.gameState]);
 
   const setPracticeGameStateApi = useMutation(
     api.gameLogic.setPracticeGameState,
   );
 
   useEffect(() => {
-    if (game?.status === "completed") {
+    if (game.status === "completed") {
       if (game.gameEndReason === "checkmate") {
         toast.success(
           `Checkmate! ${game.winner === "w" ? "White" : "Black"} wins!`,
@@ -170,18 +169,16 @@ export function ChessGameWrapper({ gameId }: { gameId: Id<"games"> }) {
         toast.info("Stalemate! Game is a draw.");
       }
     }
-  }, [game?.status, game?.gameEndReason, game?.winner]);
+  }, [game.status, game.gameEndReason, game.winner]);
 
-  const isWhitePlayer = game?.whitePlayerId === loggedInUser?._id;
-  const isBlackPlayer = game?.blackPlayerId === loggedInUser?._id;
+  const isWhitePlayer = game.whitePlayerId === loggedInUser?._id;
+  const isBlackPlayer = game.blackPlayerId === loggedInUser?._id;
 
   // For practice games, user can play both sides, otherwise enforce turn order
-  const isMyTurn =
-    game &&
-    (game.isPracticeGame
-      ? isWhitePlayer || isBlackPlayer
-      : (gameState.options.turn === "w" && isWhitePlayer) ||
-        (gameState.options.turn === "b" && isBlackPlayer));
+  const isMyTurn = game.isPracticeGame
+    ? isWhitePlayer || isBlackPlayer
+    : (gameState.options.turn === "w" && isWhitePlayer) ||
+      (gameState.options.turn === "b" && isBlackPlayer);
 
   const setPracticeGameState = useCallback(
     async (gameState: GameState) => {
@@ -193,16 +190,14 @@ export function ChessGameWrapper({ gameId }: { gameId: Id<"games"> }) {
     [gameId, setPracticeGameStateApi],
   );
 
-  if (!game) return null;
-
   return (
     <ChessGame
-      gameStatus={game?.status}
+      gameStatus={game.status}
       gameState={gameState}
       makeMove={makeMove}
-      isMyTurn={!!isMyTurn}
+      isMyTurn={isMyTurn}
       setPracticeGameState={setPracticeGameState}
-      isPracticeGame={!!game?.isPracticeGame}
+      isPracticeGame={!!game.isPracticeGame}
       isBlackPlayer={isBlackPlayer}
       renderedGameInfo={
         <div className="flex-1 space-y-4">

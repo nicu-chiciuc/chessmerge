@@ -25,6 +25,16 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("public game lookup", () => {
+  it("returns null for a malformed game id", async () => {
+    const t = convexTest(schema, modules);
+
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId: "not-a-convex-id" }),
+    ).resolves.toBeNull();
+  });
+});
+
 describe("game move authority", () => {
   it("accepts legal moves from both player identities and stores canonical moves", async () => {
     const t = convexTest(schema, modules);
