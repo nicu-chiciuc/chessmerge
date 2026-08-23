@@ -179,9 +179,11 @@ describe("public game lookup", () => {
       await expect(
         white.query(api.gameLogic.getGame, { gameId }),
       ).resolves.toBeNull();
-      await expect(t.query(api.gameLogic.listLiveGames, {})).resolves.toEqual(
-        [],
-      );
+      await expect(
+        t.query(api.gameLogic.listLiveGames, {
+          activeSince: START_TIME.getTime() - 24 * 60 * 60 * 1_000,
+        }),
+      ).resolves.toEqual([]);
       await expect(
         white.mutation(api.gameLogic.makeMove, {
           gameId,
@@ -213,6 +215,14 @@ describe("live game list", () => {
         moveHistory: [],
         lastMoveAt: START_TIME.getTime() - 1_000,
       });
+      await ctx.db.insert("games", {
+        whitePlayerId: whiteId,
+        blackPlayerId: blackId,
+        status: "active",
+        gameState: JSON.stringify(whiteTurn),
+        moveHistory: [],
+        lastMoveAt: START_TIME.getTime() - 24 * 60 * 60 * 1_000 - 1,
+      });
       const newerGameId = await ctx.db.insert("games", {
         whitePlayerId: whiteId,
         blackPlayerId: blackId,
@@ -243,7 +253,11 @@ describe("live game list", () => {
       return { olderGameId, newerGameId };
     });
 
-    await expect(t.query(api.gameLogic.listLiveGames, {})).resolves.toEqual([
+    await expect(
+      t.query(api.gameLogic.listLiveGames, {
+        activeSince: START_TIME.getTime() - 24 * 60 * 60 * 1_000,
+      }),
+    ).resolves.toEqual([
       {
         _id: newerGameId,
         lastMoveAt: START_TIME.getTime(),
