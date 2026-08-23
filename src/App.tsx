@@ -21,9 +21,9 @@ function AuthButton() {
     const identity = loggedInUser?.name ?? "Guest";
 
     return (
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <div className="flex min-w-0 max-w-full items-center gap-2 sm:gap-3">
         <span
-          className="hidden max-w-56 truncate text-sm text-gray-600 sm:block"
+          className="block min-w-8 max-w-28 truncate text-sm text-gray-600 sm:max-w-56"
           title={identity}
         >
           {identity}
@@ -51,7 +51,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white/80 px-2 shadow-sm backdrop-blur-sm sm:px-4">
+      <header className="sticky top-0 z-10 flex min-h-16 flex-wrap items-center gap-2 border-b bg-white/80 px-2 py-2 shadow-sm backdrop-blur-sm sm:h-16 sm:flex-nowrap sm:gap-4 sm:px-4 sm:py-0">
         <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <h2 className="shrink-0 text-lg font-semibold text-primary sm:text-xl">
             ChessMerge
@@ -65,7 +65,11 @@ export default function App() {
             </Button>
           )}
         </div>
-        {!isLocalPracticeRoute && <AuthButton />}
+        {!isLocalPracticeRoute && (
+          <div className="ml-auto min-w-0 max-w-full">
+            <AuthButton />
+          </div>
+        )}
       </header>
       <main>
         {isLocalPracticeRoute ? (
