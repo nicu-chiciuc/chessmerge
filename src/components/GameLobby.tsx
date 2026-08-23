@@ -162,7 +162,7 @@ export function GameLobby({
                   <button
                     type="button"
                     key={game._id}
-                    className="flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-accent/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="w-full min-w-0 rounded-lg border bg-background p-3 text-left transition-colors hover:bg-accent/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     onClick={() =>
                       void navigate({
                         to: "/game/$gameId",
@@ -170,22 +170,14 @@ export function GameLobby({
                       })
                     }
                   >
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">
-                        Game {game._id.slice(-6)}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {formatLastMove(game.lastMoveAt)}
-                      </span>
+                    <span className="block truncate font-medium">
+                      {game.status === "active"
+                        ? "Active game"
+                        : "Completed game"}{" "}
+                      {game._id.slice(-6)}
                     </span>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-                        game.status === "active"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {game.status === "active" ? "Active" : "Completed"}
+                    <span className="block text-xs text-muted-foreground">
+                      {formatLastMove(game.lastMoveAt)}
                     </span>
                   </button>
                 ))}
