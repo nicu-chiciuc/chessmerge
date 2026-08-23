@@ -1,7 +1,6 @@
-import * as Accordion from "@radix-ui/react-accordion";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { ChevronDown, FlaskConical, Swords } from "lucide-react";
+import { BookOpen, FlaskConical, Swords } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../../convex/_generated/api";
@@ -188,33 +187,27 @@ export function GameLobby({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-        <Accordion.Root
-          type="single"
-          collapsible
-          className="overflow-hidden rounded-xl border bg-card shadow-sm"
-        >
-          <Accordion.Item value="rules">
-            <Accordion.Trigger className="group flex w-full items-center justify-between gap-4 p-5 text-left hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:p-6">
-              <h2 className="font-serif text-2xl tracking-tight">
-                How merging works
-              </h2>
-              <ChevronDown
-                aria-hidden="true"
-                className="size-5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none"
-              />
-            </Accordion.Trigger>
-            <Accordion.Content className="border-t px-5 py-5 sm:px-6">
-              <ul className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-                <Rule>Move onto a friendly piece to merge them.</Rule>
-                <Rule>A merged piece can move as either piece.</Rule>
-                <Rule>Move one half away to split the pair again.</Rule>
-                <Rule>Kings cannot merge with another piece.</Rule>
-                <Rule>Capturing a merged square captures both pieces.</Rule>
-                <Rule>Pawns move one square; en passant is disabled.</Rule>
-              </ul>
-            </Accordion.Content>
-          </Accordion.Item>
-        </Accordion.Root>
+        <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-serif text-2xl tracking-tight">
+              How merging works
+            </h2>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/rules">
+                <BookOpen aria-hidden="true" />
+                Full rules
+              </Link>
+            </Button>
+          </div>
+          <ul className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+            <Rule>Move onto a friendly piece to merge them.</Rule>
+            <Rule>Move either half to split the pair again.</Rule>
+            <Rule>The pair may move using either piece's movement.</Rule>
+            <Rule>Kings cannot merge with another piece.</Rule>
+            <Rule>Capturing a merged square captures both pieces.</Rule>
+            <Rule>Pawns move one square; en passant is disabled.</Rule>
+          </ul>
+        </section>
 
         <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
           <EmailSubscribe hideCard />

@@ -5,6 +5,11 @@ const directRoutes = [
   { path: "/", showsLobbyButton: false },
   { path: "/practice", showsLobbyButton: true },
   {
+    path: "/rules",
+    showsLobbyButton: false,
+    expectedHeading: "ChessMerge rules",
+  },
+  {
     path: "/game/not-a-convex-id",
     showsLobbyButton: true,
     expectedHeading: "Game unavailable",

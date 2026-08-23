@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
+import { Route as RulesRouteImport } from './routes/rules'
 import { Route as PracticeRouteImport } from './routes/practice'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as LoginRouteImport } from './routes/login'
@@ -20,6 +21,11 @@ import { Route as ChallengeChallengeIdRouteImport } from './routes/challenge.$ch
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PracticeRoute = PracticeRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/practice': typeof PracticeRoute
+  '/rules': typeof RulesRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/challenge/$challengeId': typeof ChallengeChallengeIdRoute
   '/game/$gameId': typeof GameGameIdRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/practice': typeof PracticeRoute
+  '/rules': typeof RulesRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/challenge/$challengeId': typeof ChallengeChallengeIdRoute
   '/game/$gameId': typeof GameGameIdRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
   '/practice': typeof PracticeRoute
+  '/rules': typeof RulesRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/challenge/$challengeId': typeof ChallengeChallengeIdRoute
   '/game/$gameId': typeof GameGameIdRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/new'
     | '/practice'
+    | '/rules'
     | '/unsubscribe'
     | '/challenge/$challengeId'
     | '/game/$gameId'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/new'
     | '/practice'
+    | '/rules'
     | '/unsubscribe'
     | '/challenge/$challengeId'
     | '/game/$gameId'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/new'
     | '/practice'
+    | '/rules'
     | '/unsubscribe'
     | '/challenge/$challengeId'
     | '/game/$gameId'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NewRoute: typeof NewRoute
   PracticeRoute: typeof PracticeRoute
+  RulesRoute: typeof RulesRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   ChallengeChallengeIdRoute: typeof ChallengeChallengeIdRoute
   GameGameIdRoute: typeof GameGameIdRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/unsubscribe'
       fullPath: '/unsubscribe'
       preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/practice': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NewRoute: NewRoute,
   PracticeRoute: PracticeRoute,
+  RulesRoute: RulesRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   ChallengeChallengeIdRoute: ChallengeChallengeIdRoute,
   GameGameIdRoute: GameGameIdRoute,

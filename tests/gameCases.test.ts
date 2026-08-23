@@ -82,6 +82,49 @@ describe("Game Cases", () => {
     ]);
   });
 
+  it("promotes the pawn that splits from a merged pair", () => {
+    const gameState = createEmptyGameState();
+    gameState.board[0][4] = [{ color: "b", pieceType: "k" }];
+    gameState.board[1][1] = [
+      { color: "w", pieceType: "p" },
+      { color: "w", pieceType: "b" },
+    ];
+    gameState.board[7][4] = [{ color: "w", pieceType: "k" }];
+
+    const promotionMoves = getAllMovesForCell(parsePosition("b7"), gameState);
+    const pawnMove = promotionMoves.find(
+      (move) => move.piece === "p" && move.to.col === 1,
+    );
+    const bishopMove = promotionMoves.find(
+      (move) => move.piece === "b" && move.to.col === 0,
+    );
+    const pairMove = promotionMoves.find(
+      (move) => move.piece === "pb" && move.to.row === 0 && move.to.col === 0,
+    );
+
+    expect(pawnMove).toMatchObject({ isPromotion: true, promotion: "q" });
+    expect(bishopMove?.isPromotion).toBeUndefined();
+    expect(pairMove).toMatchObject({ isPromotion: true, promotion: "q" });
+
+    const splitPromotion = applyMove(gameState, {
+      ...pawnMove!,
+      promotion: "n",
+    });
+    expect(splitPromotion.board[0][1]).toEqual([
+      { color: "w", pieceType: "n" },
+    ]);
+    expect(splitPromotion.board[1][1]).toEqual([
+      { color: "w", pieceType: "b" },
+    ]);
+
+    const pairPromotion = applyMove(gameState, {
+      ...pairMove!,
+      promotion: "q",
+    });
+    expect(pairPromotion.board[0][0]).toEqual([{ color: "w", pieceType: "q" }]);
+    expect(pairPromotion.board[1][1]).toEqual([]);
+  });
+
   it("pinned piece cannot move", () => {
     const board = stringToBoard(`
       .  .  .  .  .  .  .  . 
@@ -170,6 +213,68 @@ describe("Game Cases", () => {
       gameState.board[7][1] = [{ color: "w", pieceType: "n" }];
 
       expect(canCastleTo(gameState, "c1")).toBe(false);
+    });
+
+    it("moves the whole rook pair when castling on either side", () => {
+      const shortState = createCastlingState();
+      shortState.board[7][7] = [
+        { color: "w", pieceType: "r" },
+        { color: "w", pieceType: "b" },
+      ];
+
+      const shortCastle = getAllMovesForCell(
+        parsePosition("e1"),
+        shortState,
+      ).find((move) => move.type === "castle" && move.to.col === 6);
+
+      expect(shortCastle).toBeDefined();
+      const shortCastled = applyMove(shortState, shortCastle!);
+      expect(shortCastled.board[7][6]).toEqual([
+        { color: "w", pieceType: "k" },
+      ]);
+      expect(shortCastled.board[7][5]).toEqual([
+        { color: "w", pieceType: "r" },
+        { color: "w", pieceType: "b" },
+      ]);
+      expect(shortCastled.board[7][7]).toEqual([]);
+
+      const longState = createCastlingState();
+      longState.board[7][0] = [
+        { color: "w", pieceType: "r" },
+        { color: "w", pieceType: "n" },
+      ];
+
+      const longCastle = getAllMovesForCell(
+        parsePosition("e1"),
+        longState,
+      ).find((move) => move.type === "castle" && move.to.col === 2);
+
+      expect(longCastle).toBeDefined();
+      const longCastled = applyMove(longState, longCastle!);
+      expect(longCastled.board[7][2]).toEqual([{ color: "w", pieceType: "k" }]);
+      expect(longCastled.board[7][3]).toEqual([
+        { color: "w", pieceType: "r" },
+        { color: "w", pieceType: "n" },
+      ]);
+      expect(longCastled.board[7][0]).toEqual([]);
+    });
+
+    it("keeps castling rights when only the rook's partner moves", () => {
+      const gameState = createCastlingState();
+      gameState.board[7][7] = [
+        { color: "w", pieceType: "r" },
+        { color: "w", pieceType: "b" },
+      ];
+
+      const split = applyMove(gameState, {
+        from: parsePosition("h1"),
+        to: parsePosition("g2"),
+        piece: "b",
+        type: "base",
+      });
+
+      expect(split.options.castlingRights.w.short).toBe(true);
+      expect(canCastleTo(split, "g1")).toBe(true);
     });
 
     it("does not castle through an empty square attacked by a pawn", () => {
