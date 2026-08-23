@@ -49,6 +49,7 @@ describe("password authentication", () => {
         provider: "password",
         params: {
           email: "new-player@example.com",
+          username: "NewPlayer",
           password: "secure-password",
           flow: "signUp",
         },
@@ -72,8 +73,86 @@ describe("password authentication", () => {
     expect(verified.tokens).not.toBeNull();
     await t.run(async (ctx) => {
       const account = await ctx.db.query("authAccounts").first();
+      const user = await ctx.db.query("users").first();
       expect(account?.emailVerified).toBe("new-player@example.com");
+      expect(user?.name).toBe("NewPlayer");
       expect(await ctx.db.query("authSessions").collect()).toHaveLength(1);
+    });
+  });
+
+  it("requires a username with at least four characters", async () => {
+    const t = convexTest(schema, modules);
+
+    await expect(
+      t.action(api.auth.signIn, {
+        provider: "password",
+        params: {
+          email: "short-name@example.com",
+          username: "abc",
+          password: "secure-password",
+          flow: "signUp",
+        },
+      }),
+    ).rejects.toThrow("Invalid username");
+
+    await t.run(async (ctx) => {
+      expect(await ctx.db.query("users").collect()).toEqual([]);
+    });
+  });
+
+  it("keeps usernames unique regardless of case", async () => {
+    const t = convexTest(schema, modules);
+
+    await captureAuthCode(() =>
+      t.action(api.auth.signIn, {
+        provider: "password",
+        params: {
+          email: "first-name@example.com",
+          username: "MergeFan",
+          password: "secure-password",
+          flow: "signUp",
+        },
+      }),
+    );
+
+    await expect(
+      t.action(api.auth.signIn, {
+        provider: "password",
+        params: {
+          email: "second-name@example.com",
+          username: "mergefan",
+          password: "secure-password",
+          flow: "signUp",
+        },
+      }),
+    ).rejects.toThrow("Username already taken");
+
+    await t.run(async (ctx) => {
+      const users = await ctx.db.query("users").collect();
+      expect(users).toHaveLength(1);
+      expect(users[0]).toMatchObject({
+        name: "MergeFan",
+        usernameKey: "mergefan",
+      });
+    });
+  });
+
+  it("assigns a public chess name to a guest", async () => {
+    const t = convexTest(schema, modules);
+
+    await expect(
+      t.action(api.auth.signIn, {
+        provider: "anonymous",
+        params: {},
+      }),
+    ).resolves.toMatchObject({ tokens: expect.any(Object) });
+
+    await t.run(async (ctx) => {
+      const user = await ctx.db.query("users").first();
+      expect(user?.isAnonymous).toBe(true);
+      expect(user?.name).toMatch(
+        /^(Amber|Brave|Calm|Clever|Quiet|Swift)(Bishop|Knight|Pawn|Queen|Rook)\d{6}$/,
+      );
     });
   });
 
@@ -133,7 +212,7 @@ async function createVerifiedUser(
   const signUp = await captureAuthCode(() =>
     t.action(api.auth.signIn, {
       provider: "password",
-      params: { email, password, flow: "signUp" },
+      params: { email, username: "ReturningPlayer", password, flow: "signUp" },
     }),
   );
 

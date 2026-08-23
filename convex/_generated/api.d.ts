@@ -16,6 +16,7 @@ import type * as emailSubscriptions from "../emailSubscriptions.js";
 import type * as emails from "../emails.js";
 import type * as gameLogic from "../gameLogic.js";
 import type * as http from "../http.js";
+import type * as publicPlayers from "../publicPlayers.js";
 import type * as router from "../router.js";
 
 import type {
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   emails: typeof emails;
   gameLogic: typeof gameLogic;
   http: typeof http;
+  publicPlayers: typeof publicPlayers;
   router: typeof router;
 }>;
 

@@ -54,6 +54,14 @@ test.describe("shareable challenges", () => {
     await expect(
       page.getByRole("heading", { name: "Waiting for an opponent" }),
     ).toBeVisible();
+    const creatorName = await page
+      .getByLabel("Challenge seats")
+      .locator("strong")
+      .first()
+      .innerText();
+    expect(creatorName).toMatch(
+      /^(Amber|Brave|Calm|Clever|Quiet|Swift)(Bishop|Knight|Pawn|Queen|Rook)\d{6}$/,
+    );
     await expect(
       page.getByText("Guest", { exact: true }).first(),
     ).toBeVisible();
@@ -171,7 +179,14 @@ test.describe("shareable challenges", () => {
       await expect(
         guestPage.getByText("Untimed", { exact: true }),
       ).toBeVisible();
-      await expect(guestPage.getByText("Host", { exact: true })).toBeVisible();
+      const creatorName = await creatorPage
+        .getByLabel("Challenge seats")
+        .locator("strong")
+        .first()
+        .innerText();
+      await expect(
+        guestPage.getByText(creatorName, { exact: true }),
+      ).toBeVisible();
       await expect(guestPage.getByText("Guest", { exact: true })).toBeVisible();
       await expect(
         guestPage.getByRole("img", { name: /Static ChessMerge board/ }),
@@ -201,9 +216,11 @@ test.describe("shareable challenges", () => {
       const gameUrl = creatorPage.url();
       await creatorPage.getByRole("button", { name: /Lobby/ }).click();
       await expect(creatorPage).toHaveURL("/");
-      const resumeGame = creatorPage.getByRole("button", {
-        name: /Active game/,
-      });
+      const resumeGame = creatorPage
+        .getByRole("heading", { name: "My games" })
+        .locator("..")
+        .getByRole("button")
+        .first();
       await expect(resumeGame).toBeVisible();
       await resumeGame.click();
       await expect(creatorPage).toHaveURL(gameUrl);
@@ -238,7 +255,7 @@ test.describe("shareable challenges", () => {
         spectatorPage.getByRole("heading", { name: "Live games" }),
       ).toBeVisible();
       const watchLiveGame = spectatorPage.getByRole("button", {
-        name: new RegExp(gameUrl.slice(-6)),
+        name: new RegExp(creatorName),
       });
       await expect(watchLiveGame).toBeVisible();
       await watchLiveGame.click();

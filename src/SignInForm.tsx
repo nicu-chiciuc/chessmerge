@@ -23,6 +23,8 @@ type AuthStep =
   | "resetPassword";
 
 const PASSWORD_MIN_LENGTH = 8;
+const USERNAME_MIN_LENGTH = 4;
+const USERNAME_MAX_LENGTH = 24;
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
@@ -50,6 +52,20 @@ export function SignInForm() {
     const email = formValue(formData, "email").trim();
     const password = formValue(formData, "password");
     const confirmPassword = formValue(formData, "confirmPassword");
+    const username = formValue(formData, "username").trim();
+
+    if (
+      flow === "signUp" &&
+      (username.length < USERNAME_MIN_LENGTH ||
+        username.length > USERNAME_MAX_LENGTH ||
+        !/^[A-Za-z0-9_-]+$/.test(username))
+    ) {
+      toast.error(
+        "Username must be 4–24 characters using letters, numbers, _ or -.",
+      );
+      setSubmitting(false);
+      return;
+    }
 
     if (flow === "signUp" && password !== confirmPassword) {
       toast.error("Passwords do not match.");
@@ -58,6 +74,7 @@ export function SignInForm() {
     }
 
     formData.set("email", email);
+    if (flow === "signUp") formData.set("username", username);
     formData.set("flow", flow);
     formData.delete("confirmPassword");
 
@@ -170,6 +187,23 @@ export function SignInForm() {
                 className="space-y-4"
                 onSubmit={(event) => void handleCredentials(event)}
               >
+                {flow === "signUp" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      name="username"
+                      placeholder="Public in games"
+                      autoComplete="username"
+                      minLength={USERNAME_MIN_LENGTH}
+                      maxLength={USERNAME_MAX_LENGTH}
+                      pattern="[A-Za-z0-9_-]+"
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -448,6 +482,12 @@ function credentialsErrorMessage(
 
   if (flow === "signUp" && /invalid password/i.test(message)) {
     return "Password must be at least 8 characters.";
+  }
+  if (flow === "signUp" && /invalid username/i.test(message)) {
+    return "Username must be 4–24 characters using letters, numbers, _ or -.";
+  }
+  if (flow === "signUp" && /username already taken/i.test(message)) {
+    return "That username is already taken.";
   }
   if (
     flow === "signIn" &&

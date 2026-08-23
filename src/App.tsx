@@ -18,7 +18,7 @@ function AuthButton() {
   const loggedInUser = useQuery(api.auth.loggedInUser);
 
   if (isAuthenticated) {
-    const identity = loggedInUser?.email ?? "Guest";
+    const identity = loggedInUser?.name ?? "Guest";
 
     return (
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">

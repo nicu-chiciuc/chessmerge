@@ -48,6 +48,10 @@ describe("public game lookup", () => {
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
       lastMoveAt: START_TIME.getTime(),
+      players: {
+        white: { name: "white", isGuest: false },
+        black: { name: "black", isGuest: false },
+      },
     };
     await expect(t.query(api.gameLogic.getGame, { gameId })).resolves.toEqual(
       spectatorGame,
@@ -64,6 +68,7 @@ describe("public game lookup", () => {
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
       lastMoveAt: START_TIME.getTime(),
+      players: spectatorGame.players,
     });
     await expect(
       black.query(api.gameLogic.getGame, { gameId }),
@@ -74,6 +79,7 @@ describe("public game lookup", () => {
       gameState: JSON.stringify(createInitialGameState()),
       moveCount: 0,
       lastMoveAt: START_TIME.getTime(),
+      players: spectatorGame.players,
     });
 
     await t.run(async (ctx) => {
@@ -94,6 +100,7 @@ describe("public game lookup", () => {
       lastMoveAt: START_TIME.getTime(),
       winner: "w",
       gameEndReason: "checkmate",
+      players: spectatorGame.players,
     });
     await expect(t.query(api.gameLogic.getGame, { gameId })).resolves.toEqual({
       ...spectatorGame,
@@ -198,7 +205,7 @@ describe("public game lookup", () => {
 });
 
 describe("live game list", () => {
-  it("returns recent challenge games without player identities", async () => {
+  it("returns recent challenge games with public player names", async () => {
     const t = convexTest(schema, modules);
     const whiteId = await insertUser(t, "white@example.com");
     const blackId = await insertUser(t, "black@example.com");
@@ -263,12 +270,20 @@ describe("live game list", () => {
         lastMoveAt: START_TIME.getTime(),
         moveCount: 1,
         turn: "b",
+        players: {
+          white: { name: "white", isGuest: false },
+          black: { name: "black", isGuest: false },
+        },
       },
       {
         _id: olderGameId,
         lastMoveAt: START_TIME.getTime() - 1_000,
         moveCount: 0,
         turn: "w",
+        players: {
+          white: { name: "white", isGuest: false },
+          black: { name: "black", isGuest: false },
+        },
       },
     ]);
   });
@@ -536,7 +551,10 @@ describe("legacy scheduled jobs", () => {
 
 async function insertUser(t: ChessMergeTest, email: string) {
   return await t.run(async (ctx) => {
-    return await ctx.db.insert("users", { email });
+    return await ctx.db.insert("users", {
+      email,
+      name: email.slice(0, email.indexOf("@")),
+    });
   });
 }
 

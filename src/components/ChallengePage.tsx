@@ -260,7 +260,11 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
                 No one has joined yet.
               </p>
               <div className="my-5 grid gap-2" aria-label="Challenge seats">
-                <PlayerSlot symbol="Y" name="You" detail="Challenge creator" />
+                <PlayerSlot
+                  symbol={view.creator.name.slice(0, 1).toUpperCase()}
+                  name={view.creator.name}
+                  detail="You · Challenge creator"
+                />
                 <PlayerSlot symbol="?" name="Guest" detail="Open seat" empty />
               </div>
               <label
@@ -377,7 +381,15 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
                 </span>
               </div>
               <div className="mb-5 grid gap-2" aria-label="Challenge seats">
-                <PlayerSlot symbol="H" name="Host" detail="Challenge creator" />
+                <PlayerSlot
+                  symbol={view.creator.name.slice(0, 1).toUpperCase()}
+                  name={view.creator.name}
+                  detail={
+                    view.creator.isGuest
+                      ? "Guest · Challenge creator"
+                      : "Challenge creator"
+                  }
+                />
                 <PlayerSlot symbol="G" name="Guest" detail="Open seat" empty />
               </div>
               <Button

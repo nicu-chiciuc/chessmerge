@@ -50,6 +50,21 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
       <h3 className="font-semibold mb-3">Game Info</h3>
 
       <div className="space-y-2 text-sm">
+        <PlayerRow
+          color="White"
+          name={game.players.white.name}
+          isGuest={game.players.white.isGuest}
+          isYou={playerColor === "w"}
+        />
+        <PlayerRow
+          color="Black"
+          name={game.players.black.name}
+          isGuest={game.players.black.isGuest}
+          isYou={playerColor === "b"}
+        />
+
+        <div className="my-3 border-t" />
+
         <div className="flex justify-between">
           <span className="text-gray-600">Status:</span>
           <span className={`font-medium ${getStatusColor()}`}>
@@ -96,6 +111,28 @@ export function GameInfo({ game, gameState, playerColor }: GameInfoProps) {
           Last move: {new Date(game.lastMoveAt).toLocaleTimeString()}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PlayerRow({
+  color,
+  isGuest,
+  isYou,
+  name,
+}: {
+  color: "White" | "Black";
+  isGuest: boolean;
+  isYou: boolean;
+  name: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-gray-600">{color}</span>
+      <span className="min-w-0 truncate font-medium" title={name}>
+        {name}
+        {isYou ? " (you)" : isGuest ? " (guest)" : ""}
+      </span>
     </div>
   );
 }

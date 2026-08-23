@@ -10,6 +10,7 @@ const modules = import.meta.glob("../convex/**/*.*s");
 const START_TIME = new Date("2026-08-23T00:00:00.000Z");
 const CHALLENGE_EXPIRY_MS = 24 * 60 * 60 * 1_000;
 const CREATION_COOLDOWN_MS = 30 * 1_000;
+const CREATOR_PLAYER = { name: "creator", isGuest: false };
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -118,6 +119,7 @@ describe("shareable challenges", () => {
       status: "waiting",
       expiresAt: challenge.expiresAt,
       viewerRole: "creator",
+      creator: CREATOR_PLAYER,
     });
     await expect(
       guest.query(api.challenges.getChallenge, {
@@ -127,6 +129,7 @@ describe("shareable challenges", () => {
       status: "waiting",
       expiresAt: challenge.expiresAt,
       viewerRole: "guest",
+      creator: CREATOR_PLAYER,
     });
     await expect(
       t.query(api.challenges.getChallenge, {
@@ -136,6 +139,7 @@ describe("shareable challenges", () => {
       status: "waiting",
       expiresAt: challenge.expiresAt,
       viewerRole: "guest",
+      creator: CREATOR_PLAYER,
     });
   });
 
@@ -243,6 +247,7 @@ describe("shareable challenges", () => {
       expiresAt: challenge.expiresAt,
       viewerRole: "creator",
       gameId,
+      creator: CREATOR_PLAYER,
     });
     await expect(
       opponent.query(api.challenges.getChallenge, {
@@ -253,12 +258,14 @@ describe("shareable challenges", () => {
       expiresAt: challenge.expiresAt,
       viewerRole: "opponent",
       gameId,
+      creator: CREATOR_PLAYER,
     });
 
     const guestDto = {
       status: "joined",
       expiresAt: challenge.expiresAt,
       viewerRole: "guest",
+      creator: CREATOR_PLAYER,
     };
     await expect(
       unrelated.query(api.challenges.getChallenge, {
@@ -460,6 +467,7 @@ describe("shareable challenges", () => {
       status: "expired",
       expiresAt: first.expiresAt,
       viewerRole: "guest",
+      creator: CREATOR_PLAYER,
     });
   });
 
@@ -490,6 +498,7 @@ describe("shareable challenges", () => {
       status: "canceled",
       expiresAt: START_TIME.getTime() + CHALLENGE_EXPIRY_MS,
       viewerRole: "creator",
+      creator: CREATOR_PLAYER,
     });
     await expect(
       guest.mutation(api.challenges.joinChallenge, { challengeId }),
@@ -499,6 +508,9 @@ describe("shareable challenges", () => {
 
 async function insertUser(t: ChessMergeTest, email: string) {
   return await t.run(async (ctx) => {
-    return await ctx.db.insert("users", { email });
+    return await ctx.db.insert("users", {
+      email,
+      name: email.slice(0, email.indexOf("@")),
+    });
   });
 }
