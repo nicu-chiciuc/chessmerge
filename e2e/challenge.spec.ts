@@ -227,17 +227,9 @@ test.describe("shareable challenges", () => {
 
       await spectatorPage.goto(challengeUrl);
       await expect(
-        spectatorPage.getByRole("heading", {
-          name: "Challenge unavailable",
-        }),
-      ).toBeVisible();
-      await expect(spectatorPage).toHaveURL(challengeUrl);
-      await expect(spectatorPage.getByText(/Game ID:/)).toHaveCount(0);
-
-      await spectatorPage.goto(gameUrl);
-      await expect(
         spectatorPage.getByRole("heading", { name: "Watching chess game" }),
       ).toBeFocused();
+      await expect(spectatorPage).toHaveURL(gameUrl);
       await expect(
         spectatorPage.getByRole("group", {
           name: "Chess board, read only",

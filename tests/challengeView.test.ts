@@ -33,42 +33,16 @@ describe("challenge view resolution", () => {
     ).toEqual({ kind: "guest", creator: CREATOR });
   });
 
-  it("sends both participants, and only participants, to the game", () => {
+  it("sends every viewer of a joined challenge to the game", () => {
     expect(
       resolveChallengeView(
         {
           status: "joined",
-          expiresAt: NOW + 1,
-          viewerRole: "creator",
           gameId: GAME_ID,
-          creator: CREATOR,
         },
         NOW,
       ),
     ).toEqual({ kind: "game", gameId: GAME_ID });
-    expect(
-      resolveChallengeView(
-        {
-          status: "joined",
-          expiresAt: NOW + 1,
-          viewerRole: "opponent",
-          gameId: GAME_ID,
-          creator: CREATOR,
-        },
-        NOW,
-      ),
-    ).toEqual({ kind: "game", gameId: GAME_ID });
-    expect(
-      resolveChallengeView(
-        {
-          status: "joined",
-          expiresAt: NOW + 1,
-          viewerRole: "guest",
-          creator: CREATOR,
-        },
-        NOW,
-      ),
-    ).toEqual({ kind: "unavailable" });
   });
 
   it("collapses invalid and unusable challenges into one state", () => {
