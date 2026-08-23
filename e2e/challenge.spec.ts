@@ -254,9 +254,30 @@ test.describe("shareable challenges", () => {
       await expect(spectatorPage).toHaveURL(gameUrl);
 
       await guestPage.setViewportSize({ width: 320, height: 720 });
+      const currentIdentity = guestPage.locator("header span[title]");
+      await expect(currentIdentity).toBeVisible();
+      const currentName = (await currentIdentity.textContent())?.trim();
+      expect(currentName).toBeTruthy();
+      await expect(currentIdentity).toHaveAttribute("title", currentName!);
+      await expect(
+        guestPage.getByRole("button", { name: /Lobby/ }),
+      ).toBeVisible();
       await expect(
         guestPage.getByRole("button", { name: "Sign out" }),
       ).toBeVisible();
+      const longName = "VeryLongChessPlayer_2026";
+      await currentIdentity.evaluate((element, name) => {
+        element.textContent = name;
+        element.title = name;
+      }, longName);
+      await expect(currentIdentity).toHaveAttribute("title", longName);
+      await expect
+        .poll(() =>
+          currentIdentity.evaluate(
+            (element) => element.scrollWidth > element.clientWidth,
+          ),
+        )
+        .toBe(true);
       await expect
         .poll(() =>
           guestPage.evaluate(() => ({
