@@ -43,6 +43,32 @@ const applicationTables = {
     .index("by_player", ["whitePlayerId"])
     .index("by_black_player", ["blackPlayerId"]),
 
+  challenges: defineTable(
+    v.union(
+      v.object({
+        creatorId: v.id("users"),
+        status: v.literal("waiting"),
+        expiresAt: v.number(),
+      }),
+      v.object({
+        creatorId: v.id("users"),
+        status: v.literal("joined"),
+        expiresAt: v.number(),
+        gameId: v.id("games"),
+      }),
+      v.object({
+        creatorId: v.id("users"),
+        status: v.literal("canceled"),
+        expiresAt: v.number(),
+      }),
+      v.object({
+        creatorId: v.id("users"),
+        status: v.literal("expired"),
+        expiresAt: v.number(),
+      }),
+    ),
+  ).index("by_creatorId", ["creatorId"]),
+
   emailSubscribers: defineTable({
     email: v.string(),
     subscribedAt: v.number(),
