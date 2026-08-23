@@ -230,7 +230,9 @@ export const BoardOptionsSchema = object({
 
 function isCastlingRook(cell: Cell, color: PieceColor): boolean {
   return (
-    cell.length === 1 && cell[0].color === color && cell[0].pieceType === "r"
+    cell.length > 0 &&
+    cell.every((piece) => piece.color === color) &&
+    cell.some((piece) => piece.pieceType === "r")
   );
 }
 
@@ -748,13 +750,8 @@ export function applyMove(gameState: GameState, move: Move): GameState {
   let promotedPiece: Piece | null = null;
   // TODO: promotion can be undefined since applyMove is also called by other functions
   if (move.isPromotion && move.promotion) {
-    // At least one piece should be a pawn
-    if (
-      !(sourceCell[0]?.pieceType === "p" || sourceCell[1]?.pieceType === "p")
-    ) {
-      throw new Error(
-        `Trying to promote a piece that is not a pawn: ${sourceCell[0].pieceType} and ${sourceCell[1].pieceType}`,
-      );
+    if (!move.piece.includes("p")) {
+      throw new Error(`Trying to promote a move without a pawn: ${move.piece}`);
     }
 
     promotedPiece = {
@@ -772,7 +769,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       throw new Error("Trying to move a piece that is not in the source cell");
     }
 
-    let pieceToMove = promotedPiece ?? sourceCell[0];
+    let pieceToMove = sourceCell[0];
 
     // Piece can also unmerge
     if (sourceCell.length === 1) {
@@ -785,6 +782,10 @@ export function applyMove(gameState: GameState, move: Move): GameState {
         newBoard[move.from.row][move.from.col] = [sourceCell[0]];
         pieceToMove = sourceCell[1];
       }
+    }
+
+    if (promotedPiece) {
+      pieceToMove = promotedPiece;
     }
 
     // Move to empty cell
@@ -981,7 +982,7 @@ export function canAnyMoveCombatCheck(
 function shouldPromote(move: Move, gameState: GameState): boolean {
   const cell = gameState.board[move.from.row][move.from.col];
 
-  const isPawn = cell[0]?.pieceType === "p" || cell[1]?.pieceType === "p";
+  const isPawn = move.piece.includes("p");
   const isToLastRow =
     (cell[0]?.color === "w" && move.to.row === 0) ||
     (cell[0]?.color === "b" && move.to.row === 7);
@@ -1079,12 +1080,19 @@ export function getAllMovesForCell(
       ...sameSquareMoves,
     ]
       .filter((move) => move !== null && move.type !== "merge")
-      .map(
-        (move): Move => ({
+      .map((move): Move => {
+        const mergedMove: Move = {
           ...move,
           piece: pieceType,
-        }),
-      );
+        };
+
+        if (shouldPromote(mergedMove, gameState)) {
+          mergedMove.isPromotion = true;
+          mergedMove.promotion = "q";
+        }
+
+        return mergedMove;
+      });
 
     // console.log({
     //   allMoves: allMoves.map(printMove),
