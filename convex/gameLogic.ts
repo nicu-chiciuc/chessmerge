@@ -358,12 +358,14 @@ export const getGame = query({
 });
 
 export const listLiveGames = query({
-  args: {},
+  args: { activeSince: v.number() },
   returns: v.array(liveGameSummaryValidator),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const candidates = await ctx.db
       .query("games")
-      .withIndex("by_status_and_last_move", (q) => q.eq("status", "active"))
+      .withIndex("by_status_and_last_move", (q) =>
+        q.eq("status", "active").gte("lastMoveAt", args.activeSince),
+      )
       .order("desc")
       .take(24);
 
