@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "convex/react";
 import { BookOpen, FlaskConical, Swords } from "lucide-react";
 import { useState } from "react";
@@ -6,6 +7,8 @@ import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { EmailSubscribe } from "./EmailSubscribe";
+
+type GameSummary = FunctionReturnType<typeof api.gameLogic.listGames>[number];
 
 export function GameLobby({
   isAuthenticated = false,
@@ -173,7 +176,7 @@ export function GameLobby({
                       {game.players.white.name} vs {game.players.black.name}
                     </span>
                     <span className="block text-xs text-muted-foreground">
-                      {game.status === "active" ? "Active" : "Completed"} ·{" "}
+                      {formatGameStatus(game)} ·{" "}
                       {formatLastMove(game.lastMoveAt)}
                     </span>
                   </button>
@@ -233,4 +236,12 @@ function formatLastMove(lastMoveAt: number) {
     hour: "numeric",
     minute: "2-digit",
   }).format(lastMoveAt);
+}
+
+function formatGameStatus(game: GameSummary) {
+  if (game.status === "active") return "Active";
+  if (game.winner === "draw") return "Draw by stalemate";
+
+  const winner = game.winner === "w" ? game.players.white : game.players.black;
+  return `${winner.name} won by ${game.gameEndReason}`;
 }
