@@ -8,7 +8,11 @@ import {
   isInCheck,
   applyMove,
   canAnyMoveCombatCheck,
+  equalPositions,
   GameState,
+  getAllMovesForCell,
+  PieceType,
+  Position,
   stringToBoard,
 } from "../lib/chessmerge";
 import { Doc, Id } from "./_generated/dataModel";
@@ -16,6 +20,93 @@ import { MutationCtx } from "./_generated/server";
 
 // Buffer time before timeout check fires (to avoid race conditions)
 const TIMEOUT_BUFFER_MS = 500;
+
+type SubmittedMove = {
+  from: Position;
+  to: Position;
+  piece: string;
+  promotion?: PieceType;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parsePosition(value: unknown): Position {
+  if (
+    !isRecord(value) ||
+    typeof value.row !== "number" ||
+    !Number.isInteger(value.row) ||
+    value.row < 0 ||
+    value.row >= 8 ||
+    typeof value.col !== "number" ||
+    !Number.isInteger(value.col) ||
+    value.col < 0 ||
+    value.col >= 8
+  ) {
+    throw new Error("Malformed move");
+  }
+  return { row: value.row, col: value.col };
+}
+
+function parseSubmittedMove(serializedMove: string): SubmittedMove {
+  let value: unknown;
+  try {
+    value = JSON.parse(serializedMove);
+  } catch {
+    throw new Error("Malformed move");
+  }
+
+  if (!isRecord(value) || typeof value.piece !== "string") {
+    throw new Error("Malformed move");
+  }
+
+  const from = parsePosition(value.from);
+  const to = parsePosition(value.to);
+  const promotion = value.promotion;
+  if (
+    promotion !== undefined &&
+    promotion !== "q" &&
+    promotion !== "r" &&
+    promotion !== "b" &&
+    promotion !== "n"
+  ) {
+    throw new Error("Malformed move");
+  }
+
+  return promotion === undefined
+    ? { from, to, piece: value.piece }
+    : { from, to, piece: value.piece, promotion };
+}
+
+function findCanonicalLegalMove(
+  gameState: GameState,
+  submittedMove: SubmittedMove,
+  isPracticeGame: boolean,
+): Move {
+  const sourcePiece =
+    gameState.board[submittedMove.from.row][submittedMove.from.col][0];
+  if (!sourcePiece) throw new Error("Illegal move");
+  if (!isPracticeGame && sourcePiece.color !== gameState.options.turn) {
+    throw new Error("Cannot move an opponent piece");
+  }
+
+  const legalMove = getAllMovesForCell(submittedMove.from, gameState).find(
+    (candidate) =>
+      equalPositions(candidate.to, submittedMove.to) &&
+      candidate.piece === submittedMove.piece,
+  );
+
+  if (!legalMove) throw new Error("Illegal move");
+
+  if (legalMove.isPromotion) {
+    if (!submittedMove.promotion) throw new Error("Illegal move");
+    return { ...legalMove, promotion: submittedMove.promotion };
+  }
+  if (submittedMove.promotion) throw new Error("Illegal move");
+
+  return legalMove;
+}
 
 /**
  * Calculate remaining time for a player based on move timestamps
@@ -211,7 +302,6 @@ export const makeMove = mutation({
     if (!isWhitePlayer && !isBlackPlayer)
       throw new Error("Not a player in this game");
 
-    const move: Move = JSON.parse(args.move);
     const gameState: GameState = JSON.parse(game.gameState);
 
     // For practice games, allow the same user to play both sides
@@ -223,6 +313,21 @@ export const makeMove = mutation({
         throw new Error("Not your turn");
       }
     }
+
+    const now = Date.now();
+    if (
+      !game.isPracticeGame &&
+      calculateRemainingTime(game, gameState.options.turn, now) <= 0
+    ) {
+      throw new Error("Clock expired");
+    }
+
+    const submittedMove = parseSubmittedMove(args.move);
+    const move = findCanonicalLegalMove(
+      gameState,
+      submittedMove,
+      !!game.isPracticeGame,
+    );
 
     // Validate and apply move
     const newGameState = applyMove(gameState, move);
@@ -249,7 +354,7 @@ export const makeMove = mutation({
       );
       if (!canMoveCombatCheck) {
         status = "completed";
-        winner = newGameState.options.turn;
+        winner = newGameState.options.turn === "w" ? "b" : "w";
         gameEndReason = "checkmate";
       }
     } else {
@@ -265,8 +370,6 @@ export const makeMove = mutation({
       }
     }
 
-    const now = Date.now();
-
     // Cancel any existing scheduled timeout
     if (game.scheduledTimeoutId) {
       await ctx.scheduler.cancel(game.scheduledTimeoutId);
@@ -276,7 +379,7 @@ export const makeMove = mutation({
     const newMoveTimestamps = [...(game.moveTimestamps || []), now];
     await ctx.db.patch(args.gameId, {
       gameState: JSON.stringify(newGameState),
-      moveHistory: [...game.moveHistory, args.move],
+      moveHistory: [...game.moveHistory, JSON.stringify(move)],
       moveTimestamps: newMoveTimestamps,
       lastMoveAt: now,
       status,
@@ -312,11 +415,16 @@ export const setPracticeGameState = mutation({
     strBoard: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
     const game = await ctx.db.get(args.gameId);
     if (!game) throw new Error("Game not found");
 
     // Only practice games can have their state set
     if (!game.isPracticeGame) throw new Error("Game is not a practice game");
+    if (game.whitePlayerId !== userId)
+      throw new Error("Not the practice game owner");
 
     try {
       const board = stringToBoard(args.strBoard);

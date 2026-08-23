@@ -228,6 +228,12 @@ export const BoardOptionsSchema = object({
   fullMoveClock: number,
 });
 
+function isCastlingRook(cell: Cell, color: PieceColor): boolean {
+  return (
+    cell.length === 1 && cell[0].color === color && cell[0].pieceType === "r"
+  );
+}
+
 function getSinglePieceMoves(
   type: PieceType,
   color: PieceColor,
@@ -523,7 +529,8 @@ function getSinglePieceMoves(
         // space to close rook is empty
         // We use ?., because the board can be edited, and the status of castling rights is not updated
         board[row]?.[col + 1]?.length === 0 &&
-        board[row]?.[col + 2]?.length === 0
+        board[row]?.[col + 2]?.length === 0 &&
+        isCastlingRook(board[row][7], color)
       ) {
         moves.push({
           type: "castle",
@@ -542,7 +549,9 @@ function getSinglePieceMoves(
         !isCellAttacked(gameState, { row: row, col: col - 2 }, color, true) &&
         // space to close rook is empty
         board[row][col - 1].length === 0 &&
-        board[row][col - 2].length === 0
+        board[row][col - 2].length === 0 &&
+        board[row][col - 3].length === 0 &&
+        isCastlingRook(board[row][0], color)
       ) {
         moves.push({
           type: "castle",
@@ -627,6 +636,57 @@ export function isInCheck(gameState: GameState, color: PieceColor): boolean {
   return false;
 }
 
+function updateCastlingRights({
+  castlingRights,
+  move,
+  sourceCell,
+  targetCell,
+}: {
+  castlingRights: BoardOptions["castlingRights"];
+  move: Move;
+  sourceCell: Cell;
+  targetCell: Cell;
+}): BoardOptions["castlingRights"] {
+  const updatedRights = {
+    w: { ...castlingRights.w },
+    b: { ...castlingRights.b },
+  };
+  const movingColor = sourceCell[0].color;
+
+  if (move.piece.includes("k")) {
+    updatedRights[movingColor].short = false;
+    updatedRights[movingColor].long = false;
+  } else if (move.piece.includes("r")) {
+    removeCornerRookRight(updatedRights, movingColor, move.from);
+  }
+
+  const capturedColor = targetCell[0]?.color;
+  if (
+    capturedColor &&
+    capturedColor !== movingColor &&
+    targetCell.some((piece) => piece.pieceType === "r")
+  ) {
+    removeCornerRookRight(updatedRights, capturedColor, move.to);
+  }
+
+  return updatedRights;
+}
+
+function removeCornerRookRight(
+  castlingRights: BoardOptions["castlingRights"],
+  color: PieceColor,
+  position: Position,
+): void {
+  const homeRow = color === "w" ? 7 : 0;
+  if (position.row !== homeRow) return;
+
+  if (position.col === 0) {
+    castlingRights[color].long = false;
+  } else if (position.col === 7) {
+    castlingRights[color].short = false;
+  }
+}
+
 export function applyMove(gameState: GameState, move: Move): GameState {
   const newBoard = gameState.board.map((row) => row.map((cell) => [...cell]));
   const nextColor = otherColor(gameState.options.turn);
@@ -642,6 +702,17 @@ export function applyMove(gameState: GameState, move: Move): GameState {
     throw new Error("Trying to move 2 pieces but source cell has only 1 piece");
   }
 
+  const nextOptions: BoardOptions = {
+    ...gameState.options,
+    turn: nextColor,
+    castlingRights: updateCastlingRights({
+      castlingRights: gameState.options.castlingRights,
+      move,
+      sourceCell,
+      targetCell,
+    }),
+  };
+
   if (move.type === "castle") {
     // short castle
     if (move.to.col === move.from.col + 2) {
@@ -654,17 +725,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
 
       return {
         board: newBoard,
-        options: {
-          ...gameState.options,
-          turn: nextColor,
-          castlingRights: {
-            ...gameState.options.castlingRights,
-            [sourceCell[0].color]: {
-              short: false,
-              long: false,
-            },
-          },
-        },
+        options: nextOptions,
       };
     }
 
@@ -679,17 +740,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
 
       return {
         board: newBoard,
-        options: {
-          ...gameState.options,
-          turn: nextColor,
-          castlingRights: {
-            ...gameState.options.castlingRights,
-            [sourceCell[0].color]: {
-              short: false,
-              long: false,
-            },
-          },
-        },
+        options: nextOptions,
       };
     }
   }
@@ -743,8 +794,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       return {
         board: newBoard,
         options: {
-          ...gameState.options,
-          turn: nextColor,
+          ...nextOptions,
           halfMoveClock: gameState.options.halfMoveClock + 1,
         },
       };
@@ -756,8 +806,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       return {
         board: newBoard,
         options: {
-          ...gameState.options,
-          turn: nextColor,
+          ...nextOptions,
           halfMoveClock: 0,
         },
       };
@@ -779,8 +828,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
     return {
       board: newBoard,
       options: {
-        ...gameState.options,
-        turn: nextColor,
+        ...nextOptions,
         halfMoveClock: gameState.options.halfMoveClock + 1,
       },
     };
@@ -818,8 +866,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       return {
         board: newBoard,
         options: {
-          ...gameState.options,
-          turn: nextColor,
+          ...nextOptions,
           halfMoveClock: gameState.options.halfMoveClock + 1,
         },
       };
@@ -831,8 +878,7 @@ export function applyMove(gameState: GameState, move: Move): GameState {
       return {
         board: newBoard,
         options: {
-          ...gameState.options,
-          turn: nextColor,
+          ...nextOptions,
           halfMoveClock: 0,
         },
       };
@@ -857,6 +903,28 @@ function isCellAttacked(
       const cell = gameState.board[row][col];
       for (const piece of cell) {
         if (piece.color === opponentColor) {
+          const rowDelta = pos.row - row;
+          const colDelta = Math.abs(pos.col - col);
+
+          if (piece.pieceType === "p") {
+            const direction = piece.color === "w" ? -1 : 1;
+            if (rowDelta === direction && colDelta === 1) {
+              return true;
+            }
+            continue;
+          }
+
+          if (piece.pieceType === "k") {
+            if (
+              (rowDelta !== 0 || colDelta !== 0) &&
+              Math.abs(rowDelta) <= 1 &&
+              colDelta <= 1
+            ) {
+              return true;
+            }
+            continue;
+          }
+
           const moves = getPieceMoves(piece, { row, col }, gameState, {
             filterCheckMoves: false,
             ignoreKingMoves,
