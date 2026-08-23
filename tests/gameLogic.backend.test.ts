@@ -53,6 +53,7 @@ describe("public game lookup", () => {
         white: { name: "white", isGuest: false },
         black: { name: "black", isGuest: false },
       },
+      rematch: null,
     };
     await expect(t.query(api.gameLogic.getGame, { gameId })).resolves.toEqual(
       spectatorGame,
@@ -71,6 +72,7 @@ describe("public game lookup", () => {
       lastMove: null,
       lastMoveAt: START_TIME.getTime(),
       players: spectatorGame.players,
+      rematch: null,
     });
     await expect(
       black.query(api.gameLogic.getGame, { gameId }),
@@ -83,6 +85,7 @@ describe("public game lookup", () => {
       lastMove: null,
       lastMoveAt: START_TIME.getTime(),
       players: spectatorGame.players,
+      rematch: null,
     });
 
     await t.run(async (ctx) => {
@@ -105,6 +108,7 @@ describe("public game lookup", () => {
       winner: "w",
       gameEndReason: "checkmate",
       players: spectatorGame.players,
+      rematch: { status: "available" },
     });
     await expect(t.query(api.gameLogic.getGame, { gameId })).resolves.toEqual({
       ...spectatorGame,
@@ -653,6 +657,110 @@ describe("game resignation", () => {
     await expect(
       white.mutation(api.gameLogic.resignGame, { gameId }),
     ).rejects.toThrow("Game is not active");
+  });
+});
+
+describe("game rematches", () => {
+  it("requires a participant in a completed resumable game", async () => {
+    const t = convexTest(schema, modules);
+    const { white, black, gameId } = await createActiveGame(t);
+    const unrelatedId = await insertUser(t, "spectator@example.com");
+    const unrelated = t.withIdentity({ subject: unrelatedId });
+
+    await expect(
+      t.mutation(api.gameLogic.requestRematch, { gameId }),
+    ).rejects.toThrow("Not authenticated");
+    await expect(
+      white.mutation(api.gameLogic.requestRematch, { gameId }),
+    ).rejects.toThrow("Game is not completed");
+
+    await black.mutation(api.gameLogic.resignGame, { gameId });
+    await expect(
+      unrelated.mutation(api.gameLogic.requestRematch, { gameId }),
+    ).rejects.toThrow("Not a player in this game");
+  });
+
+  it("offers and accepts one rematch with colors swapped", async () => {
+    const t = convexTest(schema, modules);
+    const { white, black, gameId } = await createActiveGame(t);
+    const originalGame = await readGame(t, gameId);
+    await black.mutation(api.gameLogic.resignGame, { gameId });
+
+    await expect(
+      white.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ rematch: { status: "available" } });
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ rematch: null });
+    await expect(
+      white.mutation(api.gameLogic.requestRematch, { gameId }),
+    ).resolves.toEqual({ status: "waiting" });
+    await expect(
+      white.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ rematch: { status: "waiting" } });
+    await expect(
+      black.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ rematch: { status: "offered" } });
+
+    const accepted = await black.mutation(api.gameLogic.requestRematch, {
+      gameId,
+    });
+    expect(accepted.status).toBe("ready");
+    if (accepted.status !== "ready") throw new Error("Expected a rematch game");
+
+    const rematch = await readGame(t, accepted.gameId);
+    expect(rematch).toMatchObject({
+      whitePlayerId: originalGame.blackPlayerId,
+      blackPlayerId: originalGame.whitePlayerId,
+      status: "active",
+      gameState: JSON.stringify(createInitialGameState()),
+      moveHistory: [],
+      lastMoveAt: START_TIME.getTime(),
+    });
+    await expect(
+      white.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({
+      rematch: { status: "ready", gameId: accepted.gameId },
+    });
+    await expect(
+      white.query(api.gameLogic.getGame, { gameId: accepted.gameId }),
+    ).resolves.toMatchObject({ playerColor: "b", rematch: null });
+    await expect(
+      black.query(api.gameLogic.getGame, { gameId: accepted.gameId }),
+    ).resolves.toMatchObject({ playerColor: "w", rematch: null });
+    await expect(
+      t.query(api.gameLogic.getGame, { gameId }),
+    ).resolves.toMatchObject({ rematch: null });
+  });
+
+  it("makes offer and acceptance retries idempotent", async () => {
+    const t = convexTest(schema, modules);
+    const { white, black, gameId } = await createActiveGame(t);
+    await black.mutation(api.gameLogic.resignGame, { gameId });
+
+    await expect(
+      white.mutation(api.gameLogic.requestRematch, { gameId }),
+    ).resolves.toEqual({ status: "waiting" });
+    await expect(
+      white.mutation(api.gameLogic.requestRematch, { gameId }),
+    ).resolves.toEqual({ status: "waiting" });
+
+    const firstAcceptance = await black.mutation(api.gameLogic.requestRematch, {
+      gameId,
+    });
+    const acceptanceRetry = await black.mutation(api.gameLogic.requestRematch, {
+      gameId,
+    });
+    const offererRetry = await white.mutation(api.gameLogic.requestRematch, {
+      gameId,
+    });
+
+    expect(firstAcceptance).toMatchObject({ status: "ready" });
+    expect(acceptanceRetry).toEqual(firstAcceptance);
+    expect(offererRetry).toEqual(firstAcceptance);
+    await expect(
+      t.run(async (ctx) => await ctx.db.query("games").collect()),
+    ).resolves.toHaveLength(2);
   });
 });
 

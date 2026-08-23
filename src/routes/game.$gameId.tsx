@@ -16,6 +16,11 @@ function GameRoute() {
   const { isLoading } = useConvexAuth();
   const game = useQuery(api.gameLogic.getGame, { gameId });
   const heading = useRef<HTMLHeadingElement>(null);
+  const observedRematch = useRef<{ gameId: string; ready: boolean } | null>(
+    null,
+  );
+  const rematchGameId =
+    game?.rematch?.status === "ready" ? game.rematch.gameId : null;
   const focusState =
     isLoading || game === undefined
       ? "loading"
@@ -27,6 +32,23 @@ function GameRoute() {
     if (focusState === "loading") return;
     heading.current?.focus();
   }, [focusState, gameId]);
+
+  useEffect(() => {
+    if (!game) return;
+
+    const previous = observedRematch.current;
+    const ready = rematchGameId !== null;
+    observedRematch.current = { gameId, ready };
+    if (!rematchGameId || previous?.gameId !== gameId || previous.ready) {
+      return;
+    }
+
+    void navigate({
+      to: "/game/$gameId",
+      params: { gameId: rematchGameId },
+      replace: true,
+    });
+  }, [game, gameId, navigate, rematchGameId]);
 
   if (isLoading || game === undefined) {
     return (

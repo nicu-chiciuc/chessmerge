@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
@@ -20,8 +21,10 @@ type GameView = NonNullable<FunctionReturnType<typeof api.gameLogic.getGame>>;
 
 export function ChessGameWrapper({ game }: { game: GameView }) {
   const gameId = game._id;
+  const navigate = useNavigate();
   const makeMoveApi = useMutation(api.gameLogic.makeMove);
   const resignGameApi = useMutation(api.gameLogic.resignGame);
+  const requestRematchApi = useMutation(api.gameLogic.requestRematch);
 
   const makeMove = useCallback(
     async (move: Move) => {
@@ -33,6 +36,17 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
   const resignGame = useCallback(async () => {
     await resignGameApi({ gameId });
   }, [gameId, resignGameApi]);
+
+  const requestRematch = useCallback(async () => {
+    const result = await requestRematchApi({ gameId });
+    if (result.status === "ready") {
+      await navigate({
+        to: "/game/$gameId",
+        params: { gameId: result.gameId },
+        replace: true,
+      });
+    }
+  }, [gameId, navigate, requestRematchApi]);
 
   const gameState = useMemo(() => {
     return JSON.parse(game.gameState);
@@ -75,6 +89,9 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
             game={game}
             gameState={gameState}
             onResign={game.playerColor === null ? undefined : resignGame}
+            onRequestRematch={
+              game.playerColor === null ? undefined : requestRematch
+            }
             playerColor={game.playerColor}
           />
         </div>
