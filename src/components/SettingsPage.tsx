@@ -2,7 +2,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Trash2, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { api } from "../../convex/_generated/api";
 import { ACCOUNT_DELETION_CONFIRMATION } from "../../lib/accountDeletion";
@@ -21,6 +21,109 @@ type DeleteState =
   | { kind: "idle" }
   | { kind: "deleting" }
   | { kind: "failed"; message: string };
+
+type NameState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "saved" }
+  | { kind: "taken" }
+  | { kind: "failed" };
+
+const NAME_MIN_LENGTH = 4;
+const NAME_MAX_LENGTH = 24;
+const NAME_REQUIREMENTS =
+  "Use 4 to 24 letters, numbers, underscores, or hyphens.";
+
+function PublicNameForm({ currentName }: { currentName: string }) {
+  const updateName = useMutation(api.accounts.updateName);
+  const [name, setName] = useState(currentName);
+  const [savedName, setSavedName] = useState(currentName);
+  const [state, setState] = useState<NameState>({ kind: "idle" });
+  const trimmedName = name.trim();
+  const invalid =
+    trimmedName.length < NAME_MIN_LENGTH ||
+    trimmedName.length > NAME_MAX_LENGTH ||
+    !/^[A-Za-z0-9_-]+$/.test(trimmedName);
+  const dirty = name !== savedName;
+  const saving = state.kind === "saving";
+
+  const saveName = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (invalid || !dirty || saving) return;
+
+    setName(trimmedName);
+    setState({ kind: "saving" });
+    try {
+      const updatedName = await updateName({ name: trimmedName });
+      setName(updatedName);
+      setSavedName(updatedName);
+      setState({ kind: "saved" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      setState(
+        /username already taken/i.test(message)
+          ? { kind: "taken" }
+          : { kind: "failed" },
+      );
+    }
+  };
+
+  return (
+    <form
+      className="max-w-lg space-y-3"
+      noValidate
+      onSubmit={(event) => void saveName(event)}
+    >
+      <div className="space-y-2">
+        <Label htmlFor="public-name">Public name</Label>
+        <Input
+          id="public-name"
+          name="username"
+          autoComplete="username"
+          value={name}
+          minLength={NAME_MIN_LENGTH}
+          maxLength={NAME_MAX_LENGTH}
+          pattern="[A-Za-z0-9_-]+"
+          aria-describedby="public-name-requirements public-name-status"
+          aria-invalid={dirty && invalid}
+          disabled={saving}
+          onChange={(event) => {
+            setName(event.target.value);
+            setState({ kind: "idle" });
+          }}
+        />
+        <p
+          id="public-name-requirements"
+          className="text-sm text-muted-foreground"
+        >
+          {NAME_REQUIREMENTS}
+        </p>
+      </div>
+      <Button type="submit" disabled={saving || invalid || !dirty}>
+        {saving ? "Saving name…" : "Save name"}
+      </Button>
+      <div id="public-name-status" aria-live="polite">
+        {dirty && invalid ? (
+          <p className="text-sm text-destructive" role="alert">
+            {NAME_REQUIREMENTS}
+          </p>
+        ) : state.kind === "taken" ? (
+          <p className="text-sm text-destructive" role="alert">
+            That name is already taken.
+          </p>
+        ) : state.kind === "failed" ? (
+          <p className="text-sm text-destructive" role="alert">
+            Could not save the name. Try again.
+          </p>
+        ) : state.kind === "saved" ? (
+          <p className="text-sm text-emerald-700" role="status">
+            Name saved.
+          </p>
+        ) : null}
+      </div>
+    </form>
+  );
+}
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -84,18 +187,17 @@ export function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div className="rounded-lg border bg-background p-4">
-                <dt className="text-muted-foreground">Name</dt>
-                <dd className="mt-1 break-words font-medium">{user.name}</dd>
-              </div>
-              <div className="rounded-lg border bg-background p-4">
-                <dt className="text-muted-foreground">Account type</dt>
-                <dd className="mt-1 font-medium">
-                  {user.isGuest ? "Guest" : "Registered"}
-                </dd>
-              </div>
-            </dl>
+            <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_12rem]">
+              <PublicNameForm currentName={user.name} />
+              <dl className="text-sm">
+                <div className="rounded-lg border bg-background p-4">
+                  <dt className="text-muted-foreground">Account type</dt>
+                  <dd className="mt-1 font-medium">
+                    {user.isGuest ? "Guest" : "Registered"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </CardContent>
         </Card>
 

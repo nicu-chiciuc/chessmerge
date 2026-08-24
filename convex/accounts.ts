@@ -9,10 +9,32 @@ import {
   type MutationCtx,
 } from "./_generated/server";
 import { isDeletedUser, requireActiveUser } from "./authUser";
+import { usernameKey, validateUsername } from "./publicPlayers";
 
 const SESSION_BATCH = 8;
 const SESSION_CHILD_BATCH = 32;
 const GAME_BATCH = 48;
+
+export const updateName = mutation({
+  args: { name: v.string() },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const user = await requireActiveUser(ctx);
+    const name = validateUsername(args.name);
+    const normalizedName = usernameKey(name);
+    const matches = await ctx.db
+      .query("users")
+      .withIndex("username", (query) => query.eq("usernameKey", normalizedName))
+      .take(2);
+
+    if (matches.some((match) => match._id !== user._id)) {
+      throw new Error("Username already taken");
+    }
+
+    await ctx.db.patch(user._id, { name, usernameKey: normalizedName });
+    return name;
+  },
+});
 
 export const deleteAccount = mutation({
   args: { confirmation: v.literal(ACCOUNT_DELETION_CONFIRMATION) },
