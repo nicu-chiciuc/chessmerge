@@ -1,9 +1,16 @@
 import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
+import {
+  isValidPublicName,
+  PUBLIC_NAME_MAX_LENGTH,
+  PUBLIC_NAME_MIN_LENGTH,
+  publicNameKey,
+  trimPublicName,
+} from "../lib/publicName";
 import { isDeletedUser } from "./authUser";
 
-export const USERNAME_MIN_LENGTH = 4;
-export const USERNAME_MAX_LENGTH = 24;
+export const USERNAME_MIN_LENGTH = PUBLIC_NAME_MIN_LENGTH;
+export const USERNAME_MAX_LENGTH = PUBLIC_NAME_MAX_LENGTH;
 
 export const publicPlayerValidator = v.object({
   name: v.string(),
@@ -16,19 +23,13 @@ export type PublicPlayer = {
 };
 
 export function validateUsername(value: unknown): string {
-  const username = typeof value === "string" ? value.trim() : "";
-  if (
-    username.length < USERNAME_MIN_LENGTH ||
-    username.length > USERNAME_MAX_LENGTH ||
-    !/^[A-Za-z0-9_-]+$/.test(username)
-  ) {
-    throw new Error("Invalid username");
-  }
+  const username = trimPublicName(value);
+  if (!isValidPublicName(username)) throw new Error("Invalid username");
   return username;
 }
 
 export function usernameKey(username: string): string {
-  return username.toLowerCase();
+  return publicNameKey(username);
 }
 
 export function createGuestName(): string {
