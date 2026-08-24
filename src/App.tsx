@@ -50,20 +50,11 @@ function AuthButton({
   );
 }
 
-export default function App() {
-  const navigate = useNavigate();
+function AccountControls() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signOut } = useAuthActions();
   const loggedInUser = useQuery(api.auth.loggedInUser);
   const staleSignOutStarted = useRef(false);
-  const isHydrated = useHydrated();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
-  const isLocalPracticeRoute = isHydrated && pathname.startsWith("/practice");
-  const isGameRoute =
-    isHydrated &&
-    (pathname.startsWith("/game") || pathname.startsWith("/practice"));
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -77,6 +68,22 @@ export default function App() {
     staleSignOutStarted.current = true;
     void signOut();
   }, [isAuthenticated, isLoading, loggedInUser, signOut]);
+
+  return (
+    <AuthButton isAuthenticated={isAuthenticated} loggedInUser={loggedInUser} />
+  );
+}
+
+export default function App() {
+  const navigate = useNavigate();
+  const isHydrated = useHydrated();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  const isLocalPracticeRoute = isHydrated && pathname.startsWith("/practice");
+  const isGameRoute =
+    isHydrated &&
+    (pathname.startsWith("/game") || pathname.startsWith("/practice"));
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -96,10 +103,7 @@ export default function App() {
         </div>
         {!isLocalPracticeRoute && (
           <div className="ml-auto min-w-0 max-w-full">
-            <AuthButton
-              isAuthenticated={isAuthenticated}
-              loggedInUser={loggedInUser}
-            />
+            <AccountControls />
           </div>
         )}
       </header>
