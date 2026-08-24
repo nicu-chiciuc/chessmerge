@@ -1,7 +1,11 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { createInitialGameState } from "../lib/chessmerge";
 import { mutation, query } from "./_generated/server";
+import {
+  getActiveUserId,
+  isDeletedUser,
+  requireActiveUserId,
+} from "./authUser";
 import { getPublicPlayer, publicPlayerValidator } from "./publicPlayers";
 
 const CHALLENGE_EXPIRY_MS = 24 * 60 * 60 * 1_000;
@@ -20,8 +24,7 @@ export const createChallenge = mutation({
     expiresAt: v.number(),
   }),
   handler: async (ctx) => {
-    const creatorId = await getAuthUserId(ctx);
-    if (!creatorId) throw new Error("Not authenticated");
+    const creatorId = await requireActiveUserId(ctx);
 
     const now = Date.now();
     const latestChallenge = await ctx.db
@@ -92,7 +95,7 @@ export const getChallenge = query({
       return { status: challenge.status, gameId: challenge.gameId };
     }
 
-    const viewerId = await getAuthUserId(ctx);
+    const viewerId = await getActiveUserId(ctx);
     const creator = getPublicPlayer(await ctx.db.get(challenge.creatorId));
     const viewerRole: "creator" | "guest" =
       challenge.creatorId === viewerId ? "creator" : "guest";
@@ -110,11 +113,14 @@ export const joinChallenge = mutation({
   args: { challengeId: v.id("challenges") },
   returns: v.object({ gameId: v.id("games") }),
   handler: async (ctx, args) => {
-    const guestId = await getAuthUserId(ctx);
-    if (!guestId) throw new Error("Not authenticated");
+    const guestId = await requireActiveUserId(ctx);
 
     const challenge = await ctx.db.get(args.challengeId);
     if (!challenge) throw new Error("Challenge unavailable");
+    const creator = await ctx.db.get(challenge.creatorId);
+    if (!creator || isDeletedUser(creator)) {
+      throw new Error("Challenge unavailable");
+    }
     if (challenge.creatorId === guestId) {
       throw new Error("Cannot join your own challenge");
     }
@@ -156,8 +162,7 @@ export const cancelChallenge = mutation({
   args: { challengeId: v.id("challenges") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const creatorId = await getAuthUserId(ctx);
-    if (!creatorId) throw new Error("Not authenticated");
+    const creatorId = await requireActiveUserId(ctx);
 
     const challenge = await ctx.db.get(args.challengeId);
     if (!challenge) throw new Error("Challenge unavailable");

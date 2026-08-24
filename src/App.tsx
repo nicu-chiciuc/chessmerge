@@ -3,31 +3,43 @@ import { api } from "../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
   Outlet,
+  Link,
   useHydrated,
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
+import { useEffect, useRef } from "react";
 import { Button } from "./components/ui/button";
 import { AuthStateContext } from "./lib/auth-state-context";
 
-function AuthButton() {
-  const { isAuthenticated } = useConvexAuth();
+type LoggedInUser = { name: string } | null | undefined;
+
+function AuthButton({
+  isAuthenticated,
+  loggedInUser,
+}: {
+  isAuthenticated: boolean;
+  loggedInUser: LoggedInUser;
+}) {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
-  const loggedInUser = useQuery(api.auth.loggedInUser);
 
   if (isAuthenticated) {
     const identity = loggedInUser?.name ?? "Guest";
 
     return (
       <div className="flex min-w-0 max-w-full items-center gap-2 sm:gap-3">
-        <span
-          className="block min-w-8 max-w-28 truncate text-sm text-gray-600 sm:max-w-56"
-          title={identity}
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="min-w-0 max-w-28 px-2 text-gray-600 sm:max-w-56"
         >
-          {identity}
-        </span>
+          <Link to="/settings" title={`${identity} settings`}>
+            <span className="block min-w-0 truncate">{identity}</span>
+          </Link>
+        </Button>
         <Button onClick={() => void signOut()}>Sign out</Button>
       </div>
     );
@@ -35,6 +47,30 @@ function AuthButton() {
 
   return (
     <Button onClick={() => void navigate({ to: "/login" })}>Sign in</Button>
+  );
+}
+
+function AccountControls() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+  const staleSignOutStarted = useRef(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      staleSignOutStarted.current = false;
+      return;
+    }
+    if (isLoading || loggedInUser !== null || staleSignOutStarted.current) {
+      return;
+    }
+
+    staleSignOutStarted.current = true;
+    void signOut();
+  }, [isAuthenticated, isLoading, loggedInUser, signOut]);
+
+  return (
+    <AuthButton isAuthenticated={isAuthenticated} loggedInUser={loggedInUser} />
   );
 }
 
@@ -67,7 +103,7 @@ export default function App() {
         </div>
         {!isLocalPracticeRoute && (
           <div className="ml-auto min-w-0 max-w-full">
-            <AuthButton />
+            <AccountControls />
           </div>
         )}
       </header>

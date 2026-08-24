@@ -2,6 +2,12 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+const {
+  users: _authUsers,
+  authVerifiers: _authVerifiers,
+  ...baseAuthTables
+} = authTables;
+
 const applicationTables = {
   games: defineTable({
     whitePlayerId: v.id("users"),
@@ -45,6 +51,8 @@ const applicationTables = {
   })
     .index("by_player", ["whitePlayerId"])
     .index("by_black_player", ["blackPlayerId"])
+    .index("by_white_player_and_status", ["whitePlayerId", "status"])
+    .index("by_black_player_and_status", ["blackPlayerId", "status"])
     .index("by_status_and_last_move", ["status", "lastMoveAt"]),
 
   challenges: defineTable(
@@ -71,7 +79,9 @@ const applicationTables = {
         expiresAt: v.number(),
       }),
     ),
-  ).index("by_creatorId", ["creatorId"]),
+  )
+    .index("by_creatorId", ["creatorId"])
+    .index("by_creatorId_and_status", ["creatorId", "status"]),
 
   emailSubscribers: defineTable({
     email: v.string(),
@@ -85,7 +95,7 @@ const applicationTables = {
     .index("by_unsubscribe_token", ["unsubscribeToken"]),
 };
 
-const users = defineTable({
+const activeUser = v.object({
   name: v.optional(v.string()),
   usernameKey: v.optional(v.string()),
   image: v.optional(v.string()),
@@ -94,13 +104,25 @@ const users = defineTable({
   phone: v.optional(v.string()),
   phoneVerificationTime: v.optional(v.number()),
   isAnonymous: v.optional(v.boolean()),
-})
+});
+
+const users = defineTable(
+  v.union(activeUser, v.object({ deletedAt: v.number() })),
+)
   .index("email", ["email"])
   .index("phone", ["phone"])
   .index("username", ["usernameKey"]);
 
+const authVerifiers = defineTable({
+  sessionId: v.optional(v.id("authSessions")),
+  signature: v.optional(v.string()),
+})
+  .index("signature", ["signature"])
+  .index("sessionId", ["sessionId"]);
+
 export default defineSchema({
-  ...authTables,
+  ...baseAuthTables,
+  authVerifiers,
   users,
   ...applicationTables,
 });

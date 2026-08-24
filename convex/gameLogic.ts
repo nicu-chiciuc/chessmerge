@@ -5,7 +5,6 @@ import {
   query,
   type QueryCtx,
 } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   isInCheck,
   applyMove,
@@ -27,6 +26,11 @@ import {
   publicPlayerValidator,
   type PublicPlayer,
 } from "./publicPlayers";
+import {
+  getActiveUserId,
+  isDeletedUser,
+  requireActiveUserId,
+} from "./authUser";
 
 const playersValidator = v.object({
   white: publicPlayerValidator,
@@ -317,9 +321,13 @@ export const makeMove = mutation({
     gameId: v.id("games"),
     move: v.string(), // JSON serialized move
   },
+  returns: v.object({
+    success: v.boolean(),
+    isCheck: v.boolean(),
+    isCheckmate: v.boolean(),
+  }),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireActiveUserId(ctx);
 
     const game = await ctx.db.get(args.gameId);
     if (!game) throw new Error("Game not found");
@@ -331,6 +339,7 @@ export const makeMove = mutation({
 
     if (!isWhitePlayer && !isBlackPlayer)
       throw new Error("Not a player in this game");
+    await requireActiveOpponent(ctx, game, userId);
 
     const gameState = parseStoredGameState(game.gameState);
     if (!gameState) throw new Error("Game unavailable");
@@ -406,8 +415,7 @@ export const resignGame = mutation({
   args: { gameId: v.id("games") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireActiveUserId(ctx);
 
     const game = await ctx.db.get(args.gameId);
     if (!game) throw new Error("Game not found");
@@ -419,6 +427,7 @@ export const resignGame = mutation({
     if (!isWhitePlayer && !isBlackPlayer) {
       throw new Error("Not a player in this game");
     }
+    await requireActiveOpponent(ctx, game, userId);
 
     await ctx.db.patch(args.gameId, {
       status: "completed",
@@ -438,8 +447,7 @@ export const requestRematch = mutation({
     v.object({ status: v.literal("ready"), gameId: v.id("games") }),
   ),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireActiveUserId(ctx);
 
     const game = await ctx.db.get(args.gameId);
     if (!game || !isResumableGame(game)) throw new Error("Game unavailable");
@@ -450,6 +458,7 @@ export const requestRematch = mutation({
     if (!isWhitePlayer && !isBlackPlayer) {
       throw new Error("Not a player in this game");
     }
+    await requireActiveOpponent(ctx, game, userId);
 
     if (game.rematchGameId) {
       return { status: "ready" as const, gameId: game.rematchGameId };
@@ -483,14 +492,14 @@ export const getGame = query({
   args: { gameId: v.string() },
   returns: v.union(v.null(), gameViewValidator),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
 
     const gameId = ctx.db.normalizeId("games", args.gameId);
     if (!gameId) return null;
     const game = await ctx.db.get(gameId);
     if (!game || !isResumableGame(game)) return null;
     if (!parseStoredGameState(game.gameState)) return null;
-    const players = await getPlayers(ctx, game);
+    const { players, hasDeletedPlayer } = await getPlayerView(ctx, game);
 
     const playerColor: "w" | "b" | null = userId
       ? game.whitePlayerId === userId
@@ -520,7 +529,7 @@ export const getGame = query({
       winner: game.winner,
       gameEndReason: game.gameEndReason,
       rematch:
-        playerColor === null
+        playerColor === null || hasDeletedPlayer
           ? null
           : game.rematchGameId
             ? { status: "ready" as const, gameId: game.rematchGameId }
@@ -558,12 +567,14 @@ export const listLiveGames = query({
 
       const gameState = parseStoredGameState(game.gameState);
       if (!gameState) continue;
+      const playerView = await getPlayerView(ctx, game);
+      if (playerView.hasDeletedPlayer) continue;
       liveGames.push({
         _id: game._id,
         lastMoveAt: game.lastMoveAt,
         moveCount: game.moveHistory.length,
         turn: gameState.options.turn,
-        players: await getPlayers(ctx, game),
+        players: playerView.players,
       });
 
       if (liveGames.length === 6) break;
@@ -577,7 +588,7 @@ export const listGames = query({
   args: {},
   returns: v.array(gameSummaryValidator),
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getActiveUserId(ctx);
     if (!userId) return [];
 
     const [whiteGames, blackGames] = await Promise.all([
@@ -607,7 +618,7 @@ export const listGames = query({
         const summary = {
           _id: game._id,
           lastMoveAt: game.lastMoveAt,
-          players: await getPlayers(ctx, game),
+          players: (await getPlayerView(ctx, game)).players,
         };
 
         return game.status === "active"
@@ -623,15 +634,33 @@ export const listGames = query({
   },
 });
 
-async function getPlayers(ctx: QueryCtx, game: ResumableGame) {
+async function getPlayerView(ctx: QueryCtx, game: ResumableGame) {
   const [white, black] = await Promise.all([
     ctx.db.get(game.whitePlayerId),
     ctx.db.get(game.blackPlayerId),
   ]);
   return {
-    white: getPublicPlayer(white),
-    black: getPublicPlayer(black),
+    players: {
+      white: getPublicPlayer(white),
+      black: getPublicPlayer(black),
+    },
+    hasDeletedPlayer:
+      white === null ||
+      black === null ||
+      isDeletedUser(white) ||
+      isDeletedUser(black),
   };
+}
+
+async function requireActiveOpponent(
+  ctx: QueryCtx,
+  game: ResumableGame,
+  userId: Id<"users">,
+): Promise<void> {
+  const opponentId =
+    game.whitePlayerId === userId ? game.blackPlayerId : game.whitePlayerId;
+  const opponent = await ctx.db.get(opponentId);
+  if (!opponent || isDeletedUser(opponent)) throw new Error("Game unavailable");
 }
 
 // Already-enqueued legacy timeout jobs must still resolve after deployment.
