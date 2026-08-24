@@ -42,7 +42,12 @@ describe("account deletion", () => {
       expect(await ctx.db.query("authAccounts").take(1)).toEqual([]);
       expect(await ctx.db.query("authVerificationCodes").take(1)).toEqual([]);
       expect(await ctx.db.query("authRateLimits").take(1)).toEqual([]);
-      expect(await ctx.db.query("emailSubscribers").take(1)).toEqual([]);
+      expect(await ctx.db.query("emailSubscribers").take(1)).toMatchObject([
+        {
+          email: "delete-me@example.com",
+          unsubscribeToken: "unsubscribe-token",
+        },
+      ]);
       expect(await ctx.db.get(seeded.waitingChallengeId)).toMatchObject({
         status: "canceled",
       });
@@ -124,6 +129,29 @@ describe("account deletion", () => {
         userId: deletingUserId,
         expirationTime: START_TIME.getTime() + 60_000,
       });
+      for (let index = 0; index < 10; index += 1) {
+        const accountId = await ctx.db.insert("authAccounts", {
+          userId: deletingUserId,
+          provider: `provider-${index}`,
+          providerAccountId: `batch-${index}@example.com`,
+        });
+        await ctx.db.insert("authVerificationCodes", {
+          accountId,
+          provider: `provider-${index}`,
+          code: `code-${index}`,
+          expirationTime: START_TIME.getTime() + index,
+        });
+        await ctx.db.insert("authRateLimits", {
+          identifier: accountId,
+          lastAttemptTime: START_TIME.getTime(),
+          attemptsLeft: 1,
+        });
+        await ctx.db.insert("challenges", {
+          creatorId: deletingUserId,
+          status: "waiting",
+          expiresAt: START_TIME.getTime() + index,
+        });
+      }
       for (let index = 0; index < 33; index += 1) {
         await ctx.db.insert("authRefreshTokens", {
           sessionId,
@@ -148,6 +176,18 @@ describe("account deletion", () => {
       .mutation(api.accounts.deleteAccount, {
         confirmation: ACCOUNT_DELETION_CONFIRMATION,
       });
+    await t.run(async (ctx) => {
+      expect(await ctx.db.query("authAccounts").take(1)).toEqual([]);
+      expect(await ctx.db.query("authVerificationCodes").take(1)).toEqual([]);
+      expect(await ctx.db.query("authRateLimits").take(1)).toEqual([]);
+      const waitingChallenge = await ctx.db
+        .query("challenges")
+        .withIndex("by_creatorId_and_status", (query) =>
+          query.eq("creatorId", userId).eq("status", "waiting"),
+        )
+        .take(1);
+      expect(waitingChallenge).toEqual([]);
+    });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
 
     await t.run(async (ctx) => {

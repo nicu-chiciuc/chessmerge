@@ -10,10 +10,6 @@ import {
 } from "./_generated/server";
 import { isDeletedUser, requireActiveUser } from "./authUser";
 
-const MAX_AUTH_ACCOUNTS = 8;
-const MAX_ACCOUNT_CHILDREN = 8;
-const MAX_EMAIL_RECORDS = 8;
-const WAITING_CHALLENGE_BATCH = 8;
 const SESSION_BATCH = 8;
 const SESSION_CHILD_BATCH = 32;
 const GAME_BATCH = 48;
@@ -26,39 +22,38 @@ export const deleteAccount = mutation({
     const accounts = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (query) => query.eq("userId", user._id))
-      .take(MAX_AUTH_ACCOUNTS + 1);
-    if (accounts.length > MAX_AUTH_ACCOUNTS) {
-      throw new Error("Account has too many sign-in methods to delete safely");
-    }
+      .collect();
+    const authIdentifiers: Array<string | undefined> = [user.email, user.phone];
 
     for (const account of accounts) {
       const verificationCodes = await ctx.db
         .query("authVerificationCodes")
         .withIndex("accountId", (query) => query.eq("accountId", account._id))
-        .take(MAX_ACCOUNT_CHILDREN + 1);
-      if (verificationCodes.length > MAX_ACCOUNT_CHILDREN) {
-        throw new Error(
-          "Account has too many verification codes to delete safely",
-        );
+        .collect();
+      for (const code of verificationCodes) {
+        authIdentifiers.push(code.emailVerified, code.phoneVerified);
+        await ctx.db.delete(code._id);
       }
-      for (const code of verificationCodes) await ctx.db.delete(code._id);
+      authIdentifiers.push(
+        account._id,
+        account.providerAccountId,
+        account.emailVerified,
+        account.phoneVerified,
+      );
       await ctx.db.delete(account._id);
     }
 
     const identifiers = new Set(
-      [
-        user.email,
-        user.phone,
-        ...accounts.flatMap((account) => [
-          account._id,
-          account.providerAccountId,
-          account.emailVerified,
-          account.phoneVerified,
-        ]),
-      ].filter((identifier): identifier is string => identifier !== undefined),
+      authIdentifiers.filter(
+        (identifier): identifier is string => identifier !== undefined,
+      ),
     );
     for (const identifier of identifiers) {
-      await deleteIndexedEmailRecords(ctx, identifier);
+      const rateLimits = await ctx.db
+        .query("authRateLimits")
+        .withIndex("identifier", (query) => query.eq("identifier", identifier))
+        .collect();
+      for (const rateLimit of rateLimits) await ctx.db.delete(rateLimit._id);
     }
 
     const waitingChallenges = await ctx.db
@@ -66,12 +61,7 @@ export const deleteAccount = mutation({
       .withIndex("by_creatorId_and_status", (query) =>
         query.eq("creatorId", user._id).eq("status", "waiting"),
       )
-      .take(WAITING_CHALLENGE_BATCH + 1);
-    if (waitingChallenges.length > WAITING_CHALLENGE_BATCH) {
-      throw new Error(
-        "Account has too many waiting challenges to delete safely",
-      );
-    }
+      .collect();
     for (const challenge of waitingChallenges) {
       await ctx.db.replace(challenge._id, {
         creatorId: challenge.creatorId,
@@ -108,28 +98,6 @@ export const cleanupDeletedAccount = internalMutation({
     return null;
   },
 });
-
-async function deleteIndexedEmailRecords(ctx: MutationCtx, identifier: string) {
-  const [rateLimits, subscriptions] = await Promise.all([
-    ctx.db
-      .query("authRateLimits")
-      .withIndex("identifier", (query) => query.eq("identifier", identifier))
-      .take(MAX_EMAIL_RECORDS + 1),
-    ctx.db
-      .query("emailSubscribers")
-      .withIndex("by_email", (query) => query.eq("email", identifier))
-      .take(MAX_EMAIL_RECORDS + 1),
-  ]);
-  if (
-    rateLimits.length > MAX_EMAIL_RECORDS ||
-    subscriptions.length > MAX_EMAIL_RECORDS
-  ) {
-    throw new Error("Account has too many email records to delete safely");
-  }
-  for (const rateLimit of rateLimits) await ctx.db.delete(rateLimit._id);
-  for (const subscription of subscriptions)
-    await ctx.db.delete(subscription._id);
-}
 
 async function deleteSessionBatch(
   ctx: MutationCtx,

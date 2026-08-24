@@ -106,10 +106,9 @@ export function SettingsPage() {
               Delete account
             </CardTitle>
             <CardDescription className="max-w-2xl leading-6">
-              Deleting your account removes your sign-in details, public name,
-              and newsletter subscription. Your games and move history stay on
-              ChessMerge under "Deleted player". A game in progress ends as a
-              resignation.
+              Deleting your account removes your sign-in details and public
+              name. Your games and move history stay on ChessMerge under
+              "Deleted player". A game in progress ends as a resignation.
             </CardDescription>
           </CardHeader>
           <CardContent>

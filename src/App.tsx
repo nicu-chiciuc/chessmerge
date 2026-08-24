@@ -9,14 +9,21 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
+import { useEffect, useRef } from "react";
 import { Button } from "./components/ui/button";
 import { AuthStateContext } from "./lib/auth-state-context";
 
-function AuthButton() {
-  const { isAuthenticated } = useConvexAuth();
+type LoggedInUser = { name: string } | null | undefined;
+
+function AuthButton({
+  isAuthenticated,
+  loggedInUser,
+}: {
+  isAuthenticated: boolean;
+  loggedInUser: LoggedInUser;
+}) {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
-  const loggedInUser = useQuery(api.auth.loggedInUser);
 
   if (isAuthenticated) {
     const identity = loggedInUser?.name ?? "Guest";
@@ -45,6 +52,10 @@ function AuthButton() {
 
 export default function App() {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const loggedInUser = useQuery(api.auth.loggedInUser);
+  const staleSignOutStarted = useRef(false);
   const isHydrated = useHydrated();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -53,6 +64,19 @@ export default function App() {
   const isGameRoute =
     isHydrated &&
     (pathname.startsWith("/game") || pathname.startsWith("/practice"));
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      staleSignOutStarted.current = false;
+      return;
+    }
+    if (isLoading || loggedInUser !== null || staleSignOutStarted.current) {
+      return;
+    }
+
+    staleSignOutStarted.current = true;
+    void signOut();
+  }, [isAuthenticated, isLoading, loggedInUser, signOut]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -72,7 +96,10 @@ export default function App() {
         </div>
         {!isLocalPracticeRoute && (
           <div className="ml-auto min-w-0 max-w-full">
-            <AuthButton />
+            <AuthButton
+              isAuthenticated={isAuthenticated}
+              loggedInUser={loggedInUser}
+            />
           </div>
         )}
       </header>
