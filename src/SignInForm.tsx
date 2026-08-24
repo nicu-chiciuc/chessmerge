@@ -4,6 +4,13 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
+import {
+  isValidPublicName,
+  PUBLIC_NAME_MAX_LENGTH,
+  PUBLIC_NAME_MIN_LENGTH,
+  PUBLIC_NAME_PATTERN,
+  trimPublicName,
+} from "../lib/publicName";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +30,6 @@ type AuthStep =
   | "resetPassword";
 
 const PASSWORD_MIN_LENGTH = 8;
-const USERNAME_MIN_LENGTH = 4;
-const USERNAME_MAX_LENGTH = 24;
 const USERNAME_REQUIREMENTS =
   "Username must be 4 to 24 characters and use only letters, numbers, underscores, or hyphens.";
 
@@ -54,14 +59,9 @@ export function SignInForm() {
     const email = formValue(formData, "email").trim();
     const password = formValue(formData, "password");
     const confirmPassword = formValue(formData, "confirmPassword");
-    const username = formValue(formData, "username").trim();
+    const username = trimPublicName(formValue(formData, "username"));
 
-    if (
-      flow === "signUp" &&
-      (username.length < USERNAME_MIN_LENGTH ||
-        username.length > USERNAME_MAX_LENGTH ||
-        !/^[A-Za-z0-9_-]+$/.test(username))
-    ) {
+    if (flow === "signUp" && !isValidPublicName(username)) {
       toast.error(USERNAME_REQUIREMENTS);
       setSubmitting(false);
       return;
@@ -198,9 +198,9 @@ export function SignInForm() {
                       autoComplete="username"
                       autoCapitalize="none"
                       spellCheck={false}
-                      minLength={USERNAME_MIN_LENGTH}
-                      maxLength={USERNAME_MAX_LENGTH}
-                      pattern={"[A-Za-z0-9_\\-]+"}
+                      minLength={PUBLIC_NAME_MIN_LENGTH}
+                      maxLength={PUBLIC_NAME_MAX_LENGTH}
+                      pattern={PUBLIC_NAME_PATTERN.source}
                       title={USERNAME_REQUIREMENTS}
                       aria-describedby="username-requirements"
                       required

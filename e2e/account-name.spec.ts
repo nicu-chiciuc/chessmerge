@@ -6,13 +6,17 @@ async function createGuest(page: Page) {
   await expect(page).toHaveURL(/\/challenge\/[a-zA-Z0-9_-]+$/);
 }
 
+function uniqueName(prefix: string) {
+  return `${prefix}${Date.now().toString(36)}${Math.random()
+    .toString(36)
+    .slice(2, 7)}`;
+}
+
 test("a guest can rename and another guest cannot take that name", async ({
   browser,
   page,
 }) => {
-  const uniqueName = `Guest${Date.now().toString(36)}${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const availableName = uniqueName("Guest");
 
   await createGuest(page);
   await page.locator('header a[href="/settings"]').click();
@@ -25,12 +29,12 @@ test("a guest can rename and another guest cannot take that name", async ({
   );
   await expect(saveButton).toBeDisabled();
 
-  await nameInput.fill(`  ${uniqueName}  `);
+  await nameInput.fill(`  ${availableName}  `);
   await saveButton.click();
   await expect(page.getByRole("status")).toHaveText("Name saved.");
-  await expect(nameInput).toHaveValue(uniqueName);
+  await expect(nameInput).toHaveValue(availableName);
   await expect(page.locator('header a[href="/settings"]')).toHaveText(
-    uniqueName,
+    availableName,
   );
 
   const secondContext = await browser.newContext();
@@ -41,7 +45,9 @@ test("a guest can rename and another guest cannot take that name", async ({
       .locator('header a[href="/settings"]')
       .innerText();
     await secondGuest.locator('header a[href="/settings"]').click();
-    await secondGuest.getByLabel("Public name").fill(uniqueName.toUpperCase());
+    await secondGuest
+      .getByLabel("Public name")
+      .fill(availableName.toUpperCase());
     await secondGuest.getByRole("button", { name: "Save name" }).click();
 
     await expect(secondGuest.getByRole("alert")).toHaveText(
@@ -52,5 +58,37 @@ test("a guest can rename and another guest cannot take that name", async ({
     );
   } finally {
     await secondContext.close();
+  }
+});
+
+test("a clean name form follows another tab without replacing a draft", async ({
+  page,
+}) => {
+  await createGuest(page);
+  await page.locator('header a[href="/settings"]').click();
+  const firstInput = page.getByLabel("Public name");
+
+  const otherTab = await page.context().newPage();
+  try {
+    await otherTab.goto("/settings");
+    const otherInput = otherTab.getByLabel("Public name");
+    const syncedName = uniqueName("Synced");
+    await otherInput.fill(syncedName);
+    await otherTab.getByRole("button", { name: "Save name" }).click();
+    await expect(otherTab.getByRole("status")).toHaveText("Name saved.");
+    await expect(firstInput).toHaveValue(syncedName);
+
+    await firstInput.fill("LocalDraft");
+    const newerName = uniqueName("Remote");
+    await otherInput.fill(newerName);
+    await otherTab.getByRole("button", { name: "Save name" }).click();
+    await expect(otherTab.getByRole("status")).toHaveText("Name saved.");
+
+    await expect(firstInput).toHaveValue("LocalDraft");
+    await expect(page.locator('header a[href="/settings"]')).toHaveText(
+      newerName,
+    );
+  } finally {
+    await otherTab.close();
   }
 });

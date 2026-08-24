@@ -6,6 +6,13 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { api } from "../../convex/_generated/api";
 import { ACCOUNT_DELETION_CONFIRMATION } from "../../lib/accountDeletion";
+import {
+  isValidPublicName,
+  PUBLIC_NAME_MAX_LENGTH,
+  PUBLIC_NAME_MIN_LENGTH,
+  PUBLIC_NAME_PATTERN,
+  trimPublicName,
+} from "../../lib/publicName";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,42 +36,46 @@ type NameState =
   | { kind: "taken" }
   | { kind: "failed" };
 
-const NAME_MIN_LENGTH = 4;
-const NAME_MAX_LENGTH = 24;
 const NAME_REQUIREMENTS =
   "Use 4 to 24 letters, numbers, underscores, or hyphens.";
 
 function PublicNameForm({ currentName }: { currentName: string }) {
   const updateName = useMutation(api.accounts.updateName);
-  const [name, setName] = useState(currentName);
-  const [savedName, setSavedName] = useState(currentName);
+  const [name, setName] = useState({
+    draft: currentName,
+    serverName: currentName,
+  });
   const [state, setState] = useState<NameState>({ kind: "idle" });
-  const trimmedName = name.trim();
-  const invalid =
-    trimmedName.length < NAME_MIN_LENGTH ||
-    trimmedName.length > NAME_MAX_LENGTH ||
-    !/^[A-Za-z0-9_-]+$/.test(trimmedName);
-  const dirty = name !== savedName;
+  const trimmedName = trimPublicName(name.draft);
+  const invalid = !isValidPublicName(trimmedName);
+  const dirty = name.draft !== name.serverName;
   const saving = state.kind === "saving";
+
+  useEffect(() => {
+    setName((previous) => ({
+      draft:
+        previous.draft === previous.serverName ? currentName : previous.draft,
+      serverName: currentName,
+    }));
+  }, [currentName]);
 
   const saveName = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (invalid || !dirty || saving) return;
 
-    setName(trimmedName);
+    setName((previous) => ({ ...previous, draft: trimmedName }));
     setState({ kind: "saving" });
     try {
-      const updatedName = await updateName({ name: trimmedName });
-      setName(updatedName);
-      setSavedName(updatedName);
+      const result = await updateName({ name: trimmedName });
+      if (result.status === "taken") {
+        setState({ kind: "taken" });
+        return;
+      }
+
+      setName({ draft: result.name, serverName: result.name });
       setState({ kind: "saved" });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      setState(
-        /username already taken/i.test(message)
-          ? { kind: "taken" }
-          : { kind: "failed" },
-      );
+    } catch {
+      setState({ kind: "failed" });
     }
   };
 
@@ -80,15 +91,18 @@ function PublicNameForm({ currentName }: { currentName: string }) {
           id="public-name"
           name="username"
           autoComplete="username"
-          value={name}
-          minLength={NAME_MIN_LENGTH}
-          maxLength={NAME_MAX_LENGTH}
-          pattern="[A-Za-z0-9_-]+"
+          value={name.draft}
+          minLength={PUBLIC_NAME_MIN_LENGTH}
+          maxLength={PUBLIC_NAME_MAX_LENGTH}
+          pattern={PUBLIC_NAME_PATTERN.source}
           aria-describedby="public-name-requirements public-name-status"
           aria-invalid={dirty && invalid}
           disabled={saving}
           onChange={(event) => {
-            setName(event.target.value);
+            setName((previous) => ({
+              ...previous,
+              draft: event.target.value,
+            }));
             setState({ kind: "idle" });
           }}
         />

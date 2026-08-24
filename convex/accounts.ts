@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { v, type Infer } from "convex/values";
 
 import { ACCOUNT_DELETION_CONFIRMATION } from "../lib/accountDeletion";
 import { internal } from "./_generated/api";
@@ -14,11 +14,16 @@ import { usernameKey, validateUsername } from "./publicPlayers";
 const SESSION_BATCH = 8;
 const SESSION_CHILD_BATCH = 32;
 const GAME_BATCH = 48;
+const updateNameResult = v.union(
+  v.object({ status: v.literal("updated"), name: v.string() }),
+  v.object({ status: v.literal("taken") }),
+);
+type UpdateNameResult = Infer<typeof updateNameResult>;
 
 export const updateName = mutation({
   args: { name: v.string() },
-  returns: v.string(),
-  handler: async (ctx, args) => {
+  returns: updateNameResult,
+  handler: async (ctx, args): Promise<UpdateNameResult> => {
     const user = await requireActiveUser(ctx);
     const name = validateUsername(args.name);
     const normalizedName = usernameKey(name);
@@ -28,11 +33,11 @@ export const updateName = mutation({
       .take(2);
 
     if (matches.some((match) => match._id !== user._id)) {
-      throw new Error("Username already taken");
+      return { status: "taken" };
     }
 
     await ctx.db.patch(user._id, { name, usernameKey: normalizedName });
-    return name;
+    return { status: "updated", name };
   },
 });
 

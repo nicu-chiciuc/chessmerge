@@ -37,11 +37,11 @@ describe("public account name", () => {
       guest.mutation(api.accounts.updateName, {
         name: "  RenamedGuest  ",
       }),
-    ).resolves.toBe("RenamedGuest");
+    ).resolves.toEqual({ status: "updated", name: "RenamedGuest" });
 
     await expect(
       guest.mutation(api.accounts.updateName, { name: "renamedguest" }),
-    ).resolves.toBe("renamedguest");
+    ).resolves.toEqual({ status: "updated", name: "renamedguest" });
 
     await t.run(async (ctx) => {
       expect(await ctx.db.get(seeded.userId)).toMatchObject({
@@ -83,17 +83,33 @@ describe("public account name", () => {
     const user = t.withIdentity({ subject: userId });
 
     await expect(
+      user.mutation(api.accounts.updateName, { name: "RegisteredName" }),
+    ).resolves.toEqual({ status: "updated", name: "RegisteredName" });
+    await expect(
       user.mutation(api.accounts.updateName, { name: "bad name" }),
     ).rejects.toThrow("Invalid username");
     await expect(
       user.mutation(api.accounts.updateName, { name: "takenNAME" }),
-    ).rejects.toThrow("Username already taken");
+    ).resolves.toEqual({ status: "taken" });
 
     await t.run(async (ctx) => {
       expect(await ctx.db.get(userId)).toMatchObject({
-        name: "Editable",
-        usernameKey: "editable",
+        name: "RegisteredName",
+        usernameKey: "registeredname",
       });
     });
+  });
+
+  it("rejects stale authentication for a deleted account", async () => {
+    const t = convexTest(schema, modules);
+    const deletedUserId = await t.run((ctx) =>
+      ctx.db.insert("users", { deletedAt: Date.now() }),
+    );
+
+    await expect(
+      t
+        .withIdentity({ subject: deletedUserId })
+        .mutation(api.accounts.updateName, { name: "NewName" }),
+    ).rejects.toThrow("Not authenticated");
   });
 });
