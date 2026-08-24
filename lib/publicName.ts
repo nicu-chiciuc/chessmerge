@@ -1,6 +1,7 @@
 export const PUBLIC_NAME_MIN_LENGTH = 4;
 export const PUBLIC_NAME_MAX_LENGTH = 24;
 export const PUBLIC_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
+export const PUBLIC_NAME_HTML_PATTERN = "^[A-Za-z0-9_\\-]+$";
 
 export function trimPublicName(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";

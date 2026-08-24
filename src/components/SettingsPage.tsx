@@ -8,9 +8,9 @@ import { api } from "../../convex/_generated/api";
 import { ACCOUNT_DELETION_CONFIRMATION } from "../../lib/accountDeletion";
 import {
   isValidPublicName,
+  PUBLIC_NAME_HTML_PATTERN,
   PUBLIC_NAME_MAX_LENGTH,
   PUBLIC_NAME_MIN_LENGTH,
-  PUBLIC_NAME_PATTERN,
   trimPublicName,
 } from "../../lib/publicName";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ function PublicNameForm({ currentName }: { currentName: string }) {
           value={name.draft}
           minLength={PUBLIC_NAME_MIN_LENGTH}
           maxLength={PUBLIC_NAME_MAX_LENGTH}
-          pattern={PUBLIC_NAME_PATTERN.source}
+          pattern={PUBLIC_NAME_HTML_PATTERN}
           aria-describedby="public-name-requirements public-name-status"
           aria-invalid={dirty && invalid}
           disabled={saving}

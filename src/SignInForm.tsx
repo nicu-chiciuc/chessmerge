@@ -6,9 +6,9 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
   isValidPublicName,
+  PUBLIC_NAME_HTML_PATTERN,
   PUBLIC_NAME_MAX_LENGTH,
   PUBLIC_NAME_MIN_LENGTH,
-  PUBLIC_NAME_PATTERN,
   trimPublicName,
 } from "../lib/publicName";
 import { Button } from "@/components/ui/button";
@@ -200,7 +200,7 @@ export function SignInForm() {
                       spellCheck={false}
                       minLength={PUBLIC_NAME_MIN_LENGTH}
                       maxLength={PUBLIC_NAME_MAX_LENGTH}
-                      pattern={PUBLIC_NAME_PATTERN.source}
+                      pattern={PUBLIC_NAME_HTML_PATTERN}
                       title={USERNAME_REQUIREMENTS}
                       aria-describedby="username-requirements"
                       required
