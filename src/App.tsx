@@ -3,6 +3,7 @@ import { api } from "../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import {
   Outlet,
+  Link,
   useHydrated,
   useNavigate,
   useRouterState,
@@ -22,12 +23,16 @@ function AuthButton() {
 
     return (
       <div className="flex min-w-0 max-w-full items-center gap-2 sm:gap-3">
-        <span
-          className="block min-w-8 max-w-28 truncate text-sm text-gray-600 sm:max-w-56"
-          title={identity}
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="min-w-0 max-w-28 px-2 text-gray-600 sm:max-w-56"
         >
-          {identity}
-        </span>
+          <Link to="/settings" title={`${identity} settings`}>
+            <span className="block min-w-0 truncate">{identity}</span>
+          </Link>
+        </Button>
         <Button onClick={() => void signOut()}>Sign out</Button>
       </div>
     );

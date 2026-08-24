@@ -12,6 +12,7 @@ import {
   usernameKey,
   validateUsername,
 } from "./publicPlayers";
+import { isDeletedUser } from "./authUser";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
@@ -44,7 +45,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, { userId, existingUserId }) {
       const user = await ctx.db.get(userId);
-      if (user?.usernameKey) {
+      if (user && !isDeletedUser(user) && user.usernameKey) {
         // Convex Auth's generic callback type does not retain application indexes.
         const db = ctx.db as MutationCtx["db"];
         const matches = await db
@@ -58,7 +59,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
 
       // Only send email for new users (not updates)
       if (!existingUserId) {
-        if (user?.email) {
+        if (user && !isDeletedUser(user) && user.email) {
           await ctx.scheduler.runAfter(
             0,
             internal.auth.sendAccountCreationEmail,
@@ -89,7 +90,7 @@ export const loggedInUser = query({
       return null;
     }
     const user = await ctx.db.get(userId);
-    if (!user) {
+    if (!user || isDeletedUser(user)) {
       return null;
     }
     return { _id: user._id, ...getPublicPlayer(user) };

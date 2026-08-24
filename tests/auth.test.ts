@@ -74,6 +74,7 @@ describe("password authentication", () => {
     await t.run(async (ctx) => {
       const account = await ctx.db.query("authAccounts").first();
       const user = await ctx.db.query("users").first();
+      if (!user || "deletedAt" in user) throw new Error("Expected active user");
       expect(account?.emailVerified).toBe("new-player@example.com");
       expect(user?.name).toBe("NewPlayer");
       expect(await ctx.db.query("authSessions").collect()).toHaveLength(1);
@@ -170,6 +171,7 @@ describe("password authentication", () => {
 
     await t.run(async (ctx) => {
       const user = await ctx.db.query("users").first();
+      if (!user || "deletedAt" in user) throw new Error("Expected active user");
       expect(user?.isAnonymous).toBe(true);
       expect(user?.name).toMatch(
         /^(Amber|Brave|Calm|Clever|Quiet|Swift)(Bishop|Knight|Pawn|Queen|Rook)\d{6}$/,

@@ -1,5 +1,6 @@
 import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
+import { isDeletedUser } from "./authUser";
 
 export const USERNAME_MIN_LENGTH = 4;
 export const USERNAME_MAX_LENGTH = 24;
@@ -43,6 +44,7 @@ export function createGuestName(): string {
 
 export function getPublicPlayer(user: Doc<"users"> | null): PublicPlayer {
   if (!user) return { name: "Player0000", isGuest: false };
+  if (isDeletedUser(user)) return { name: "Deleted player", isGuest: false };
 
   const name = user.name?.trim();
   if (name && name.length >= USERNAME_MIN_LENGTH) {
