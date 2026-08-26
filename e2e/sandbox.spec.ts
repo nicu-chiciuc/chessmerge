@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { boardToString, stringToBoard } from "../lib/chessmerge";
+
 const chosenSetup = "4k3/8/8/8/8/8/4P3/4K3 b - - 0 1";
 const serializedChosenSetup = "4k3/8/8/8/8/8/4P3/4K3_b_-_-_0_1";
 const promotionSetup = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
@@ -29,6 +31,9 @@ test.describe("Sandbox", () => {
     await square(page, "e2").click();
     await square(page, "e3").click();
     await expect(boardText).toHaveValue(/\.  \.  \.  \.  P  \.  \.  \. /);
+    await expect(page.getByLabel("FEMN position")).toHaveValue(
+      / b KQkq - 1 1$/,
+    );
 
     await boardText.fill(editedBoard);
     await expect(square(page, "a4")).toHaveAttribute(
@@ -37,17 +42,24 @@ test.describe("Sandbox", () => {
     );
     await expect(page.getByText("Black to move")).toBeVisible();
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
+    await expect(page.getByLabel("FEMN position")).toHaveValue(
+      "4k3/8/8/8/R:N7/8/8/4K3 b KQkq - 1 1",
+    );
 
-    const invalidBoard = editedBoard.replace("RN", "KN");
+    const invalidBoard = editedBoard.replace("RN", "X");
     await boardText.fill(invalidBoard);
-    await expect(page.getByRole("alert")).toHaveText("Kings cannot be merged.");
+    await expect(page.getByRole("alert")).toHaveText(
+      "The board contains an unknown piece. Use ., p, r, n, b, q, or k.",
+    );
     await expect(square(page, "a4")).toHaveAttribute(
       "aria-label",
       /white rook and white knight/i,
     );
     await boardText.blur();
-    await expect(boardText).toHaveValue(invalidBoard);
-    await expect(page.getByRole("alert")).toHaveText("Kings cannot be merged.");
+    await expect(boardText).toHaveValue(
+      boardToString(stringToBoard(editedBoard)),
+    );
+    await expect(page.getByRole("alert")).toHaveCount(0);
 
     await square(page, "e8").click();
     await square(page, "e7").click();
@@ -118,7 +130,7 @@ test.describe("Sandbox", () => {
     expect(openedWebSockets).toEqual([]);
   });
 
-  test("applies and shares a chosen setup while moves stay local", async ({
+  test("edits and shares a chosen setup while moves stay local", async ({
     context,
     page,
   }) => {
@@ -128,17 +140,34 @@ test.describe("Sandbox", () => {
     });
 
     await page.getByText("Advanced", { exact: true }).click();
-    await page.getByLabel("FEMN position").fill(chosenSetup);
-    await page.getByRole("button", { name: "Apply position" }).click();
+    const femnPosition = page.getByLabel("FEMN position");
+    await femnPosition.fill(chosenSetup);
 
-    await expect
-      .poll(() => new URL(page.url()).searchParams.get("gameState"))
-      .toBe(serializedChosenSetup);
     await expect(page.getByText("Black to move")).toBeVisible();
     await expect(square(page, "e8")).toHaveAttribute(
       "aria-label",
       /black king/i,
     );
+    await expect(page.getByLabel("Board text")).toHaveValue(
+      /\.  \.  \.  \.  P  \.  \.  \. /,
+    );
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("gameState"))
+      .toBe(serializedChosenSetup);
+    await expect(
+      page.getByRole("button", { name: "Use current board" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Apply position" }),
+    ).toHaveCount(0);
+
+    await femnPosition.fill("not a position");
+    await expect(page.getByRole("alert")).toHaveText(
+      "Enter a full FEMN position with a board, turn, castling rights, and move counts.",
+    );
+    await femnPosition.blur();
+    await expect(femnPosition).toHaveValue(chosenSetup);
+    await expect(page.getByRole("alert")).toHaveCount(0);
 
     await square(page, "e8").click();
     await square(page, "e7").click();
@@ -175,7 +204,6 @@ test.describe("Sandbox", () => {
 
     await page.getByText("Advanced", { exact: true }).click();
     await page.getByLabel("FEMN position").fill(promotionSetup);
-    await page.getByRole("button", { name: "Apply position" }).click();
     await square(page, "e7").click();
     await square(page, "e8").click();
 
@@ -206,7 +234,6 @@ test.describe("Sandbox", () => {
 
     await page.getByText("Advanced", { exact: true }).click();
     await page.getByLabel("FEMN position").fill(mergedPieceSetup);
-    await page.getByRole("button", { name: "Apply position" }).click();
 
     const whiteKing = square(page, "e1").locator('[draggable="true"]');
     await expect(whiteKing).toHaveCount(1);

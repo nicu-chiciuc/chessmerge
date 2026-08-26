@@ -13,6 +13,7 @@ import { ChessBoard } from "./ChessBoard";
 import {
   formatSandboxPosition,
   isDefaultSandboxPosition,
+  parseEditableSandboxPosition,
   parseSandboxBoard,
   parseSandboxPosition,
   serializeSandboxPosition,
@@ -22,6 +23,9 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 
 type PieceSelectionMode = "both" | "first" | "second";
+type TextEditorState =
+  | { kind: "synced" }
+  | { kind: "editing"; value: string; error: string | null };
 
 interface SandboxSession {
   setup: GameState;
@@ -30,6 +34,7 @@ interface SandboxSession {
 }
 
 const defaultPosition = createInitialGameState();
+const syncedTextEditor = { kind: "synced" } satisfies TextEditorState;
 
 export function LocalPracticePage() {
   const serializedPosition = useSearch({
@@ -54,7 +59,6 @@ export function LocalPracticePage() {
 
   return (
     <SandboxSessionView
-      key={serializeSandboxPosition(setup)}
       initialSetup={setup}
       invalidLinkMessage={invalidLinkMessage}
     />
@@ -78,14 +82,10 @@ function SandboxSessionView({
   const [selectedPieceMode, setSelectedPieceMode] =
     useState<PieceSelectionMode>("both");
   const [needsPromotion, setNeedsPromotion] = useState<Move | null>(null);
-  const [positionDraft, setPositionDraft] = useState(() =>
-    formatSandboxPosition(initialSetup),
-  );
-  const [positionError, setPositionError] = useState<string | null>(null);
-  const [boardDraft, setBoardDraft] = useState(() =>
-    boardToString(initialSetup.board),
-  );
-  const [boardError, setBoardError] = useState<string | null>(null);
+  const [positionEditor, setPositionEditor] =
+    useState<TextEditorState>(syncedTextEditor);
+  const [boardEditor, setBoardEditor] =
+    useState<TextEditorState>(syncedTextEditor);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   function clearInteraction() {
@@ -140,7 +140,8 @@ function SandboxSessionView({
       position: nextPosition,
       history: [...previous.history, previous.position],
     }));
-    setBoardError(null);
+    setBoardEditor(syncedTextEditor);
+    setPositionEditor(syncedTextEditor);
     clearInteraction();
   }
 
@@ -193,7 +194,8 @@ function SandboxSessionView({
       position: previousPosition,
       history: previous.history.slice(0, -1),
     }));
-    setBoardError(null);
+    setBoardEditor(syncedTextEditor);
+    setPositionEditor(syncedTextEditor);
     clearInteraction();
   }
 
@@ -203,71 +205,75 @@ function SandboxSessionView({
       position: previous.setup,
       history: [],
     }));
-    setBoardError(null);
+    setBoardEditor(syncedTextEditor);
+    setPositionEditor(syncedTextEditor);
     clearInteraction();
   }
 
   function updateBoardFromText(value: string) {
-    setBoardDraft(value);
-
     const parsedBoard = parseSandboxBoard(value, session.position);
 
     if (parsedBoard.kind === "invalid") {
-      setBoardError(parsedBoard.message);
+      setBoardEditor({
+        kind: "editing",
+        value,
+        error: parsedBoard.message,
+      });
       return;
     }
 
-    setBoardError(null);
-
-    if (
-      boardToString(parsedBoard.gameState.board) ===
-      boardToString(session.position.board)
-    ) {
-      return;
-    }
-
-    setSession((previous) => ({
-      ...previous,
-      position: {
-        ...previous.position,
-        board: parsedBoard.gameState.board,
-      },
+    setBoardEditor({ kind: "editing", value, error: null });
+    setPositionEditor(syncedTextEditor);
+    setSession({
+      setup: parsedBoard.gameState,
+      position: parsedBoard.gameState,
       history: [],
-    }));
+    });
+    replaceSetupUrl(parsedBoard.gameState);
     clearInteraction();
   }
 
-  function applyPositionDraft() {
-    const parsedDraft = parseSandboxPosition(positionDraft);
+  function updatePositionFromText(value: string) {
+    const parsedPosition = parseEditableSandboxPosition(value);
 
-    if (parsedDraft.kind === "invalid") {
-      setPositionError(parsedDraft.message);
+    if (parsedPosition.kind === "invalid") {
+      setPositionEditor({
+        kind: "editing",
+        value,
+        error: parsedPosition.message,
+      });
       return;
     }
 
-    const nextSetup = parsedDraft.gameState;
-    const serializedSetup = serializeSandboxPosition(nextSetup);
-
-    setSession({ setup: nextSetup, position: nextSetup, history: [] });
-    setPositionDraft(formatSandboxPosition(nextSetup));
-    setPositionError(null);
-    setBoardError(null);
+    setPositionEditor({ kind: "editing", value, error: null });
+    setBoardEditor(syncedTextEditor);
+    setSession({
+      setup: parsedPosition.gameState,
+      position: parsedPosition.gameState,
+      history: [],
+    });
+    replaceSetupUrl(parsedPosition.gameState);
     clearInteraction();
+  }
 
+  function finishBoardEditing() {
+    setBoardEditor(syncedTextEditor);
+  }
+
+  function finishPositionEditing() {
+    setPositionEditor(syncedTextEditor);
+  }
+
+  function replaceSetupUrl(setup: GameState) {
     void navigate({
       replace: true,
       search: (previous) => ({
         ...previous,
-        gameState: isDefaultSandboxPosition(nextSetup)
+        gameState: isDefaultSandboxPosition(setup)
           ? undefined
-          : serializedSetup,
+          : serializeSandboxPosition(setup),
       }),
     });
-  }
-
-  function useCurrentPosition() {
-    setPositionDraft(formatSandboxPosition(session.position));
-    setPositionError(null);
   }
 
   async function copySetupLink() {
@@ -291,9 +297,14 @@ function SandboxSessionView({
   }
 
   const turnName = session.position.options.turn === "w" ? "White" : "Black";
-  const boardText = boardError
-    ? boardDraft
-    : boardToString(session.position.board);
+  const boardText =
+    boardEditor.kind === "editing"
+      ? boardEditor.value
+      : boardToString(session.position.board);
+  const positionText =
+    positionEditor.kind === "editing"
+      ? positionEditor.value
+      : formatSandboxPosition(session.position);
   const isAtSetup =
     serializeSandboxPosition(session.position) ===
     serializeSandboxPosition(session.setup);
@@ -414,7 +425,11 @@ function SandboxSessionView({
                 <Textarea
                   id="sandbox-board"
                   aria-describedby="sandbox-board-note"
-                  aria-invalid={boardError ? true : undefined}
+                  aria-invalid={
+                    boardEditor.kind === "editing" && boardEditor.error
+                      ? true
+                      : undefined
+                  }
                   autoCapitalize="off"
                   autoCorrect="off"
                   className="w-[26ch] max-w-full resize-none overflow-hidden whitespace-pre font-mono text-xs leading-relaxed"
@@ -422,6 +437,7 @@ function SandboxSessionView({
                   spellCheck={false}
                   value={boardText}
                   wrap="off"
+                  onBlur={finishBoardEditing}
                   onChange={(event) => updateBoardFromText(event.target.value)}
                 />
                 <p
@@ -431,9 +447,9 @@ function SandboxSessionView({
                   Use . for empty squares. Uppercase is White; lowercase is
                   Black. Join merged pieces, such as RN.
                 </p>
-                {boardError && (
+                {boardEditor.kind === "editing" && boardEditor.error && (
                   <p className="text-sm text-destructive" role="alert">
-                    {boardError}
+                    {boardEditor.error}
                   </p>
                 )}
               </div>
@@ -445,42 +461,33 @@ function SandboxSessionView({
                 <Textarea
                   id="sandbox-femn"
                   aria-describedby="sandbox-femn-note"
-                  aria-invalid={positionError ? true : undefined}
+                  aria-invalid={
+                    positionEditor.kind === "editing" && positionEditor.error
+                      ? true
+                      : undefined
+                  }
                   autoCapitalize="off"
                   autoCorrect="off"
                   className="min-h-24 resize-y font-mono text-xs leading-relaxed"
                   spellCheck={false}
-                  value={positionDraft}
-                  onChange={(event) => {
-                    setPositionDraft(event.target.value);
-                    setPositionError(null);
-                  }}
+                  value={positionText}
+                  onBlur={finishPositionEditing}
+                  onChange={(event) =>
+                    updatePositionFromText(event.target.value)
+                  }
                 />
                 <p
                   id="sandbox-femn-note"
                   className="text-xs text-muted-foreground"
                 >
-                  Reset and copied links use the applied position.
+                  Edits update the board immediately. Invalid text resets on
+                  blur.
                 </p>
-                {positionError && (
+                {positionEditor.kind === "editing" && positionEditor.error && (
                   <p className="text-sm text-destructive" role="alert">
-                    {positionError}
+                    {positionEditor.error}
                   </p>
                 )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={useCurrentPosition}
-                >
-                  Use current board
-                </Button>
-                <Button type="button" size="sm" onClick={applyPositionDraft}>
-                  Apply position
-                </Button>
               </div>
             </div>
           </details>
