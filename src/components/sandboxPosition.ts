@@ -3,7 +3,7 @@ import {
   createInitialGameState,
   stringToBoard,
 } from "../../lib/chessmerge";
-import type { GameState, PieceColor } from "../../lib/chessmerge";
+import type { GameState } from "../../lib/chessmerge";
 
 export type SandboxPositionResult =
   | {
@@ -57,11 +57,6 @@ export function parseSandboxPosition(input: string): SandboxPositionResult {
     const gameState = FEMN.fromFEMNGame(
       [boardField, turn, castlingRights, "-", halfMove, fullMove].join(" "),
     );
-    const kingError = validateKings(gameState);
-
-    if (kingError) {
-      return invalidPosition(kingError);
-    }
 
     return { kind: "valid", gameState };
   } catch {
@@ -69,66 +64,103 @@ export function parseSandboxPosition(input: string): SandboxPositionResult {
   }
 }
 
+export function parseEditableSandboxPosition(
+  input: string,
+): SandboxPositionResult {
+  const fields = parseEditablePositionFields(input);
+
+  if (!fields) {
+    return invalidPosition(
+      "Enter a full FEMN position with a board, turn, castling rights, and move counts.",
+    );
+  }
+
+  const { boardField, turn, castlingRights, enPassant, halfMove, fullMove } =
+    fields;
+  const halfMoveClock = Number(halfMove);
+  const fullMoveClock = Number(fullMove);
+
+  if (
+    !/^\d+$/.test(halfMove) ||
+    !/^\d+$/.test(fullMove) ||
+    !Number.isSafeInteger(halfMoveClock) ||
+    !Number.isSafeInteger(fullMoveClock) ||
+    fullMoveClock < 1
+  ) {
+    return invalidPosition("Enter valid move counts.");
+  }
+
+  try {
+    return {
+      kind: "valid",
+      gameState: FEMN.fromFEMNGame(
+        [boardField, turn, castlingRights, enPassant, halfMove, fullMove].join(
+          " ",
+        ),
+      ),
+    };
+  } catch {
+    return invalidPosition("This FEMN position contains an unknown piece.");
+  }
+}
+
+function parseEditablePositionFields(input: string): {
+  boardField: string;
+  turn: string;
+  castlingRights: string;
+  enPassant: string;
+  halfMove: string;
+  fullMove: string;
+} | null {
+  const trimmed = input.trim();
+  const strictMatch = trimmed.match(
+    /^(\S+)[ _]+([wb])[ _]+(\S+)[ _]+(\S+)[ _]+(\d+)[ _]+(\d+)$/,
+  );
+
+  if (strictMatch) {
+    const [, boardField, turn, castlingRights, enPassant, halfMove, fullMove] =
+      strictMatch;
+
+    return { boardField, turn, castlingRights, enPassant, halfMove, fullMove };
+  }
+
+  const editableMatch = trimmed.match(/^(\S+)[ _]+([wb])([ _].*)$/);
+
+  if (!editableMatch) {
+    return null;
+  }
+
+  const [, boardField, turn, optionTail] = editableMatch;
+  const optionFields = optionTail.slice(1).split(/[ _]/);
+
+  if (optionFields.length !== 4) {
+    return null;
+  }
+
+  const [castlingRights, enPassant, halfMove, fullMove] = optionFields;
+
+  return {
+    boardField,
+    turn,
+    castlingRights: castlingRights || "-",
+    enPassant: enPassant || "-",
+    halfMove,
+    fullMove,
+  };
+}
+
 export function parseSandboxBoard(
   input: string,
   currentGameState: GameState,
 ): SandboxPositionResult {
-  const rows = input
-    .split("\n")
-    .map((row) => row.trim())
-    .filter(Boolean);
-
-  if (rows.length !== 8) {
-    return invalidPosition("The board text must contain exactly 8 ranks.");
-  }
-
-  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
-    const rank = 8 - rowIndex;
-    const cells = rows[rowIndex].split(/\s+/);
-
-    if (cells.length !== 8) {
-      return invalidPosition(`Rank ${rank} must contain exactly 8 squares.`);
-    }
-
-    if (cells.some((cell) => cell !== "." && !/^[prnbqk]{1,2}$/i.test(cell))) {
-      return invalidPosition(
-        `Rank ${rank} contains an unknown piece. Use ., p, r, n, b, q, or k.`,
-      );
-    }
-
-    if (
-      cells.some(
-        (cell) =>
-          cell.length === 2 &&
-          isWhiteSymbol(cell[0]) !== isWhiteSymbol(cell[1]),
-      )
-    ) {
-      return invalidPosition(
-        `Merged pieces on rank ${rank} must have the same color.`,
-      );
-    }
-
-    if (
-      cells.some(
-        (cell) => cell.length === 2 && cell.toLowerCase().includes("k"),
-      )
-    ) {
-      return invalidPosition("Kings cannot be merged.");
-    }
-  }
-
   try {
-    const gameState = {
-      ...currentGameState,
-      board: stringToBoard(rows.join("\n")),
+    return {
+      kind: "valid",
+      gameState: {
+        ...currentGameState,
+        board: stringToBoard(input),
+      },
     };
-    const kingError = validateKings(gameState);
-
-    if (kingError) {
-      return invalidPosition(kingError);
-    }
-
-    return { kind: "valid", gameState };
   } catch {
     return invalidPosition(
       "The board contains an unknown piece. Use ., p, r, n, b, q, or k.",
@@ -212,14 +244,6 @@ function validateBoardRow(row: string, rank: number): string | null {
       return `Rank ${rank} has an incomplete merged piece.`;
     }
 
-    if (isWhiteSymbol(symbol) !== isWhiteSymbol(mergedPiece)) {
-      return `Merged pieces on rank ${rank} must have the same color.`;
-    }
-
-    if (symbol.toLowerCase() === "k" || mergedPiece.toLowerCase() === "k") {
-      return "Kings cannot be merged.";
-    }
-
     index += 2;
   }
 
@@ -228,30 +252,6 @@ function validateBoardRow(row: string, rank: number): string | null {
   }
 
   return null;
-}
-
-function validateKings(gameState: GameState): string | null {
-  const kingCounts: Record<PieceColor, number> = { w: 0, b: 0 };
-
-  for (const row of gameState.board) {
-    for (const cell of row) {
-      for (const piece of cell) {
-        if (piece.pieceType === "k") {
-          kingCounts[piece.color] += 1;
-        }
-      }
-    }
-  }
-
-  if (kingCounts.w !== 1 || kingCounts.b !== 1) {
-    return "Place exactly one white king and one black king.";
-  }
-
-  return null;
-}
-
-function isWhiteSymbol(symbol: string): boolean {
-  return symbol === symbol.toUpperCase();
 }
 
 function invalidPosition(message: string): SandboxPositionResult {
