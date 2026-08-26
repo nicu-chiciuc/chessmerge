@@ -8,6 +8,33 @@ const promotionSetup = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const mergedPieceSetup = "4k3/8/8/3R:N4/8/8/8/4K3 w - - 0 1";
 
 test.describe("Sandbox", () => {
+  test("keeps incomplete editable positions interactive", async ({ page }) => {
+    const browserErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        browserErrors.push(message.text());
+      }
+    });
+    page.on("pageerror", (error) => browserErrors.push(error.message));
+
+    await page.goto("/practice");
+    await expect(page.getByRole("heading", { name: "Sandbox" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByText("Advanced", { exact: true }).click();
+    await page.getByLabel("FEMN position").fill("q7/8 b - - 0 1");
+
+    await square(page, "a8").click();
+    await expect(square(page, "a7")).toHaveAttribute("data-legal-move", "true");
+    await square(page, "a7").click();
+
+    await expect(square(page, "a7")).toHaveAttribute(
+      "aria-label",
+      /black queen/i,
+    );
+    expect(browserErrors).toEqual([]);
+  });
+
   test("keeps board text and the visual board in sync", async ({ page }) => {
     const editedBoard = [
       ". . . . k . . .",

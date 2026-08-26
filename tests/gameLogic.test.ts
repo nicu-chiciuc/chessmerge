@@ -419,5 +419,35 @@ describe("Game Logic Tests", () => {
       const moves = getAllMovesForCell({ row: 6, col: 4 }, gameState); // White pawn
       expect(moves.length).toBeGreaterThan(0);
     });
+
+    it("can return pseudo-legal moves when an editable position has no king", () => {
+      const gameState = createEmptyGameState();
+      gameState.options.turn = "b";
+      gameState.board[0][0] = [{ color: "b", pieceType: "q" }];
+
+      expect(() => getAllMovesForCell({ row: 0, col: 0 }, gameState)).toThrow(
+        "No king found on the board for the given color",
+      );
+
+      const moves = getAllMovesForCell({ row: 0, col: 0 }, gameState, {
+        allowMissingKing: true,
+      });
+
+      expect(moves).toHaveLength(21);
+    });
+
+    it("keeps king-safety filtering when editable positions contain the king", () => {
+      const gameState = createEmptyGameState();
+      gameState.board[1][1] = [{ color: "b", pieceType: "k" }];
+      gameState.board[4][7] = [{ color: "b", pieceType: "b" }];
+      gameState.board[6][5] = [{ color: "w", pieceType: "r" }];
+      gameState.board[7][4] = [{ color: "w", pieceType: "k" }];
+
+      const moves = getAllMovesForCell({ row: 6, col: 5 }, gameState, {
+        allowMissingKing: true,
+      });
+
+      expect(moves).toHaveLength(0);
+    });
   });
 });

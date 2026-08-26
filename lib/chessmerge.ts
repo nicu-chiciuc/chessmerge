@@ -610,6 +610,14 @@ function findKingPosition({ board }: GameState, color: PieceColor): Position {
   return kingPos;
 }
 
+function hasKing({ board }: GameState, color: PieceColor): boolean {
+  return board.some((row) =>
+    row.some((cell) =>
+      cell.some((piece) => piece.color === color && piece.pieceType === "k"),
+    ),
+  );
+}
+
 export function isInCheck(gameState: GameState, color: PieceColor): boolean {
   const kingPos = findKingPosition(gameState, color);
 
@@ -1005,24 +1013,35 @@ export function equalPositions(pos1: Position, pos2: Position): boolean {
 /**
  * The ONLY function that should be used to get moves for a cell by an
  * external system.
+ *
+ * Editable positions can opt into pseudo-legal moves when the moving color's
+ * king is absent. Positions that contain the king still use king-safety
+ * filtering.
  */
 export function getAllMovesForCell(
   pos: Position,
   gameState: GameState,
+  {
+    allowMissingKing = false,
+  }: {
+    allowMissingKing?: boolean;
+  } = {},
 ): Move[] {
   const moves: Move[] = [];
   const cell = gameState.board[pos.row][pos.col];
   // Check that color is the same as gameState.options.turn. Also why is it not `| undefined` here?
   const color = cell[0]?.color;
+  const filterKingSafety =
+    !allowMissingKing || (color !== undefined && hasKing(gameState, color));
   const firstCellMoves = cell[0]
     ? getPieceMoves(cell[0], pos, gameState, {
-        filterCheckMoves: true,
+        filterCheckMoves: filterKingSafety,
       })
     : [];
 
   const secondCellMoves = cell[1]
     ? getPieceMoves(cell[1], pos, gameState, {
-        filterCheckMoves: true,
+        filterCheckMoves: filterKingSafety,
       })
     : [];
 
@@ -1099,6 +1118,10 @@ export function getAllMovesForCell(
     // });
 
     moves.push(...allMoves);
+  }
+
+  if (!filterKingSafety || color === undefined) {
+    return moves;
   }
 
   // Filter out moves that would put the king in check

@@ -106,7 +106,9 @@ function SandboxSessionView({
 
     const selectedCell =
       session.position.board[selectedSquare.row][selectedSquare.col];
-    const allMoves = getAllMovesForCell(selectedSquare, session.position);
+    const allMoves = getAllMovesForCell(selectedSquare, session.position, {
+      allowMissingKing: true,
+    });
 
     if (selectedCell.length < 2) {
       return allMoves;

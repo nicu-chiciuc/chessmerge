@@ -136,6 +136,39 @@ describe("Sandbox positions", () => {
       );
     }
   });
+
+  it("normalizes an empty editable castling field", () => {
+    const result = parseEditableSandboxPosition("4k3/8/8/8/8/8/8/4K3 w  - 0 1");
+
+    expect(result.kind).toBe("valid");
+    if (result.kind === "valid") {
+      expect(formatSandboxPosition(result.gameState)).toBe(
+        "4k3/8/8/8/8/8/8/4K3 w - - 0 1",
+      );
+    }
+  });
+
+  it("normalizes an empty editable en-passant field", () => {
+    const result = parseEditableSandboxPosition("4k3/8/8/8/8/8/8/4K3 w -  0 1");
+
+    expect(result.kind).toBe("valid");
+    if (result.kind === "valid") {
+      expect(formatSandboxPosition(result.gameState)).toBe(
+        "4k3/8/8/8/8/8/8/4K3 w - - 0 1",
+      );
+    }
+  });
+
+  it("keeps repaired editable FEMN move counts safe", () => {
+    const result = parseEditableSandboxPosition(
+      "4k3/8/8/8/8/8/8/4K3 w -  9007199254740992 1",
+    );
+
+    expect(result).toEqual({
+      kind: "invalid",
+      message: "Enter valid move counts.",
+    });
+  });
 });
 
 function requireValidPosition(input: string): GameState {

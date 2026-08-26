@@ -67,22 +67,22 @@ export function parseSandboxPosition(input: string): SandboxPositionResult {
 export function parseEditableSandboxPosition(
   input: string,
 ): SandboxPositionResult {
-  const match = input
-    .trim()
-    .match(/^(\S+)[ _]+([wb])[ _]+(\S+)[ _]+(\S+)[ _]+(\d+)[ _]+(\d+)$/);
+  const fields = parseEditablePositionFields(input);
 
-  if (!match) {
+  if (!fields) {
     return invalidPosition(
       "Enter a full FEMN position with a board, turn, castling rights, and move counts.",
     );
   }
 
-  const [, boardField, turn, castlingRights, enPassant, halfMove, fullMove] =
-    match;
+  const { boardField, turn, castlingRights, enPassant, halfMove, fullMove } =
+    fields;
   const halfMoveClock = Number(halfMove);
   const fullMoveClock = Number(fullMove);
 
   if (
+    !/^\d+$/.test(halfMove) ||
+    !/^\d+$/.test(fullMove) ||
     !Number.isSafeInteger(halfMoveClock) ||
     !Number.isSafeInteger(fullMoveClock) ||
     fullMoveClock < 1
@@ -102,6 +102,51 @@ export function parseEditableSandboxPosition(
   } catch {
     return invalidPosition("This FEMN position contains an unknown piece.");
   }
+}
+
+function parseEditablePositionFields(input: string): {
+  boardField: string;
+  turn: string;
+  castlingRights: string;
+  enPassant: string;
+  halfMove: string;
+  fullMove: string;
+} | null {
+  const trimmed = input.trim();
+  const strictMatch = trimmed.match(
+    /^(\S+)[ _]+([wb])[ _]+(\S+)[ _]+(\S+)[ _]+(\d+)[ _]+(\d+)$/,
+  );
+
+  if (strictMatch) {
+    const [, boardField, turn, castlingRights, enPassant, halfMove, fullMove] =
+      strictMatch;
+
+    return { boardField, turn, castlingRights, enPassant, halfMove, fullMove };
+  }
+
+  const editableMatch = trimmed.match(/^(\S+)[ _]+([wb])([ _].*)$/);
+
+  if (!editableMatch) {
+    return null;
+  }
+
+  const [, boardField, turn, optionTail] = editableMatch;
+  const optionFields = optionTail.slice(1).split(/[ _]/);
+
+  if (optionFields.length !== 4) {
+    return null;
+  }
+
+  const [castlingRights, enPassant, halfMove, fullMove] = optionFields;
+
+  return {
+    boardField,
+    turn,
+    castlingRights: castlingRights || "-",
+    enPassant: enPassant || "-",
+    halfMove,
+    fullMove,
+  };
 }
 
 export function parseSandboxBoard(
