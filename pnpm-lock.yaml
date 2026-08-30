@@ -100,8 +100,8 @@ importers:
         specifier: ^3.1.4
         version: 3.1.4(vitest@3.1.4)
       convex-test:
-        specifier: ^0.0.37
-        version: 0.0.37(convex@1.45.0(react@19.1.0))
+        specifier: ^0.0.56
+        version: 0.0.56(convex@1.45.0(react@19.1.0))
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
@@ -2094,10 +2094,10 @@ packages:
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
-  convex-test@0.0.37:
-    resolution: {integrity: sha512-gC2ReAGgPAlCCWKNHAjJnEr/IMi1oo5ux9g5cLL68m401Ne1xXc43TfVAD+m/FiGDztmsHtfPr61EWn51mCRjw==}
+  convex-test@0.0.56:
+    resolution: {integrity: sha512-dLYXlQjKFoGqvjAmPzyLgb2HsYI7iLo1iuNTU2DZmSrMRLWosYk94erjSU67GG5ovfP6+MjX8RJO+ebhmL6QYA==}
     peerDependencies:
-      convex: ^1.16.4
+      convex: ^1.43.0
 
   convex@1.45.0:
     resolution: {integrity: sha512-AV3B56Ptu/14d76g3urBJ50dwpiZa6uJaLT84OWox5aCwZIJiuAamdjv3lLHDzs8vv5kC31anEZohhUe3qJ2bA==}
@@ -5568,7 +5568,7 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-test@0.0.37(convex@1.45.0(react@19.1.0)):
+  convex-test@0.0.56(convex@1.45.0(react@19.1.0)):
     dependencies:
       convex: 1.45.0(react@19.1.0)
 
