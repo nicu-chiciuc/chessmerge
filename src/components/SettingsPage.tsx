@@ -153,7 +153,7 @@ export function SettingsPage() {
 
   if (user === undefined) {
     return (
-      <div className="grid min-h-[calc(100vh-4rem)] place-items-center px-4">
+      <div className="grid flex-1 place-items-center px-4">
         <p className="text-sm text-muted-foreground">Loading account…</p>
       </div>
     );

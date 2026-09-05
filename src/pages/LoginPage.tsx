@@ -19,7 +19,7 @@ export function LoginPage() {
   // Show loading while checking auth status
   if (loggedInUser === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex flex-1 items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -31,7 +31,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start bg-gray-50 px-4 pt-16">
+    <div className="flex flex-1 flex-col items-center justify-start bg-gray-50 px-4 pt-16">
       <div className="w-full max-w-md space-y-4">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-primary mb-2">ChessMerge</h1>

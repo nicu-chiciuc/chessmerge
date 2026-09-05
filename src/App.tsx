@@ -107,9 +107,9 @@ export default function App() {
           </div>
         )}
       </header>
-      <main className="flex-1">
+      <main className="flex flex-1 flex-col">
         {isLocalPracticeRoute ? (
-          <div className="max-w-6xl mx-auto">
+          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
             <Outlet />
           </div>
         ) : (
@@ -145,7 +145,7 @@ function Content() {
   const { isAuthenticated } = useConvexAuth();
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
       <AuthStateContext.Provider value={isAuthenticated}>
         <Outlet />
       </AuthStateContext.Provider>

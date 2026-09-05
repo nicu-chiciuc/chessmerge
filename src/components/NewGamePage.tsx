@@ -85,7 +85,7 @@ export function NewGamePage() {
     state.kind === "waitingForAuth" || state.kind === "creating";
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-background">
+    <div className="flex-1 bg-background">
       <div className="mx-auto grid w-full max-w-6xl gap-7 px-3 py-6 sm:px-6 md:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] md:items-center md:gap-10 md:py-12">
         <ChallengeBoardPreview />
         <article

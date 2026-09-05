@@ -220,7 +220,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
 
   if (view.kind === "loading" || view.kind === "game") {
     return (
-      <div className="grid min-h-[calc(100vh-4rem)] place-items-center px-4">
+      <div className="grid flex-1 place-items-center px-4">
         <p
           className="font-mono text-xs text-muted-foreground"
           aria-live="polite"
@@ -235,7 +235,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
     joinState.kind === "waitingForAuth" || joinState.kind === "joining";
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-background">
+    <div className="flex-1 bg-background">
       <div className="mx-auto grid w-full max-w-6xl gap-7 px-3 py-6 sm:px-6 md:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] md:items-center md:gap-10 md:py-12">
         <ChallengeBoardPreview />
         <article
@@ -470,7 +470,7 @@ function UnavailableChallenge({
   onCreate: () => void;
 }) {
   return (
-    <div className="grid min-h-[calc(100vh-4rem)] place-items-center px-3 py-8">
+    <div className="grid flex-1 place-items-center px-3 py-8">
       <article className="w-full max-w-lg rounded-xl border bg-card p-6 shadow-lg sm:p-8">
         <h1 className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
           Challenge unavailable

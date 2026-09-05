@@ -60,7 +60,7 @@ function GameRoute() {
 
   if (game == null) {
     return (
-      <div className="grid min-h-[calc(100vh-4rem)] place-items-center px-3 py-8">
+      <div className="grid flex-1 place-items-center px-3 py-8">
         <article className="w-full max-w-lg rounded-xl border bg-card p-6 shadow-lg sm:p-8">
           <h1
             ref={heading}
