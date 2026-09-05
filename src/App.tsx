@@ -123,7 +123,7 @@ export default function App() {
           rel="noopener noreferrer"
           className="inline-flex min-h-11 items-center gap-1 rounded-sm px-2 underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          Made with
+          Managed with
           <span className="inline-flex items-center gap-1 font-medium">
             <img
               src="/samebase.svg"
