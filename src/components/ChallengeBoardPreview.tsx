@@ -1,4 +1,4 @@
-import { createInitialGameState, type Board } from "../../lib/chessmerge";
+import { createInitialGameState, type GameState } from "../../lib/chessmerge";
 import { ChessBoard } from "./ChessBoard";
 
 const previewBoard = createPreviewBoard();
@@ -25,13 +25,14 @@ export function ChallengeBoardPreview() {
         >
           <div aria-hidden="true">
             <ChessBoard
-              board={previewBoard}
+              gameState={previewBoard}
               selectedSquare={null}
               validMoves={[]}
               onSquareClick={() => undefined}
               needsPromotion={null}
               setSelectedPromotion={() => undefined}
               readOnly
+              checkNotice="none"
             />
           </div>
         </div>
@@ -49,8 +50,9 @@ export function ChallengeBoardPreview() {
   );
 }
 
-function createPreviewBoard(): Board {
-  const { board } = createInitialGameState();
+function createPreviewBoard(): GameState {
+  const gameState = createInitialGameState();
+  const { board } = gameState;
 
   board[0][1] = [];
   board[1][3] = [];
@@ -64,5 +66,5 @@ function createPreviewBoard(): Board {
   board[7][1] = [];
   board[7][2] = [];
 
-  return board;
+  return gameState;
 }

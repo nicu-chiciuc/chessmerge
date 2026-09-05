@@ -248,7 +248,7 @@ export function ChessGame({
     <div className="mt-4 flex flex-col xl:grid xl:grid-cols-4 gap-4 xl:gap-6">
       <div className="w-full max-w-3xl xl:col-span-3 mx-auto">
         <ChessBoard
-          board={gameState.board}
+          gameState={gameState}
           lastMove={lastMove}
           selectedSquare={selectedSquare}
           validMoves={validPositions}
@@ -258,10 +258,10 @@ export function ChessGame({
           onPieceSelectionChange={handlePieceSelectionChange}
           flipped={isBlackPlayer}
           isMyTurn={!!isMyTurn}
-          currentTurn={gameState.options.turn}
           needsPromotion={needsPromotion ? needsPromotion.to : null}
           setSelectedPromotion={setSelectedPromotion}
           readOnly={readOnly}
+          checkNotice={gameStatus === "active" ? "visible" : "hidden"}
         />
       </div>
 
