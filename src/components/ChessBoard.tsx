@@ -1,6 +1,17 @@
-import { mapToName } from "../../lib/chessmerge";
-import type { Board, Position, Piece, PieceType } from "../../lib/chessmerge";
-import { useEffect, useRef, useState } from "react";
+import {
+  getAllMovesForCell,
+  hasKing,
+  isInCheck,
+  mapToName,
+} from "../../lib/chessmerge";
+import type {
+  GameState,
+  Position,
+  Piece,
+  PieceType,
+} from "../../lib/chessmerge";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { TriangleAlert } from "lucide-react";
 
 // Import all chess piece SVGs
 import whiteKingSvg from "../pieces/Chess_klt45.svg";
@@ -22,7 +33,7 @@ const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
 const promotionPieceTypes = ["q", "r", "b", "n"] satisfies PieceType[];
 
 interface ChessBoardProps {
-  board: Board;
+  gameState: GameState;
   lastMove?: { from: Position; to: Position } | null;
   selectedSquare: Position | null;
   validMoves: Position[];
@@ -30,10 +41,10 @@ interface ChessBoardProps {
   onPieceSelectionChange?: (mode: "both" | "first" | "second") => void;
   flipped?: boolean;
   isMyTurn?: boolean;
-  currentTurn?: "w" | "b";
   needsPromotion: Position | null;
   setSelectedPromotion: (piece: Piece) => void;
   readOnly?: boolean;
+  checkNotice?: "visible" | "hidden" | "none";
 }
 
 const getPieceSvg = (piece: Piece) => {
@@ -59,7 +70,7 @@ const getPieceSvg = (piece: Piece) => {
 };
 
 export function ChessBoard({
-  board,
+  gameState,
   lastMove = null,
   selectedSquare,
   validMoves,
@@ -67,11 +78,34 @@ export function ChessBoard({
   onPieceSelectionChange,
   flipped = false,
   isMyTurn = false,
-  currentTurn = "w",
   needsPromotion,
   setSelectedPromotion,
   readOnly = false,
+  checkNotice = "visible",
 }: ChessBoardProps) {
+  const {
+    board,
+    options: { turn: currentTurn },
+  } = gameState;
+  const checkNoticeId = useId();
+  const checkState = useMemo(() => {
+    if (
+      !hasKing(gameState, gameState.options.turn) ||
+      !isInCheck(gameState, gameState.options.turn)
+    )
+      return null;
+
+    const canRespond = gameState.board.some((row, rowIndex) =>
+      row.some(
+        (cell, col) =>
+          cell[0]?.color === gameState.options.turn &&
+          getAllMovesForCell({ row: rowIndex, col }, gameState).length > 0,
+      ),
+    );
+
+    return canRespond ? "check" : "checkmate";
+  }, [gameState]);
+  const canInteract = !readOnly && isMyTurn && checkState !== "checkmate";
   const [draggedFrom, setDraggedFrom] = useState<Position | null>(null);
   const [dragOverSquare, setDragOverSquare] = useState<Position | null>(null);
   const [selectedPieceMode, setSelectedPieceMode] = useState<
@@ -103,6 +137,31 @@ export function ChessBoard({
     ? board[selectedSquare.row][selectedSquare.col]
     : null;
   const hasTwoPieces = selectedCell && selectedCell.length === 2;
+  const turnName = currentTurn === "w" ? "White" : "Black";
+  const checkTitle =
+    checkState === "checkmate"
+      ? `Checkmate. ${currentTurn === "w" ? "Black" : "White"} wins.`
+      : canInteract
+        ? "Your king is in check"
+        : `${turnName} is in check`;
+  let checkGuidance: string | null = null;
+  if (
+    checkState === "check" &&
+    canInteract &&
+    selectedCell?.length &&
+    validMoves.length === 0
+  ) {
+    const canSplitToResolveCheck =
+      hasTwoPieces &&
+      selectedPieceMode === "both" &&
+      selectedSquare !== null &&
+      getAllMovesForCell(selectedSquare, gameState).length > 0;
+    checkGuidance = canSplitToResolveCheck
+      ? "These pieces can't move together. Try moving just one."
+      : hasTwoPieces && selectedPieceMode === "both"
+        ? "These pieces can't resolve check. Choose another piece."
+        : "This piece can't resolve check. Choose another piece.";
+  }
 
   // Reset piece selection mode when square changes
   const resetPieceMode = () => {
@@ -116,7 +175,7 @@ export function ChessBoard({
   };
 
   const handleSquareClick = (row: number, col: number) => {
-    if (readOnly) return;
+    if (!canInteract) return;
 
     // Reset piece mode when selecting a different square
     if (
@@ -131,7 +190,7 @@ export function ChessBoard({
 
   const handleDragStart = (e: React.DragEvent, row: number, col: number) => {
     const piece = board[row][col][0];
-    if (!piece || !isMyTurn || piece.color !== currentTurn) {
+    if (!piece || !canInteract || piece.color !== currentTurn) {
       e.preventDefault();
       return;
     }
@@ -203,14 +262,22 @@ export function ChessBoard({
     const isValidMove = validMoves.some(
       (move) => move.row === row && move.col === col,
     );
+    const isKingInCheck =
+      checkState !== null &&
+      cell.some(
+        (piece) => piece.pieceType === "k" && piece.color === currentTurn,
+      );
     const lastMoveRole =
       lastMove?.from.row === row && lastMove.from.col === col
         ? "from"
         : lastMove?.to.row === row && lastMove.to.col === col
           ? "to"
           : null;
-    const coordinateColor =
-      lastMoveRole !== null || isLight ? "text-amber-800" : "text-amber-100";
+    const coordinateColor = isKingInCheck
+      ? "text-red-900"
+      : lastMoveRole !== null || isLight
+        ? "text-amber-800"
+        : "text-amber-100";
 
     const isDraggedSquare =
       draggedFrom?.row === row && draggedFrom?.col === col;
@@ -219,10 +286,10 @@ export function ChessBoard({
 
     let squareClass = `
       aspect-square min-w-0 flex items-center justify-center cursor-pointer relative border-0 p-0
-      ${lastMoveRole ? "bg-yellow-300" : isLight ? "bg-amber-100" : "bg-amber-800"}
+      ${isKingInCheck ? "bg-red-300" : lastMoveRole ? "bg-yellow-300" : isLight ? "bg-amber-100" : "bg-amber-800"}
       ${isSelected ? "ring-2 sm:ring-4 ring-blue-500 z-20" : ""}
       ${isDraggedSquare ? "opacity-50" : ""}
-      ${isDragOver ? "bg-blue-200" : ""}
+      ${isDragOver && !isKingInCheck ? "bg-blue-200" : ""}
       hover:brightness-110 transition-[filter,opacity,background-color]
       focus-visible:z-30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary
       disabled:cursor-not-allowed disabled:hover:brightness-100
@@ -233,7 +300,7 @@ export function ChessBoard({
     if (
       cell.length === 2 &&
       cell[0].color === currentTurn &&
-      isMyTurn &&
+      canInteract &&
       !isSelected
     ) {
       squareClass += " ring-2 ring-orange-300 z-10";
@@ -243,21 +310,23 @@ export function ChessBoard({
       cell.length === 1 &&
       !needsPromotion &&
       cell[0].color === currentTurn &&
-      isMyTurn;
+      canInteract;
 
     return (
       <button
         key={`${row}-${col}`}
         type="button"
-        disabled={readOnly || !isMyTurn || needsPromotion !== null}
+        disabled={!canInteract || needsPromotion !== null}
         aria-label={getSquareLabel(
           square,
           cell,
           isSelected,
           isValidMove,
           lastMoveRole,
+          isKingInCheck,
         )}
         aria-pressed={isSelected}
+        data-check={isKingInCheck ? "true" : undefined}
         data-last-move={lastMoveRole ?? undefined}
         data-legal-move={isValidMove ? "true" : undefined}
         data-square={square}
@@ -270,6 +339,12 @@ export function ChessBoard({
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, row, col)}
       >
+        {isKingInCheck && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 border-2 border-red-700 sm:border-4"
+          />
+        )}
         {cell.length > 0 && (
           <ChessPieceCell
             pieces={cell}
@@ -317,9 +392,34 @@ export function ChessBoard({
 
   return (
     <div className="flex flex-col items-center justify-center w-full ">
+      {checkNotice !== "none" && (
+        <div
+          id={checkNoticeId}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="mb-2 h-14 w-full sm:h-10"
+        >
+          {checkNotice === "visible" && checkState !== null && (
+            <div className="flex h-full items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-900">
+              <TriangleAlert aria-hidden="true" className="size-4 shrink-0" />
+              <p
+                className={checkGuidance ? "min-w-0" : "min-w-0 font-semibold"}
+              >
+                {checkGuidance ?? checkTitle}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       <div
         ref={boardElementRef}
         aria-label={readOnly ? "Chess board, read only" : "Chess board"}
+        aria-describedby={
+          checkNotice === "visible" && checkState !== null
+            ? checkNoticeId
+            : undefined
+        }
         className="chessBoard grid aspect-square grid-cols-8 border-gray-800 w-full relative"
         role="group"
       >
@@ -365,7 +465,7 @@ export function ChessBoard({
       </div>
 
       {/* Piece selection buttons for merged pieces */}
-      {hasTwoPieces && selectedCell && isMyTurn ? (
+      {hasTwoPieces && selectedCell && canInteract ? (
         <div className="mt-4 flex gap-2 space-between">
           <Button
             aria-label={`Move only the ${getPieceName(selectedCell[0]).toLowerCase()}`}
@@ -555,12 +655,14 @@ function getSquareLabel(
   isSelected: boolean,
   isValidMove: boolean,
   lastMoveRole: "from" | "to" | null,
+  isKingInCheck: boolean,
 ): string {
   const contents =
     pieces.length === 0
       ? "empty"
       : pieces.map((piece) => getPieceName(piece).toLowerCase()).join(" and ");
   const state = [
+    isKingInCheck ? "in check" : null,
     isSelected ? "selected" : null,
     isValidMove ? "legal move" : null,
     lastMoveRole ? `last move ${lastMoveRole}` : null,

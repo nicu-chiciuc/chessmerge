@@ -349,13 +349,12 @@ function SandboxSessionView({
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_18rem] lg:gap-6">
         <div className="mx-auto min-w-0 w-full max-w-3xl">
           <ChessBoard
-            board={session.position.board}
+            gameState={session.position}
             selectedSquare={selectedSquare}
             validMoves={validMoves.map((move) => move.to)}
             onSquareClick={handleSquareClick}
             onPieceSelectionChange={setSelectedPieceMode}
             isMyTurn
-            currentTurn={session.position.options.turn}
             needsPromotion={needsPromotion?.to ?? null}
             setSelectedPromotion={selectPromotion}
           />

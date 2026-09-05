@@ -610,7 +610,7 @@ function findKingPosition({ board }: GameState, color: PieceColor): Position {
   return kingPos;
 }
 
-function hasKing({ board }: GameState, color: PieceColor): boolean {
+export function hasKing({ board }: GameState, color: PieceColor): boolean {
   return board.some((row) =>
     row.some((cell) =>
       cell.some((piece) => piece.color === color && piece.pieceType === "k"),
