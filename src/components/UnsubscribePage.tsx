@@ -38,7 +38,7 @@ export function UnsubscribePage({ token }: { token?: string }) {
   }, [token, unsubscribe]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="flex flex-1 items-center justify-center bg-gray-50 p-4">
       <div className="bg-white rounded-lg shadow-sm border p-8 max-w-md w-full text-center">
         <h1 className="text-2xl font-bold mb-4">ChessMerge</h1>
 

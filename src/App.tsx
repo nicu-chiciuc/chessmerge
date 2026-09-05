@@ -107,15 +107,35 @@ export default function App() {
           </div>
         )}
       </header>
-      <main>
+      <main className="flex flex-1 flex-col">
         {isLocalPracticeRoute ? (
-          <div className="max-w-6xl mx-auto">
+          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
             <Outlet />
           </div>
         ) : (
           <Content />
         )}
       </main>
+      <footer className="px-4 py-3 text-center text-xs text-muted-foreground">
+        <a
+          href="https://samebase.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-11 items-center gap-1 rounded-sm px-2 underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          Made with
+          <span className="inline-flex items-center gap-1 font-medium">
+            <img
+              src="/samebase.svg"
+              alt=""
+              width={16}
+              height={16}
+              className="size-4 shrink-0"
+            />
+            Samebase
+          </span>
+        </a>
+      </footer>
       <Toaster />
     </div>
   );
@@ -125,7 +145,7 @@ function Content() {
   const { isAuthenticated } = useConvexAuth();
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
       <AuthStateContext.Provider value={isAuthenticated}>
         <Outlet />
       </AuthStateContext.Provider>
