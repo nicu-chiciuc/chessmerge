@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { useEffect, useRef } from "react";
+import { SamebaseAttribution } from "./components/SamebaseAttribution";
 import { Button } from "./components/ui/button";
 import { AuthStateContext } from "./lib/auth-state-context";
 
@@ -116,25 +117,8 @@ export default function App() {
           <Content />
         )}
       </main>
-      <footer className="px-4 py-3 text-center text-xs text-muted-foreground">
-        <a
-          href="https://samebase.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center gap-1 rounded-sm px-2 underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          Managed with
-          <span className="inline-flex items-center gap-1 font-medium">
-            <img
-              src="/samebase.svg"
-              alt=""
-              width={16}
-              height={16}
-              className="size-4 shrink-0"
-            />
-            Samebase
-          </span>
-        </a>
+      <footer className="mx-auto flex w-full max-w-6xl justify-end px-3 py-3 text-muted-foreground sm:px-6">
+        <SamebaseAttribution />
       </footer>
       <Toaster />
     </div>
