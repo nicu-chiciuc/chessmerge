@@ -25,7 +25,7 @@ describe("Cloudflare Convex deployment", () => {
     const deployment = selectConvexDeploy({
       WORKERS_CI_BRANCH: "preview-persistence",
       CONVEX_DEPLOY_KEY: "production-key",
-      PREVIEW_CONVEX_DEPLOY_KEY: "preview-key",
+      PREVIEW_CONVEX_DEPLOY_KEY: "preview:team:project|test",
     });
 
     expect(deployment.args).toEqual([
@@ -37,14 +37,14 @@ describe("Cloudflare Convex deployment", () => {
       "--cmd",
       "pnpm run build:app",
     ]);
-    expect(deployment.deployKey).toBe("preview-key");
+    expect(deployment.deployKey).toBe("preview:team:project|test");
   });
 
   it("keeps production deployment on its existing key and command", () => {
     const deployment = selectConvexDeploy({
       WORKERS_CI_BRANCH: "main",
       CONVEX_DEPLOY_KEY: "production-key",
-      PREVIEW_CONVEX_DEPLOY_KEY: "preview-key",
+      PREVIEW_CONVEX_DEPLOY_KEY: "preview:team:project|test",
     });
 
     expect(deployment.args).toEqual([
@@ -66,16 +66,35 @@ describe("Cloudflare Convex deployment", () => {
     ).toThrow("Set PREVIEW_CONVEX_DEPLOY_KEY");
   });
 
+  it.each([
+    "prod:production|test",
+    "dev:development|test",
+    "project:team:project|test",
+    "preview:deployment|test",
+    "preview:team:project",
+  ])("rejects a non-preview key before deploying: %s", async (deployKey) => {
+    await expect(
+      main({
+        WORKERS_CI_BRANCH: "preview-persistence",
+        PREVIEW_CONVEX_DEPLOY_KEY: deployKey,
+      }),
+    ).rejects.toThrow(
+      "PREVIEW_CONVEX_DEPLOY_KEY must be a Convex preview deploy key",
+    );
+    expect(spawn).not.toHaveBeenCalled();
+    expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
+  });
+
   it("sets up authentication after a successful deploy with only the selected key", async () => {
     await main({
       WORKERS_CI_BRANCH: "preview-persistence",
       CONVEX_DEPLOY_KEY: "production-key",
-      PREVIEW_CONVEX_DEPLOY_KEY: "preview-key",
+      PREVIEW_CONVEX_DEPLOY_KEY: "preview:team:project|test",
     });
 
     const selectedEnv = {
       WORKERS_CI_BRANCH: "preview-persistence",
-      CONVEX_DEPLOY_KEY: "preview-key",
+      CONVEX_DEPLOY_KEY: "preview:team:project|test",
     };
     expect(spawn).toHaveBeenCalledWith("pnpm", expect.any(Array), {
       env: selectedEnv,
@@ -107,7 +126,7 @@ describe("Cloudflare Convex deployment", () => {
     await expect(
       main({
         WORKERS_CI_BRANCH: "preview-persistence",
-        PREVIEW_CONVEX_DEPLOY_KEY: "preview-key",
+        PREVIEW_CONVEX_DEPLOY_KEY: "preview:team:project|test",
       }),
     ).rejects.toThrow("Convex deploy failed");
     expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();

@@ -74,6 +74,8 @@ uses `http://localhost:5173` for `SITE_URL`, while previews use
 builds reuse the named Convex deployment with `--preview-name`. New commits keep
 the preview's users, games, sessions, and deployment URL while that deployment exists.
 Convex can still expire previews under its retention policy.
+The build requires a project preview key in `PREVIEW_CONVEX_DEPLOY_KEY` and rejects
+production or individual-deployment keys before running Convex.
 
 After a successful preview deploy, `scripts/ensure-preview-convex-auth.ts` checks
 that same named deployment. It preserves existing auth keys and `SITE_URL`. If
