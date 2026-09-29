@@ -15,7 +15,7 @@
     "build": "node ./scripts/build-cloudflare.ts",
     "build:app": "tsc -b && vite build",
     "deploy": "wrangler deploy",
-    "deploy:preview": "wrangler versions upload",
+    "deploy:preview": "wrangler preview",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives",
     "lint:strict": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc -b",
@@ -79,6 +79,6 @@
     "typescript-eslint": "^8.24.1",
     "vite": "^7.3.6",
     "vitest": "^3.1.4",
-    "wrangler": "4.123.0"
+    "wrangler": "4.136.2"
   }
 }

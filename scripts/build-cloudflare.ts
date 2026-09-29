@@ -5,21 +5,17 @@ import { pathToFileURL } from "node:url";
 import { ensurePreviewConvexAuth } from "./ensure-preview-convex-auth.ts";
 
 /**
-Samebase writes both Convex deploy keys to both Cloudflare Workers Builds triggers because the
-Cloudflare dashboard shows one shared build-variable table. The Builds API can store variables per
-trigger, but Samebase keeps its API-created setup equivalent to the dashboard setup.
-
-It selects `CONVEX_DEPLOY_KEY` on `main` or
-`PREVIEW_CONVEX_DEPLOY_KEY` on another branch. It then gives only the selected value to Convex as
-`CONVEX_DEPLOY_KEY` and runs `build:app`. After a successful preview deploy, the auth helper
-initializes missing settings without replacing existing credentials. Keep provider migration work
-out of this file. Run `node --run build:app` directly for a local application build.
+Workers Builds supplies CONVEX_DEPLOY_KEY from Production or Previews Base build settings.
+Local builds run only build:app. Preview builds reuse the branch deployment and initialize
+missing auth settings without replacing existing credentials.
 */
 const PRODUCTION_BRANCH = "main";
-const PRODUCTION_KEY = "CONVEX_DEPLOY_KEY";
-const PREVIEW_KEY = "PREVIEW_CONVEX_DEPLOY_KEY";
+const DEPLOY_KEY = "CONVEX_DEPLOY_KEY";
 
 export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
+  if (env.WORKERS_CI !== "1" && env.WORKERS_CI !== "true") {
+    return { args: ["run", "build:app"], previewName: null };
+  }
   const branch = env.WORKERS_CI_BRANCH;
   if (!branch) {
     throw new Error(
@@ -28,14 +24,15 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
   }
 
   const preview = branch !== PRODUCTION_BRANCH;
-  const keyName = preview ? PREVIEW_KEY : PRODUCTION_KEY;
-  const deployKey = env[keyName];
+  const deployKey = env[DEPLOY_KEY];
   if (!deployKey) {
-    throw new Error(`Set ${keyName} for Cloudflare Workers branch ${branch}.`);
+    throw new Error(
+      `Set ${DEPLOY_KEY} for Cloudflare Workers branch ${branch}.`,
+    );
   }
   // Convex ignores --preview-name for deployment keys. Require a project preview key.
   if (preview && !/^preview:[^:|]+:[^:|]+\|.+$/.test(deployKey)) {
-    throw new Error(`${PREVIEW_KEY} must be a Convex preview deploy key.`);
+    throw new Error(`${DEPLOY_KEY} must be a Convex preview deploy key.`);
   }
 
   return {
@@ -47,22 +44,16 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
       "--cmd",
       "pnpm run build:app",
     ],
-    deployKey,
     previewName: preview ? branch : null,
   };
 }
 
 export async function main(env: NodeJS.ProcessEnv = process.env) {
   const deployment = selectConvexDeploy(env);
-  const convexEnv: NodeJS.ProcessEnv = {
-    ...env,
-    CONVEX_DEPLOY_KEY: deployment.deployKey,
-  };
-  delete convexEnv.PREVIEW_CONVEX_DEPLOY_KEY;
 
   await new Promise<void>((resolve, reject) => {
     const child = spawn("pnpm", deployment.args, {
-      env: convexEnv,
+      env,
       shell: process.platform === "win32",
       stdio: "inherit",
     });
@@ -73,12 +64,12 @@ export async function main(env: NodeJS.ProcessEnv = process.env) {
         return;
       }
 
-      reject(new Error(`Convex deploy failed with exit code ${code ?? 1}.`));
+      reject(new Error(`Cloudflare build failed with exit code ${code ?? 1}.`));
     });
   });
 
   if (deployment.previewName) {
-    ensurePreviewConvexAuth(convexEnv, deployment.previewName);
+    ensurePreviewConvexAuth(env, deployment.previewName);
   }
 }
 
