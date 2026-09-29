@@ -39,34 +39,8 @@ pnpm run dev
 - `pnpm run deploy:preview` - Create or update a native Worker Preview
 - `pnpm run preview` - Serve the current `dist/client` build through Wrangler's static-asset runtime
 
-Cloudflare Settings > Builds must use `pnpm run build`, `pnpm run deploy` for `main`, and
-`pnpm run deploy:preview` for other branches. Set the build secret `CONVEX_DEPLOY_KEY` to the
-production deploy key under Production and the project Preview deploy key under Previews Base.
-The build reads only that key. Convex supplies the backend URL before the frontend build.
-Local builds have no deployment side effects.
-
-For an existing Worker, confirm the repository, Worker, and account before the irreversible
-Settings > Builds > Set up Worker Previews step. Set **New preview command** to
-`pnpm run deploy:preview` in the dialog. After the switch, verify all three package commands,
-keep the current build root, and enable non-production branch builds.
-
-The switch creates **Builds > Previews Base** and copies the old build variables, including
-the production `CONVEX_DEPLOY_KEY`. Before the first migrated branch build, replace that copied
-value with the project Preview deploy key in **Builds > Previews Base**. Do not put this key
-under **Runtime variables and secrets**.
-
-Verify the migrated branch's returned URL, backend, and guest authentication. Confirm that
-production is unchanged. After the migrated production build succeeds, remove
-`PREVIEW_CONVEX_DEPLOY_KEY` from Production and Previews Base and `SAMEBASE_CONVEX_PROJECT`
-from Previews Base. Keep the project marker in Production.
-
-The empty `previews` config is sufficient for this static asset Worker. Runtime variables and
-bindings do not inherit production values. Any future runtime binding needs a preview-safe
-resource. Runtime secrets belong in Previews Base runtime configuration.
-
-Validate the production package with `pnpm exec wrangler deploy --dry-run` after a build.
-Worker Previews has no dry-run mode. Wrangler reads the parent Worker name from Workers Builds
-or the existing config. A manual override uses `--worker-name`; `--name` names the Preview.
+Set the build secret `CONVEX_DEPLOY_KEY` to the production deploy key in **Builds > Production**
+and the project Preview deploy key in **Builds > Previews Base**, not runtime settings.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
@@ -102,32 +76,15 @@ The Convex project also keeps these three values as **Development** and
 new deployments; it does not update deployments that already exist. Development
 uses `http://localhost:5173` for `SITE_URL`, while previews use
 `https://chessmerge.com` as the stable redirect fallback. Cloudflare preview
-builds reuse the named Convex deployment with `--preview-name`. New commits keep
-the preview's users, games, sessions, and deployment URL while that deployment exists.
-Convex can still expire previews under its retention policy.
-The preview build requires a project preview key in `CONVEX_DEPLOY_KEY` and rejects
-production or individual-deployment keys before running Convex.
+builds use `--preview-name` to preserve users, games, sessions, and the deployment
+URL until Convex expires the preview. They reject production or individual-deployment
+keys before running Convex.
 
-After a successful preview deploy, `scripts/ensure-preview-convex-auth.ts` checks
-that same named deployment. It preserves existing auth keys and `SITE_URL`. If
-both keys are absent, it creates a matching pair. If `SITE_URL` is absent, it adds
-the documented redirect fallback above. A partial key pair or a failed read stops
-the build without overwriting credentials. Missing settings are written together,
-without forcing changes to values that another build may have configured.
-
-This applies the native Worker Previews migration from
-[Samebase's starter update](https://github.com/samebase/samebase/pull/1562).
-It keeps ChessMerge's pnpm and Vite commands, `main` production branch, static SPA
-assets, and named Convex previews. The app-specific auth helper keeps the existing
-redirect fallback, rejects failed reads, and writes missing settings together through
-stdin without forcing changes. Production auth setup is unchanged. This is a scoped
-template update, not a full template-version upgrade. No source-build markers existed
-in these app files, so this update does not claim a complete starter snapshot.
-
-To verify the fix on a branch, sign in to its preview and create a test game.
-Push a second commit to the same branch. Confirm that the Convex deployment URL,
-saved game, and session remain usable. Test a new sign-in too. Do not use
-`--preview-create` to repair authentication; that deletes the preview's data.
+After a preview deployment, `scripts/ensure-preview-convex-auth.ts` preserves existing keys
+and `SITE_URL`. It creates a matching key pair only when both keys are absent and
+adds the redirect fallback only when `SITE_URL` is absent. Missing settings are
+written together without overwriting values. A failed read or partial key pair
+stops the build.
 
 Manage the defaults in Convex Project Settings or with
 `pnpm exec convex env default --help`. Keep `JWT_PRIVATE_KEY` and `JWKS` from the
