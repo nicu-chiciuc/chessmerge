@@ -49,7 +49,7 @@ For an existing Worker, confirm the repository, Worker, and account before the i
 Settings > Builds > Set up Worker Previews step. Restore the three package commands after the
 switch, keep the current build root, and enable non-production branch builds. Verify the migrated
 branch's returned URL, backend, and guest authentication. Confirm that production is unchanged.
-Only then remove `PREVIEW_CONVEX_DEPLOY_KEY` from both triggers and `SAMEBASE_CONVEX_PROJECT`
+Only then remove `PREVIEW_CONVEX_DEPLOY_KEY` from Production and Previews Base and `SAMEBASE_CONVEX_PROJECT`
 from previews. Keep the project marker on production.
 
 The empty `previews` config is sufficient for this static asset Worker. Runtime variables and
