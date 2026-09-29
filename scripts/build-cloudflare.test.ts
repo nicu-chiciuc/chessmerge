@@ -32,11 +32,15 @@ describe("Cloudflare Convex deployment", () => {
 
       await main(env);
 
-      expect(spawn).toHaveBeenCalledExactlyOnceWith("pnpm", ["run", "build:app"], {
-        env,
-        shell: process.platform === "win32",
-        stdio: "inherit",
-      });
+      expect(spawn).toHaveBeenCalledExactlyOnceWith(
+        "pnpm",
+        ["run", "build:app"],
+        {
+          env,
+          shell: process.platform === "win32",
+          stdio: "inherit",
+        },
+      );
       expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
     },
   );
@@ -78,7 +82,9 @@ describe("Cloudflare Convex deployment", () => {
   });
 
   it("requires the Workers Builds branch before running Convex", async () => {
-    await expect(main({ WORKERS_CI: "1" })).rejects.toThrow("WORKERS_CI_BRANCH");
+    await expect(main({ WORKERS_CI: "1" })).rejects.toThrow(
+      "WORKERS_CI_BRANCH",
+    );
     expect(spawn).not.toHaveBeenCalled();
     expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
   });

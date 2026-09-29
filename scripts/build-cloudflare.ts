@@ -26,7 +26,9 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
   const preview = branch !== PRODUCTION_BRANCH;
   const deployKey = env[DEPLOY_KEY];
   if (!deployKey) {
-    throw new Error(`Set ${DEPLOY_KEY} for Cloudflare Workers branch ${branch}.`);
+    throw new Error(
+      `Set ${DEPLOY_KEY} for Cloudflare Workers branch ${branch}.`,
+    );
   }
   // Convex ignores --preview-name for deployment keys. Require a project preview key.
   if (preview && !/^preview:[^:|]+:[^:|]+\|.+$/.test(deployKey)) {

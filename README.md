@@ -97,7 +97,7 @@ uses `http://localhost:5173` for `SITE_URL`, while previews use
 builds reuse the named Convex deployment with `--preview-name`. New commits keep
 the preview's users, games, sessions, and deployment URL while that deployment exists.
 Convex can still expire previews under its retention policy.
-The build requires a project preview key in `PREVIEW_CONVEX_DEPLOY_KEY` and rejects
+The preview build requires a project preview key in `CONVEX_DEPLOY_KEY` and rejects
 production or individual-deployment keys before running Convex.
 
 After a successful preview deploy, `scripts/ensure-preview-convex-auth.ts` checks
@@ -107,13 +107,14 @@ the documented redirect fallback above. A partial key pair or a failed read stop
 the build without overwriting credentials. Missing settings are written together,
 without forcing changes to values that another build may have configured.
 
-This applies the Samebase template's persistent-preview and idempotent-auth
-behavior, with explicit preview targeting and ChessMerge's existing redirect
-fallback. The source is the [Samebase build helper](https://github.com/samebase/base/blob/main/scripts/build-cloudflare.ts)
-and [auth helper](https://github.com/samebase/base/blob/main/scripts/ensure-convex-auth.ts).
-This is a scoped template update, not a full template-version upgrade. It does not
-change the Cloudflare preview model, Wrangler commands, or the existing
-`CONVEX_DEPLOY_KEY` / `PREVIEW_CONVEX_DEPLOY_KEY` selection.
+This applies the native Worker Previews migration from
+[Samebase's starter update](https://github.com/samebase/samebase/pull/1562).
+It keeps ChessMerge's pnpm and Vite commands, `main` production branch, static SPA
+assets, and named Convex previews. The app-specific auth helper keeps the existing
+redirect fallback, rejects failed reads, and writes missing settings together through
+stdin without forcing changes. Production auth setup is unchanged. This is a scoped
+template update, not a full template-version upgrade. No source-build markers existed
+in these app files, so this update does not claim a complete starter snapshot.
 
 To verify the fix on a branch, sign in to its preview and create a test game.
 Push a second commit to the same branch. Confirm that the Convex deployment URL,
