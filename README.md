@@ -41,8 +41,8 @@ pnpm run dev
 
 Set the build secret `CONVEX_DEPLOY_KEY` to the production deploy key in **Builds > Production**
 and the project Preview deploy key in **Builds > Previews Base**, not runtime settings.
-Existing Worker Previews keep their own build variables. To use updated Base settings, delete the
-Worker Preview and push its branch again. This does not delete the branch's Convex preview.
+Existing branches keep their own build variables. To use updated Base settings, use a new branch
+or update the existing branch's build variables. Deleting the Worker Preview alone does not reset them.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
