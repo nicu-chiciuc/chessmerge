@@ -71,8 +71,31 @@ The Convex project also keeps these three values as **Development** and
 new deployments; it does not update deployments that already exist. Development
 uses `http://localhost:5173` for `SITE_URL`, while previews use
 `https://chessmerge.com` as the stable redirect fallback. Cloudflare preview
-builds recreate their named Convex deployment, so the next build inherits the
-defaults and guest authentication works without copying production secrets.
+builds reuse the named Convex deployment with `--preview-name`. New commits keep
+the preview's users, games, sessions, and deployment URL while that deployment exists.
+Convex can still expire previews under its retention policy.
+The build requires a project preview key in `PREVIEW_CONVEX_DEPLOY_KEY` and rejects
+production or individual-deployment keys before running Convex.
+
+After a successful preview deploy, `scripts/ensure-preview-convex-auth.ts` checks
+that same named deployment. It preserves existing auth keys and `SITE_URL`. If
+both keys are absent, it creates a matching pair. If `SITE_URL` is absent, it adds
+the documented redirect fallback above. A partial key pair or a failed read stops
+the build without overwriting credentials. Missing settings are written together,
+without forcing changes to values that another build may have configured.
+
+This applies the Samebase template's persistent-preview and idempotent-auth
+behavior, with explicit preview targeting and ChessMerge's existing redirect
+fallback. The source is the [Samebase build helper](https://github.com/samebase/base/blob/main/scripts/build-cloudflare.ts)
+and [auth helper](https://github.com/samebase/base/blob/main/scripts/ensure-convex-auth.ts).
+This is a scoped template update, not a full template-version upgrade. It does not
+change the Cloudflare preview model, Wrangler commands, or the existing
+`CONVEX_DEPLOY_KEY` / `PREVIEW_CONVEX_DEPLOY_KEY` selection.
+
+To verify the fix on a branch, sign in to its preview and create a test game.
+Push a second commit to the same branch. Confirm that the Convex deployment URL,
+saved game, and session remain usable. Test a new sign-in too. Do not use
+`--preview-create` to repair authentication; that deletes the preview's data.
 
 Manage the defaults in Convex Project Settings or with
 `pnpm exec convex env default --help`. Keep `JWT_PRIVATE_KEY` and `JWKS` from the

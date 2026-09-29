@@ -2,15 +2,17 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { ensurePreviewConvexAuth } from "./ensure-preview-convex-auth.ts";
 
 /**
 Samebase writes both Convex deploy keys to both Cloudflare Workers Builds triggers because the
 Cloudflare dashboard shows one shared build-variable table. The Builds API can store variables per
 trigger, but Samebase keeps its API-created setup equivalent to the dashboard setup.
 
-This file has one job. It selects `CONVEX_DEPLOY_KEY` on `main` or
+It selects `CONVEX_DEPLOY_KEY` on `main` or
 `PREVIEW_CONVEX_DEPLOY_KEY` on another branch. It then gives only the selected value to Convex as
-`CONVEX_DEPLOY_KEY` and runs `build:app`. Keep application setup and provider migration work
+`CONVEX_DEPLOY_KEY` and runs `build:app`. After a successful preview deploy, the auth helper
+initializes missing settings without replacing existing credentials. Keep provider migration work
 out of this file. Run `node --run build:app` directly for a local application build.
 */
 const PRODUCTION_BRANCH = "main";
@@ -31,17 +33,22 @@ export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
   if (!deployKey) {
     throw new Error(`Set ${keyName} for Cloudflare Workers branch ${branch}.`);
   }
+  // Convex ignores --preview-name for deployment keys. Require a project preview key.
+  if (preview && !/^preview:[^:|]+:[^:|]+\|.+$/.test(deployKey)) {
+    throw new Error(`${PREVIEW_KEY} must be a Convex preview deploy key.`);
+  }
 
   return {
     args: [
       "exec",
       "convex",
       "deploy",
-      ...(preview ? ["--preview-create", branch] : []),
+      ...(preview ? ["--preview-name", branch] : []),
       "--cmd",
       "pnpm run build:app",
     ],
     deployKey,
+    previewName: preview ? branch : null,
   };
 }
 
@@ -69,6 +76,10 @@ export async function main(env: NodeJS.ProcessEnv = process.env) {
       reject(new Error(`Convex deploy failed with exit code ${code ?? 1}.`));
     });
   });
+
+  if (deployment.previewName) {
+    ensurePreviewConvexAuth(convexEnv, deployment.previewName);
+  }
 }
 
 const entrypoint = process.argv[1];
