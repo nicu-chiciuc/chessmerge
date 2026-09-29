@@ -41,7 +41,7 @@ pnpm run dev
 
 Set the build secret `CONVEX_DEPLOY_KEY` to the production deploy key in **Builds > Production**
 and the project Preview deploy key in **Builds > Previews Base**, not runtime settings.
-After changing build secrets, push a new commit. Retrying an old build reuses its old variables.
+Existing Worker Previews keep their own build variables. Update them too when changing Previews Base.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
