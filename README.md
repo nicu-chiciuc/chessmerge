@@ -46,11 +46,19 @@ The build reads only that key. Convex supplies the backend URL before the fronte
 Local builds have no deployment side effects.
 
 For an existing Worker, confirm the repository, Worker, and account before the irreversible
-Settings > Builds > Set up Worker Previews step. Restore the three package commands after the
-switch, keep the current build root, and enable non-production branch builds. Verify the migrated
-branch's returned URL, backend, and guest authentication. Confirm that production is unchanged.
-Only then remove `PREVIEW_CONVEX_DEPLOY_KEY` from Production and Previews Base and `SAMEBASE_CONVEX_PROJECT`
-from previews. Keep the project marker on production.
+Settings > Builds > Set up Worker Previews step. Set **New preview command** to
+`pnpm run deploy:preview` in the dialog. After the switch, verify all three package commands,
+keep the current build root, and enable non-production branch builds.
+
+The switch creates **Builds > Previews Base** and copies the old build variables, including
+the production `CONVEX_DEPLOY_KEY`. Before the first migrated branch build, replace that copied
+value with the project Preview deploy key in **Builds > Previews Base**. Do not put this key
+under **Runtime variables and secrets**.
+
+Verify the migrated branch's returned URL, backend, and guest authentication. Confirm that
+production is unchanged. After the migrated production build succeeds, remove
+`PREVIEW_CONVEX_DEPLOY_KEY` from Production and Previews Base and `SAMEBASE_CONVEX_PROJECT`
+from Previews Base. Keep the project marker in Production.
 
 The empty `previews` config is sufficient for this static asset Worker. Runtime variables and
 bindings do not inherit production values. Any future runtime binding needs a preview-safe
