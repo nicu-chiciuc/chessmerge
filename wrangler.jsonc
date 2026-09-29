@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "chessmerge",
   "compatibility_date": "2026-08-16",
-  "preview_urls": true,
+  "previews": {},
   "assets": {
     "directory": "./dist/client",
     "html_handling": "none",

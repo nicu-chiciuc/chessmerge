@@ -34,8 +34,31 @@ pnpm run dev
 ### Build and deploy
 
 - `pnpm run build:app` - Type-check and build the application locally
-- `pnpm run build` - Select the Convex deployment in Cloudflare Workers Builds, deploy the Convex functions, and build the application
+- `pnpm run build` - Build locally, or deploy the selected Convex backend and build in Cloudflare Workers Builds
+- `pnpm run deploy` - Publish production with Wrangler
+- `pnpm run deploy:preview` - Create or update a native Worker Preview
 - `pnpm run preview` - Serve the current `dist/client` build through Wrangler's static-asset runtime
+
+Cloudflare Settings > Builds must use `pnpm run build`, `pnpm run deploy` for `main`, and
+`pnpm run deploy:preview` for other branches. Set the build secret `CONVEX_DEPLOY_KEY` to the
+production deploy key under Production and the project Preview deploy key under Previews Base.
+The build reads only that key. Convex supplies the backend URL before the frontend build.
+Local builds have no deployment side effects.
+
+For an existing Worker, confirm the repository, Worker, and account before the irreversible
+Settings > Builds > Set up Worker Previews step. Restore the three package commands after the
+switch, keep the current build root, and enable non-production branch builds. Verify the migrated
+branch's returned URL, backend, and guest authentication. Confirm that production is unchanged.
+Only then remove `PREVIEW_CONVEX_DEPLOY_KEY` from both triggers and `SAMEBASE_CONVEX_PROJECT`
+from previews. Keep the project marker on production.
+
+The empty `previews` config is sufficient for this static asset Worker. Runtime variables and
+bindings do not inherit production values. Any future runtime binding needs a preview-safe
+resource. Runtime secrets belong in Previews Base runtime configuration.
+
+Validate the production package with `pnpm exec wrangler deploy --dry-run` after a build.
+Worker Previews has no dry-run mode. Wrangler reads the parent Worker name from Workers Builds
+or the existing config. A manual override uses `--worker-name`; `--name` names the Preview.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
