@@ -44,6 +44,11 @@ and the project Preview deploy key in **Builds > Previews Base**, not runtime se
 Existing branches keep their own build variables. To use updated Base settings, use a new branch
 or update the existing branch's build variables. Deleting the Worker Preview alone does not reset them.
 
+The build, auth, and branch-head scripts match the Samebase starter. A stale Workers Build stops
+before Convex publishes functions. Local builds do not deploy Convex. See the
+[Worker Previews migration guide](https://samebase.com/docs/cloudflare-previews-migration)
+for provider settings. This app already uses native Worker Previews.
+
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
 - `tsconfig.app.json` - Frontend React app (`src/` directory)
@@ -79,14 +84,12 @@ new deployments; it does not update deployments that already exist. Development
 uses `http://localhost:5173` for `SITE_URL`, while previews use
 `https://chessmerge.com` as the stable redirect fallback. Cloudflare preview
 builds use `--preview-name` to preserve users, games, sessions, and the deployment
-URL until Convex expires the preview. They reject production or individual-deployment
-keys before running Convex.
+URL until Convex expires the preview. Preview build settings must use the project Preview key.
 
-After a preview deployment, `scripts/ensure-preview-convex-auth.ts` preserves existing keys
-and `SITE_URL`. It creates a matching key pair only when both keys are absent and
-adds the redirect fallback only when `SITE_URL` is absent. Missing settings are
-written together without overwriting values. A failed read or partial key pair
-stops the build.
+After the Convex deploy, the standard `scripts/ensure-convex-auth.ts` preserves existing auth keys.
+It creates a matching key pair only when both keys are absent. A failed read or partial key pair
+stops the build. The app-only `scripts/ensure-preview-site-url.ts` then preserves `SITE_URL`
+or sets `https://chessmerge.com` when that value is absent. It runs only for preview Workers Builds.
 
 Manage the defaults in Convex Project Settings or with
 `pnpm exec convex env default --help`. Keep `JWT_PRIVATE_KEY` and `JWKS` from the

@@ -1,62 +1,33 @@
+// Samebase source build: v2064
 /// <reference types="node" />
 import { spawn } from "node:child_process";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
-import { ensurePreviewConvexAuth } from "./ensure-preview-convex-auth.ts";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-/**
-Workers Builds supplies CONVEX_DEPLOY_KEY from Production or Previews Base build settings.
-Local builds run only build:app. Preview builds reuse the branch deployment and initialize
-missing auth settings without replacing existing credentials.
-*/
-const PRODUCTION_BRANCH = "main";
-const DEPLOY_KEY = "CONVEX_DEPLOY_KEY";
+const CONVEX_DEPLOY_KEY = "CONVEX_DEPLOY_KEY";
+const WORKERS_BUILD_COMMAND = "vp run build:app && node ./scripts/verify-current-branch-head.ts";
+const vitePlusEntrypoint = fileURLToPath(import.meta.resolve("vite-plus/bin"));
 
-export function selectConvexDeploy(env: NodeJS.ProcessEnv) {
-  if (env.WORKERS_CI !== "1" && env.WORKERS_CI !== "true") {
-    return { args: ["run", "build:app"], previewName: null };
-  }
-  const branch = env.WORKERS_CI_BRANCH;
-  if (!branch) {
-    throw new Error(
-      "Cloudflare Workers Builds must provide WORKERS_CI_BRANCH. Run build:app for a local build.",
-    );
-  }
+type ConvexDeployPlan =
+  | {
+      kind: "deploy";
+      args: readonly string[];
+    }
+  | {
+      kind: "previewDeploy";
+      args: readonly string[];
+    }
+  | {
+      kind: "frontendOnly";
+    };
 
-  const preview = branch !== PRODUCTION_BRANCH;
-  const deployKey = env[DEPLOY_KEY];
-  if (!deployKey) {
-    throw new Error(
-      `Set ${DEPLOY_KEY} for Cloudflare Workers branch ${branch}.`,
-    );
-  }
-  // Convex ignores --preview-name for deployment keys. Require a project preview key.
-  if (preview && !/^preview:[^:|]+:[^:|]+\|.+$/.test(deployKey)) {
-    throw new Error(`${DEPLOY_KEY} must be a Convex preview deploy key.`);
-  }
-
-  return {
-    args: [
-      "exec",
-      "convex",
-      "deploy",
-      ...(preview ? ["--preview-name", branch] : []),
-      "--cmd",
-      "pnpm run build:app",
-    ],
-    previewName: preview ? branch : null,
-  };
-}
-
-export async function main(env: NodeJS.ProcessEnv = process.env) {
-  const deployment = selectConvexDeploy(env);
-
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn("pnpm", deployment.args, {
+function run(args: readonly string[], env?: NodeJS.ProcessEnv) {
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn(process.execPath, [vitePlusEntrypoint, ...args], {
       env,
-      shell: process.platform === "win32",
       stdio: "inherit",
     });
+
     child.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) {
@@ -64,13 +35,58 @@ export async function main(env: NodeJS.ProcessEnv = process.env) {
         return;
       }
 
-      reject(new Error(`Cloudflare build failed with exit code ${code ?? 1}.`));
+      reject(new Error(`vp ${args.join(" ")} failed with exit code ${code ?? 1}`));
     });
   });
+}
 
-  if (deployment.previewName) {
-    ensurePreviewConvexAuth(env, deployment.previewName);
+function isEnabled(value: string | undefined) {
+  return value === "1" || value === "true";
+}
+
+export function selectConvexDeployPlan(env: NodeJS.ProcessEnv): ConvexDeployPlan {
+  if (!isEnabled(env["WORKERS_CI"])) {
+    return { kind: "frontendOnly" };
   }
+
+  const branch = env["WORKERS_CI_BRANCH"];
+  if (!branch) {
+    throw new Error(
+      "Set WORKERS_CI_BRANCH in Cloudflare Workers build variables to prevent unintended production Convex deploys.",
+    );
+  }
+
+  if (!env[CONVEX_DEPLOY_KEY]) {
+    throw new Error(
+      branch === "main"
+        ? `Set ${CONVEX_DEPLOY_KEY} in Cloudflare production build variables. Use a Convex production deploy key with exactly deployment:deploy, deployment:env:view, deployment:env:write, and deployment:data:view.`
+        : `Set ${CONVEX_DEPLOY_KEY} in Cloudflare Builds > Previews Base > Variables and secrets. Use a Convex project Preview deploy key.`,
+    );
+  }
+
+  if (branch !== "main") {
+    return {
+      kind: "previewDeploy",
+      args: ["exec", "convex", "deploy", "--preview-name", branch, "--cmd", WORKERS_BUILD_COMMAND],
+    };
+  }
+
+  return {
+    kind: "deploy",
+    args: ["exec", "convex", "deploy", "--cmd", WORKERS_BUILD_COMMAND],
+  };
+}
+
+export async function main(env: NodeJS.ProcessEnv = process.env, runCommand = run) {
+  const plan = selectConvexDeployPlan(env);
+
+  if (plan.kind === "frontendOnly") {
+    await runCommand(["run", "build:app"], { ...env, CONVEX_DEPLOY_KEY: undefined });
+    return;
+  }
+
+  await runCommand(plan.args, env);
+  await runCommand(["exec", "node", "./scripts/ensure-convex-auth.ts"], env);
 }
 
 const entrypoint = process.argv[1];

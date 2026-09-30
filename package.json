@@ -1,18 +1,14 @@
 {
   "name": "chessmerge",
-  "private": true,
   "version": "0.0.0",
-  "packageManager": "pnpm@10.11.1",
+  "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=24.0.0"
-  },
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
     "dev:frontend": "vite --open",
     "dev:backend": "convex dev",
     "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" ",
-    "build": "node ./scripts/build-cloudflare.ts",
+    "build": "node ./scripts/build-cloudflare.ts && node ./scripts/ensure-preview-site-url.ts",
     "build:app": "tsc -b && vite build",
     "deploy": "wrangler deploy",
     "deploy:preview": "wrangler preview",
@@ -78,9 +74,14 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^7.3.6",
+    "vite-plus": "0.3.0",
     "vitest": "4.1.11",
     "wrangler": "4.145.0"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "pnpm@10.11.1",
   "pnpm": {
     "overrides": {
       "@humanfs/node": "0.16.8",
