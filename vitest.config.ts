@@ -1,6 +1,12 @@
 import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      lib: path.resolve(__dirname, "./lib"),
+    },
+  },
   test: {
     environment: "node",
     globals: true,
@@ -18,11 +24,6 @@ export default defineConfig({
       ],
     },
     // Run tests sequentially to avoid conflicts with shared state
-    pool: "threads",
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+    maxWorkers: 1,
   },
 });
