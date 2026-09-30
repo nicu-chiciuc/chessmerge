@@ -1,172 +1,72 @@
-import { ChildProcess, spawn } from "node:child_process";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { main, selectConvexDeploy } from "./build-cloudflare.ts";
-import { ensurePreviewConvexAuth } from "./ensure-preview-convex-auth.ts";
+// Samebase source build: v2064
+import { describe, expect, it, vi } from "vite-plus/test";
 
-vi.mock("node:child_process", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("node:child_process")>()),
-  spawn: vi.fn(),
-}));
-vi.mock("./ensure-preview-convex-auth.ts", () => ({
-  ensurePreviewConvexAuth: vi.fn(),
-}));
+import { main, selectConvexDeployPlan } from "./build-cloudflare.ts";
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(spawn).mockImplementation(() => {
-    const child = new ChildProcess();
-    queueMicrotask(() => child.emit("close", 0));
-    return child;
+describe("build-cloudflare", () => {
+  it("requires the Convex Preview key in Previews Base", () => {
+    expect(() =>
+      selectConvexDeployPlan({ WORKERS_CI: "1", WORKERS_CI_BRANCH: "feature-branch" }),
+    ).toThrow("Cloudflare Builds > Previews Base > Variables and secrets");
   });
-});
 
-describe("Cloudflare Convex deployment", () => {
-  it.each([undefined, "false", "0"])(
-    "keeps local builds free of deployment effects with WORKERS_CI=%s",
-    async (workersCi) => {
-      const env = {
-        WORKERS_CI: workersCi,
+  it("requires the Workers branch during Workers builds", () => {
+    expect(() => selectConvexDeployPlan({ WORKERS_CI: "1" })).toThrow("Set WORKERS_CI_BRANCH");
+  });
+
+  it("deploys production from main", () => {
+    expect(
+      selectConvexDeployPlan({
+        CONVEX_DEPLOY_KEY: "prod-key",
+        WORKERS_CI: "1",
         WORKERS_CI_BRANCH: "main",
-        CONVEX_DEPLOY_KEY: "prod:production|test",
-      };
-
-      await main(env);
-
-      expect(spawn).toHaveBeenCalledExactlyOnceWith(
-        "pnpm",
-        ["run", "build:app"],
-        {
-          env,
-          shell: process.platform === "win32",
-          stdio: "inherit",
-        },
-      );
-      expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
-    },
-  );
-
-  it("reuses the branch preview instead of deleting its data", () => {
-    const deployment = selectConvexDeploy({
-      WORKERS_CI: "1",
-      WORKERS_CI_BRANCH: "preview-persistence",
-      CONVEX_DEPLOY_KEY: "preview:team:project|test",
-    });
-
-    expect(deployment.args).toEqual([
-      "exec",
-      "convex",
-      "deploy",
-      "--preview-name",
-      "preview-persistence",
-      "--cmd",
-      "pnpm run build:app",
-    ]);
-    expect(deployment.previewName).toBe("preview-persistence");
-  });
-
-  it("keeps production deployment on its existing command", () => {
-    const deployment = selectConvexDeploy({
-      WORKERS_CI: "true",
-      WORKERS_CI_BRANCH: "main",
-      CONVEX_DEPLOY_KEY: "prod:production|test",
-    });
-
-    expect(deployment.args).toEqual([
-      "exec",
-      "convex",
-      "deploy",
-      "--cmd",
-      "pnpm run build:app",
-    ]);
-    expect(deployment.previewName).toBeNull();
-  });
-
-  it("requires the Workers Builds branch before running Convex", async () => {
-    await expect(main({ WORKERS_CI: "1" })).rejects.toThrow(
-      "WORKERS_CI_BRANCH",
-    );
-    expect(spawn).not.toHaveBeenCalled();
-    expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
-  });
-
-  it.each(["main", "preview-persistence"])(
-    "does not use the legacy preview key when the build key is missing on %s",
-    async (branch) => {
-      await expect(
-        main({
-          WORKERS_CI: "1",
-          WORKERS_CI_BRANCH: branch,
-          PREVIEW_CONVEX_DEPLOY_KEY: "preview:team:project|legacy",
-        }),
-      ).rejects.toThrow("Set CONVEX_DEPLOY_KEY");
-      expect(spawn).not.toHaveBeenCalled();
-      expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
-    },
-  );
-
-  it.each([
-    "prod:production|test",
-    "dev:development|test",
-    "project:team:project|test",
-    "preview:deployment|test",
-    "preview:team:project",
-  ])("rejects a non-preview key before deploying: %s", async (deployKey) => {
-    await expect(
-      main({
-        WORKERS_CI: "1",
-        WORKERS_CI_BRANCH: "preview-persistence",
-        CONVEX_DEPLOY_KEY: deployKey,
-        PREVIEW_CONVEX_DEPLOY_KEY: "preview:team:project|legacy",
       }),
-    ).rejects.toThrow("CONVEX_DEPLOY_KEY must be a Convex preview deploy key");
-    expect(spawn).not.toHaveBeenCalled();
-    expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
+    ).toEqual({
+      kind: "deploy",
+      args: [
+        "exec",
+        "convex",
+        "deploy",
+        "--cmd",
+        "vp run build:app && node ./scripts/verify-current-branch-head.ts",
+      ],
+    });
   });
 
-  it("sets up authentication after a successful deploy with the build-specific key", async () => {
-    const env = {
-      WORKERS_CI: "1",
-      WORKERS_CI_BRANCH: "preview-persistence",
-      CONVEX_DEPLOY_KEY: "preview:team:project|test",
-    };
-
-    await main(env);
-
-    expect(spawn).toHaveBeenCalledWith("pnpm", expect.any(Array), {
-      env,
-      shell: process.platform === "win32",
-      stdio: "inherit",
+  it("reuses the named Convex preview on non-main branches", () => {
+    expect(
+      selectConvexDeployPlan({
+        CONVEX_DEPLOY_KEY: "preview-key",
+        WORKERS_CI: "1",
+        WORKERS_CI_BRANCH: "feature-branch",
+      }),
+    ).toEqual({
+      kind: "previewDeploy",
+      args: [
+        "exec",
+        "convex",
+        "deploy",
+        "--preview-name",
+        "feature-branch",
+        "--cmd",
+        "vp run build:app && node ./scripts/verify-current-branch-head.ts",
+      ],
     });
-    expect(ensurePreviewConvexAuth).toHaveBeenCalledExactlyOnceWith(
-      env,
-      "preview-persistence",
+  });
+
+  it("requires the production key with the least-privilege permission set", () => {
+    expect(() => selectConvexDeployPlan({ WORKERS_CI: "1", WORKERS_CI_BRANCH: "main" })).toThrow(
+      "Use a Convex production deploy key with exactly deployment:deploy, deployment:env:view, deployment:env:write, and deployment:data:view.",
     );
   });
 
-  it("does not change production authentication", async () => {
-    await main({
-      WORKERS_CI: "1",
+  it("keeps local builds frontend-only even with Cloudflare values present", async () => {
+    const runCommand = vi.fn(async () => {});
+    await main({ CONVEX_DEPLOY_KEY: "prod-key", WORKERS_CI_BRANCH: "main" }, runCommand);
+
+    expect(runCommand).toHaveBeenCalledExactlyOnceWith(["run", "build:app"], {
+      CONVEX_DEPLOY_KEY: undefined,
       WORKERS_CI_BRANCH: "main",
-      CONVEX_DEPLOY_KEY: "prod:production|test",
     });
-
-    expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
-  });
-
-  it("does not set up authentication after a failed deploy", async () => {
-    vi.mocked(spawn).mockImplementation(() => {
-      const child = new ChildProcess();
-      queueMicrotask(() => child.emit("close", 1));
-      return child;
-    });
-
-    await expect(
-      main({
-        WORKERS_CI: "1",
-        WORKERS_CI_BRANCH: "preview-persistence",
-        CONVEX_DEPLOY_KEY: "preview:team:project|test",
-      }),
-    ).rejects.toThrow("Cloudflare build failed");
-    expect(ensurePreviewConvexAuth).not.toHaveBeenCalled();
   });
 });
