@@ -24,14 +24,20 @@ jobs:
           node-version: '24'
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Verify package signatures
+        run: npm audit signatures
 
       - name: Audit dependencies
         run: pnpm audit
 
       - name: Audit production dependencies
         run: pnpm audit --prod
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       
       - name: Run build
         run: pnpm run build:app
