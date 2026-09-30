@@ -49,7 +49,7 @@ test.describe("production deep links", () => {
 
       expect(response?.status()).toBe(200);
       await expect(
-        page.getByRole("heading", { name: "ChessMerge" }),
+        page.getByRole("heading", { name: "ChessMerge", exact: true }),
       ).toBeVisible();
 
       const lobbyButton = page.getByRole("button", { name: "Lobby" });
