@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Verify package signatures
+        run: npm audit signatures
+
       - name: Audit dependencies
         run: pnpm audit
 
