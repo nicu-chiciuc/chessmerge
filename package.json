@@ -41,8 +41,8 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@robolex/sure": "^0.12.0",
-    "@tanstack/react-router": "1.169.2",
-    "@tanstack/react-start": "1.167.65",
+    "@tanstack/react-router": "1.170.40",
+    "@tanstack/react-start": "1.168.59",
     "@tscu/dependent": "npm:@jsr/tscu__dependent@^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -62,11 +62,11 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^5.2.0",
-    "@vitest/coverage-v8": "^3.1.4",
-    "@vitest/ui": "^3.1.4",
+    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/ui": "4.1.11",
     "convex-test": "^0.0.56",
     "dotenv": "^16.4.7",
-    "eslint": "^9.21.0",
+    "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
@@ -78,7 +78,16 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^7.3.6",
-    "vitest": "^3.1.4",
-    "wrangler": "4.136.2"
+    "vitest": "4.1.11",
+    "wrangler": "4.145.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@humanfs/node": "0.16.8",
+      "browserslist": "4.29.3",
+      "js-yaml": "4.3.2",
+      "shell-quote": "1.11.0",
+      "yaml": "2.8.3"
+    }
   }
 }
