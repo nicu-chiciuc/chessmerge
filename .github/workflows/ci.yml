@@ -57,14 +57,20 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: node ./scripts/validate-main-build-label.ts
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Verify package signatures
+        run: npm audit signatures
 
       - name: Audit dependencies
         run: pnpm audit
 
       - name: Audit production dependencies
         run: pnpm audit --prod
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Type check
         run: pnpm run type-check
@@ -89,6 +95,18 @@ jobs:
           node-version: 24
           cache: "pnpm"
 
+      - name: Install dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Verify package signatures
+        run: npm audit signatures
+
+      - name: Audit dependencies
+        run: pnpm audit
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -111,6 +129,18 @@ jobs:
         with:
           node-version: 24
           cache: "pnpm"
+
+      - name: Install dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Verify package signatures
+        run: npm audit signatures
+
+      - name: Audit dependencies
+        run: pnpm audit
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
