@@ -83,6 +83,11 @@
   },
   "packageManager": "pnpm@10.11.1",
   "pnpm": {
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ]
+    },
     "overrides": {
       "@humanfs/node": "0.16.8",
       "browserslist": "4.29.3",
