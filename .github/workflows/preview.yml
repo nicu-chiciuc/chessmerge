@@ -1,0 +1,60 @@
+name: Preview
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    name: Deploy preview
+    # A pull request from a fork gets no secrets.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write # gh pr comment posts the preview URL.
+    # One run per pull request; a newer push waits, so the last deploy is the newest commit.
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The preview deployment is named after the branch, so a second push reuses it. The
+      # flags match `pnpm run deploy`; the build also records the site URL that Convex gives it.
+      - name: Deploy the preview
+        id: deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+        run: |
+          # The single quotes are deliberate: the variables expand in the shell that npx convex deploy starts.
+          # shellcheck disable=SC2016
+          pnpm exec convex-hosting deploy --preview-name "$GITHUB_HEAD_REF" \
+            --build 'pnpm run build:app && echo "url=$VITE_CONVEX_SITE_URL" >> "$GITHUB_OUTPUT"' \
+            --dist dist/client --html-handling none --not-found-handling single-page-application
+
+      - name: Post the preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none \
+            --body "Preview: $URL"
