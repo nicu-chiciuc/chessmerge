@@ -20,7 +20,7 @@ importers:
         version: 0.41.3
       '@convex-dev/auth':
         specifier: ^0.0.95
-        version: 0.0.95(@auth/core@0.41.3)(convex@1.45.0(react@19.1.0))(react@19.1.0)
+        version: 0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.1.0))(react@19.1.0)
       '@oslojs/crypto':
         specifier: ^1.0.1
         version: 1.0.1
@@ -42,6 +42,9 @@ importers:
       '@robolex/sure':
         specifier: ^0.12.0
         version: 0.12.0
+      '@samebase/convex-hosting':
+        specifier: 0.5.0
+        version: 0.5.0(convex@1.46.0(react@19.1.0))
       '@tanstack/react-router':
         specifier: 1.170.40
         version: 1.170.40(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -58,8 +61,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       convex:
-        specifier: ^1.45.0
-        version: 1.45.0(react@19.1.0)
+        specifier: ^1.46.0
+        version: 1.46.0(react@19.1.0)
       dependent-ts:
         specifier: ^0.0.4
         version: 0.0.4
@@ -108,7 +111,7 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       convex-test:
         specifier: ^0.0.56
-        version: 0.0.56(convex@1.45.0(react@19.1.0))
+        version: 0.0.56(convex@1.46.0(react@19.1.0))
       dotenv:
         specifier: ^16.4.7
         version: 16.5.0
@@ -1546,6 +1549,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@samebase/convex-hosting@0.5.0':
+    resolution: {integrity: sha512-CkDojgDm3dtSEO6ngo32FK6dQgaYUVEDMjZRRAAAcHv2NHIJoac70dZ5ks27Wl7fbMpUpPSUws2L6wjo+ENMLg==}
+    hasBin: true
+    peerDependencies:
+      convex: ^1.46.0
+
   '@sindresorhus/is@7.2.0':
     resolution: {integrity: sha512-P1Cz1dWaFfR4IR+U13mqqiGsLFf1KbayybWwdd2vfctdV6hDpUkgCY0nKOLLTMSoRd/jJNjtbqzf13K8DCCXQw==}
     engines: {node: '>=18'}
@@ -2323,8 +2332,8 @@ packages:
     peerDependencies:
       convex: ^1.43.0
 
-  convex@1.45.0:
-    resolution: {integrity: sha512-AV3B56Ptu/14d76g3urBJ50dwpiZa6uJaLT84OWox5aCwZIJiuAamdjv3lLHDzs8vv5kC31anEZohhUe3qJ2bA==}
+  convex@1.46.0:
+    resolution: {integrity: sha512-dhBwDQTZDOhi5SUGAX17EWNehCdNq6/UFrSL0eLZuGfMkdsQbCVWVRZCzbZ5CF+/pgvoGxtApbEoTSipqL4JTw==}
     engines: {node: '>=20.0.0', npm: '>=7.0.0'}
     hasBin: true
     peerDependencies:
@@ -2722,6 +2731,10 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
+  ignore@7.0.12:
+    resolution: {integrity: sha512-/8UvqAPU9DGTI9k4mxtf49U37Isfwr8Uts96+SBHIkFxPJnHS0Ew4f00sM4Scd8V8EjM0jUNtVDdv1kPdt35lg==}
+    engines: {node: '>= 4'}
+
   ignore@7.0.5:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
@@ -3116,6 +3129,11 @@ packages:
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
+
+  mime@4.1.0:
+    resolution: {integrity: sha512-X5ju04+cAzsojXKes0B/S4tcYtFAJ6tTMuSPBEn9CPGlrWr8Fiw7qYeLT0XyH80HSoAoqWCaz+MWKh22P7G1cw==}
+    engines: {node: '>=16'}
+    hasBin: true
 
   miniflare@5.20260930.0-alpha:
     resolution: {integrity: sha512-vZljfRtOEeynbhJtuvYsnCU8t6zF5wIUm9ql4YFHB7zvYw2+F2tpT0BzXjzaa++eiUIml1gsODCf02qShBmJdg==}
@@ -4081,12 +4099,12 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260930.2':
     optional: true
 
-  '@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.45.0(react@19.1.0))(react@19.1.0)':
+  '@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@auth/core': 0.41.3
       '@oslojs/crypto': 1.0.1
       '@oslojs/encoding': 1.1.0
-      convex: 1.45.0(react@19.1.0)
+      convex: 1.46.0(react@19.1.0)
       cookie: 1.0.2
       is-network-error: 1.1.0
       jose: 5.10.0
@@ -4897,6 +4915,13 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.62.5':
     optional: true
+
+  '@samebase/convex-hosting@0.5.0(convex@1.46.0(react@19.1.0))':
+    dependencies:
+      convex: 1.46.0(react@19.1.0)
+      ignore: 7.0.12
+      mime: 4.1.0
+      zod: 4.6.5
 
   '@sindresorhus/is@7.2.0': {}
 
@@ -5725,14 +5750,14 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-test@0.0.56(convex@1.45.0(react@19.1.0)):
+  convex-test@0.0.56(convex@1.46.0(react@19.1.0)):
     dependencies:
-      convex: 1.45.0(react@19.1.0)
+      convex: 1.46.0(react@19.1.0)
 
-  convex@1.45.0(react@19.1.0):
+  convex@1.46.0(react@19.1.0):
     dependencies:
       esbuild: 0.27.0
-      prettier: 3.5.3
+      prettier: 3.9.9
       ws: 8.21.0
     optionalDependencies:
       react: 19.1.0
@@ -6212,6 +6237,8 @@ snapshots:
 
   ignore@5.3.2: {}
 
+  ignore@7.0.12: {}
+
   ignore@7.0.5: {}
 
   import-fresh@3.3.1:
@@ -6546,6 +6573,8 @@ snapshots:
     dependencies:
       braces: 3.0.3
       picomatch: 2.3.2
+
+  mime@4.1.0: {}
 
   miniflare@5.20260930.0-alpha(@types/node@22.15.29):
     dependencies:

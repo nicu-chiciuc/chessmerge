@@ -68,4 +68,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  hosting: import("@samebase/convex-hosting/_generated/component.js").ComponentApi<"hosting">;
+};
