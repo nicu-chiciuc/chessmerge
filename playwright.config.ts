@@ -20,7 +20,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm run build:app && pnpm run preview",
+    command: "pnpm run build:app && node ./scripts/serve-dist.ts",
     url: "http://localhost:8787",
     reuseExistingServer: !isHydrationSmoke,
     timeout: 120000,
