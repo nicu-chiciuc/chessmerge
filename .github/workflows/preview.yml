@@ -37,6 +37,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # A re-run of an old run checks out its old commit, and its deploy would put older code
+      # over the newer preview. Only the commit that the pull request points to now deploys.
+      - name: Check that this commit is the head of the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+          if [ "$head" != "$EVENT_HEAD" ]; then
+            echo "::error::$EVENT_HEAD is stale: the pull request now points to $head. Convex was not deployed."
+            exit 1
+          fi
+
       # The preview deployment is named after the branch, so a second push reuses it. The
       # flags match `pnpm run deploy`; the build also records the site URL that Convex gives it.
       - name: Deploy the preview
