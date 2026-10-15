@@ -1,15 +1,16 @@
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { useEffect, useRef, useState } from "react";
 
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { ChallengeBoardPreview } from "./ChallengeBoardPreview";
+import { challengeQuery } from "./ChallengePage.queries";
 import { resolveChallengeView, type ChallengeView } from "./challenge-view";
 
-type PageView = ChallengeView | { kind: "loading" };
 type JoinState =
   | { kind: "failed"; message: string }
   | { kind: "idle" }
@@ -20,14 +21,20 @@ type CancelState =
   | { kind: "failed"; message: string }
   | { kind: "idle" };
 
-export function ChallengePage({ challengeId }: { challengeId: string }) {
+export function ChallengePage({
+  challengeId,
+  initialNow,
+}: {
+  challengeId: string;
+  initialNow: number;
+}) {
   const navigate = useNavigate();
-  const challenge = useQuery(api.challenges.getChallenge, { challengeId });
+  const { data: challenge } = useSuspenseQuery(challengeQuery(challengeId));
   const joinChallenge = useMutation(api.challenges.joinChallenge);
   const cancelChallenge = useMutation(api.challenges.cancelChallenge);
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signIn } = useAuthActions();
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(initialNow);
   const [joinState, setJoinState] = useState<JoinState>({ kind: "idle" });
   const [cancelState, setCancelState] = useState<CancelState>({ kind: "idle" });
   const [showCancel, setShowCancel] = useState(false);
@@ -40,8 +47,7 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
   const joinButton = useRef<HTMLButtonElement>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
   const keepWaitingButton = useRef<HTMLButtonElement>(null);
-  const unavailableButton = useRef<HTMLButtonElement>(null);
-  const previousView = useRef<PageView["kind"]>("loading");
+  const previousView = useRef<ChallengeView["kind"] | "loading">("loading");
   const previousCancelPrompt = useRef(false);
 
   const canonicalUrl =
@@ -51,11 +57,12 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
   const agentInvite = `Open this ChessMerge challenge in your browser, join as a guest, and play the full game against me: ${canonicalUrl}\n\nDo not stop while the game is active. When the page says "Opponent's turn," wait and check again. When the page says "Your turn," make a move. Continue until the page shows the final result.`;
   const canShare =
     typeof navigator !== "undefined" && typeof navigator.share === "function";
-  const view: PageView = locallyUnavailable
+  const view: ChallengeView = locallyUnavailable
     ? { kind: "unavailable" }
-    : challenge === undefined
-      ? { kind: "loading" }
-      : resolveChallengeView(challenge, now);
+    : resolveChallengeView(challenge, now);
+  // The server renders signed out, so the viewer's role is known only after
+  // Convex Auth loads in the browser. Until then the page shows no controls.
+  const controlsView = isLoading ? "loading" : view.kind;
   const gameId = view.kind === "game" ? view.gameId : null;
 
   // The public query returns a usable view only after Convex normalizes this raw route value.
@@ -89,22 +96,21 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
   }, [gameId, navigate]);
 
   useEffect(() => {
-    const viewChanged = previousView.current !== view.kind;
+    const viewChanged = previousView.current !== controlsView;
     const promptChanged = previousCancelPrompt.current !== showCancel;
-    previousView.current = view.kind;
+    previousView.current = controlsView;
     previousCancelPrompt.current = showCancel;
     if (!viewChanged && !promptChanged) return;
 
     const frame = window.requestAnimationFrame(() => {
-      if (view.kind === "unavailable") unavailableButton.current?.focus();
-      if (view.kind === "guest" && viewChanged) joinButton.current?.focus();
-      if (view.kind !== "creator") return;
+      if (controlsView === "guest" && viewChanged) joinButton.current?.focus();
+      if (controlsView !== "creator") return;
       if (showCancel) keepWaitingButton.current?.focus();
       else if (promptChanged) cancelButton.current?.focus();
       else if (viewChanged) copyButton.current?.focus();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [showCancel, view.kind]);
+  }, [controlsView, showCancel]);
 
   useEffect(() => {
     if (
@@ -209,23 +215,16 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
     }
   };
 
-  if (view.kind === "unavailable") {
-    return (
-      <UnavailableChallenge
-        buttonRef={unavailableButton}
-        onCreate={() => void navigate({ to: "/new" })}
-      />
-    );
-  }
+  if (view.kind === "unavailable") return <UnavailableChallenge />;
 
-  if (view.kind === "loading" || view.kind === "game") {
+  if (view.kind === "game") {
     return (
       <div className="grid flex-1 place-items-center px-4">
         <p
           className="font-mono text-xs text-muted-foreground"
           aria-live="polite"
         >
-          {view.kind === "game" ? "Opening game…" : "Opening challenge…"}
+          Opening game…
         </p>
       </div>
     );
@@ -241,10 +240,10 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
         <article
           className="order-first min-w-0 rounded-xl border bg-card p-5 shadow-lg sm:p-8 md:order-last"
           aria-labelledby={
-            view.kind === "creator" ? "waiting-title" : "join-title"
+            controlsView === "creator" ? "waiting-title" : "join-title"
           }
         >
-          {view.kind === "creator" ? (
+          {controlsView === "creator" ? (
             <>
               <h1
                 id="waiting-title"
@@ -405,16 +404,18 @@ export function ChallengePage({ challengeId }: { challengeId: string }) {
                 />
                 <PlayerSlot symbol="G" name="Guest" detail="Open seat" empty />
               </div>
-              <Button
-                ref={joinButton}
-                type="button"
-                size="lg"
-                className="w-full"
-                disabled={pendingJoin}
-                onClick={beginJoin}
-              >
-                {pendingJoin ? "Joining…" : "Join as guest"}
-              </Button>
+              {controlsView === "guest" ? (
+                <Button
+                  ref={joinButton}
+                  type="button"
+                  size="lg"
+                  className="w-full"
+                  disabled={pendingJoin}
+                  onClick={beginJoin}
+                >
+                  {pendingJoin ? "Joining…" : "Join as guest"}
+                </Button>
+              ) : null}
               {joinState.kind === "failed" ? (
                 <p
                   className="mt-4 text-sm text-destructive [overflow-wrap:anywhere]"
@@ -462,13 +463,15 @@ function PlayerSlot({
   );
 }
 
-function UnavailableChallenge({
-  buttonRef,
-  onCreate,
-}: {
-  buttonRef: RefObject<HTMLButtonElement | null>;
-  onCreate: () => void;
-}) {
+/** The route's notFoundComponent too, so it owns its focus. */
+export function UnavailableChallenge() {
+  const navigate = useNavigate();
+  const button = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    button.current?.focus();
+  }, []);
+
   return (
     <div className="grid flex-1 place-items-center px-3 py-8">
       <article className="w-full max-w-lg rounded-xl border bg-card p-6 shadow-lg sm:p-8">
@@ -480,11 +483,11 @@ function UnavailableChallenge({
           already have an opponent.
         </p>
         <Button
-          ref={buttonRef}
+          ref={button}
           type="button"
           size="lg"
           className="mt-6 w-full"
-          onClick={onCreate}
+          onClick={() => void navigate({ to: "/new" })}
         >
           Create a challenge
         </Button>
