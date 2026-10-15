@@ -43,8 +43,8 @@
     "convex": "^1.46.0",
     "dependent-ts": "^0.0.4",
     "lucide-react": "^0.511.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.3.0"
   },
