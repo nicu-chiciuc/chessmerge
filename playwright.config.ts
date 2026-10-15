@@ -1,4 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config as loadEnvFile } from "dotenv";
+
+// The suite runs against the development deployment's site, after `pnpm run deploy:dev`.
+loadEnvFile({ path: ".env.local" });
+const baseURL = process.env.VITE_CONVEX_SITE_URL;
+if (!baseURL) {
+  throw new Error(
+    "The suite needs VITE_CONVEX_SITE_URL from .env.local; run npx convex dev once.",
+  );
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -8,7 +18,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:8787",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -17,10 +27,4 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm run build:app && node ./scripts/serve-dist.ts",
-    url: "http://localhost:8787",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
 });
