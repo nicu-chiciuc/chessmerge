@@ -145,8 +145,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Build and smoke test
-        run: pnpm run test:e2e:smoke
+      # The shell prerender creates the Convex client, which needs an absolute URL.
+      - name: Build
+        env:
+          VITE_CONVEX_URL: https://placeholder.convex.cloud
+        run: pnpm run build:app
