@@ -1,6 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Trash2, UserRound } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
@@ -143,15 +143,20 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const { signOut } = useAuthActions();
   const deleteAccount = useMutation(api.accounts.deleteAccount);
+  const { isLoading } = useConvexAuth();
   const user = useQuery(api.auth.loggedInUser);
   const [confirmation, setConfirmation] = useState("");
   const [state, setState] = useState<DeleteState>({ kind: "idle" });
 
+  // Convex Auth sets the stored token after the page subscribes, so the first
+  // answer can be the signed-out null. Null means signed out once auth loads.
   useEffect(() => {
-    if (user === null) void navigate({ to: "/login", replace: true });
-  }, [navigate, user]);
+    if (!isLoading && user === null) {
+      void navigate({ to: "/login", replace: true });
+    }
+  }, [isLoading, navigate, user]);
 
-  if (user === undefined) {
+  if (isLoading || user === undefined) {
     return (
       <div className="grid flex-1 place-items-center px-4">
         <p className="text-sm text-muted-foreground">Loading account…</p>
