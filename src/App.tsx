@@ -4,7 +4,6 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import {
   Outlet,
   Link,
-  useHydrated,
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
@@ -77,14 +76,12 @@ function AccountControls() {
 
 export default function App() {
   const navigate = useNavigate();
-  const isHydrated = useHydrated();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const isLocalPracticeRoute = isHydrated && pathname.startsWith("/practice");
-  const isGameRoute =
-    isHydrated &&
-    (pathname.startsWith("/game") || pathname.startsWith("/practice"));
+  // The root route renders the practice page without the Convex provider.
+  const isLocalPracticeRoute = pathname.startsWith("/practice");
+  const isGameRoute = pathname.startsWith("/game") || isLocalPracticeRoute;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
