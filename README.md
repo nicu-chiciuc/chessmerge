@@ -52,9 +52,10 @@ GitHub Actions deploys:
   the preview URL (`.github/workflows/preview.yml`). Later pushes reuse the preview, so users,
   games, and sessions stay until Convex expires it.
 
-`convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes.
-`pnpm run dev` and `pnpm run dev:backend` run `convex-hosting init` first, which creates the
-file with no site version in a new clone.
+`convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes. In a new clone,
+`convex dev` cannot push until that file exists, so run `npx convex dev --skip-push` (it creates
+the development deployment and `.env.local` without a push), then `pnpm run deploy:dev`, then
+`pnpm run dev`.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 

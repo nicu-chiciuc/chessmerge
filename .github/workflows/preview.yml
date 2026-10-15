@@ -51,18 +51,13 @@ jobs:
             exit 1
           fi
 
-      # The preview deployment is named after the branch, so a second push reuses it. The
-      # flags match `pnpm run deploy`; the build also records the site URL that Convex gives it.
+      # The preview deployment is named after the branch, so a second push reuses it. The deploy
+      # writes url=<site URL> to $GITHUB_OUTPUT.
       - name: Deploy the preview
         id: deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
-        run: |
-          # The single quotes are deliberate: the variables expand in the shell that npx convex deploy starts.
-          # shellcheck disable=SC2016
-          pnpm exec convex-hosting deploy --preview-name "$GITHUB_HEAD_REF" \
-            --build 'pnpm run build:app && echo "url=$VITE_CONVEX_SITE_URL" >> "$GITHUB_OUTPUT"' \
-            --dist dist/client --html-handling none --not-found-handling single-page-application
+        run: pnpm run deploy --preview-name "$GITHUB_HEAD_REF"
 
       - name: Post the preview URL
         env:

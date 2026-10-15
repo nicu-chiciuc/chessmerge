@@ -44,8 +44,8 @@ importers:
         specifier: ^0.12.0
         version: 0.12.0
       '@samebase/convex-hosting':
-        specifier: 0.5.0
-        version: 0.5.0(convex@1.46.0(react@19.1.0))
+        specifier: 0.8.0
+        version: 0.8.0(convex@1.46.0(react@19.1.0))
       '@tanstack/react-router':
         specifier: 1.170.40
         version: 1.170.40(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -1053,8 +1053,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@samebase/convex-hosting@0.5.0':
-    resolution: {integrity: sha512-CkDojgDm3dtSEO6ngo32FK6dQgaYUVEDMjZRRAAAcHv2NHIJoac70dZ5ks27Wl7fbMpUpPSUws2L6wjo+ENMLg==}
+  '@samebase/convex-hosting@0.8.0':
+    resolution: {integrity: sha512-MQmn2oXkEOv+D5ao/+gMRKXARft/VcQEub8oTDbyq0ZtKgC0LGMKns9agudv9jrQ1EwGtQGk6JPt89qxiDiQtA==}
     hasBin: true
     peerDependencies:
       convex: ^1.46.0
@@ -3733,7 +3733,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.5':
     optional: true
 
-  '@samebase/convex-hosting@0.5.0(convex@1.46.0(react@19.1.0))':
+  '@samebase/convex-hosting@0.8.0(convex@1.46.0(react@19.1.0))':
     dependencies:
       convex: 1.46.0(react@19.1.0)
       ignore: 7.0.12
