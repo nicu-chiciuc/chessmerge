@@ -1,6 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config as loadEnvFile } from "dotenv";
 
-const isHydrationSmoke = process.env.CHESSMERGE_E2E_SMOKE === "1";
+// The suite runs against the development deployment's site, after `pnpm run deploy:dev`.
+loadEnvFile({ path: ".env.local" });
+const baseURL = process.env.VITE_CONVEX_SITE_URL;
+if (!baseURL) {
+  throw new Error(
+    "The suite needs VITE_CONVEX_SITE_URL from .env.local; run npx convex dev once.",
+  );
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -10,7 +18,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:8787",
+    baseURL,
     trace: "on-first-retry",
   },
   projects: [
@@ -19,10 +27,4 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm run build:app && pnpm run preview",
-    url: "http://localhost:8787",
-    reuseExistingServer: !isHydrationSmoke,
-    timeout: 120000,
-  },
 });

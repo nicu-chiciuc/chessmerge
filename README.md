@@ -33,21 +33,29 @@ pnpm run dev
 
 ### Build and deploy
 
-- `pnpm run build:app` - Type-check and build the application locally
-- `pnpm run build` - Build locally, or deploy the selected Convex backend and build in Cloudflare Workers Builds
-- `pnpm run deploy` - Publish production with Wrangler
-- `pnpm run deploy:preview` - Create or update a native Worker Preview
-- `pnpm run preview` - Serve the current `dist/client` build through Wrangler's static-asset runtime
+- `pnpm run build:app` - Type-check and build the application into `dist/client`
+- `pnpm run deploy` - Build, upload the site, and push the functions to the production Convex deployment
+- `pnpm run deploy:dev` - The same for the development deployment in `.env.local`
 
-Set the build secret `CONVEX_DEPLOY_KEY` to the production deploy key in **Builds > Production**
-and the project Preview deploy key in **Builds > Previews Base**, not runtime settings.
-Existing branches keep their own build variables. To use updated Base settings, use a new branch
-or update the existing branch's build variables. Deleting the Worker Preview alone does not reset them.
+Convex serves the site next to the backend with
+[`@samebase/convex-hosting`](https://github.com/samebase/convex-hosting), at
+`https://<deployment>.convex.site`. A deploy uploads `dist/client` and then pushes the
+functions, and the push switches the site. Deploy with these scripts, not with a plain
+`npx convex deploy`, which pushes no site version.
 
-The build, auth, and branch-head scripts match the Samebase starter. A stale Workers Build stops
-before Convex publishes functions. Local builds do not deploy Convex. See the
-[Worker Previews migration guide](https://samebase.com/docs/cloudflare-previews-migration)
-for provider settings. This app already uses native Worker Previews.
+GitHub Actions deploys:
+
+- A push to `main` deploys production with the repository secret `CONVEX_DEPLOY_KEY`, the
+  production deploy key (`.github/workflows/deploy.yml`).
+- A pull request from this repository deploys a Convex preview named after its branch with the
+  repository secret `CONVEX_PREVIEW_DEPLOY_KEY`, the project's preview deploy key, and comments
+  the preview URL (`.github/workflows/preview.yml`). Later pushes reuse the preview, so users,
+  games, and sessions stay until Convex expires it.
+
+`convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes. In a new clone,
+`convex dev` cannot push until that file exists, so run `npx convex dev --skip-push` (it creates
+the development deployment and `.env.local` without a push), then `pnpm run deploy:dev`, then
+`pnpm run dev`.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
 
@@ -55,15 +63,17 @@ for provider settings. This app already uses native Worker Previews.
 - `tsconfig.node.json` - Node.js tooling (vite.config.ts, etc.)
 - `convex/tsconfig.json` - Convex backend functions
 
-The generated Convex bindings in `convex/_generated` are committed so CI and
-Cloudflare can build without development deployment credentials. Run
+The generated Convex bindings in `convex/_generated` are committed so CI can
+build without development deployment credentials. Run
 `pnpm exec convex codegen` after changing backend modules or the schema.
 
 TanStack Start runs in SPA mode for this application. It prerenders the browser
-shell to `dist/client/index.html`, and Cloudflare Workers Static Assets serves
-that shell for direct route loads. Convex Auth and all authenticated game data
-initialize in the browser; the Start prerender step does not read or recreate an
-authenticated session on the server.
+shell to `dist/client/index.html`, and Convex hosting serves that shell when a
+browser opens a route directly (`--not-found-handling single-page-application`).
+The fallback applies to navigations only: a request without
+`Sec-Fetch-Mode: navigate`, such as plain `curl`, gets 404 for a route path.
+Convex Auth and all authenticated game data initialize in the browser; the Start
+prerender step does not read or recreate an authenticated session on the server.
 
 ### Authentication email setup
 
@@ -75,21 +85,16 @@ If the automatic first-run setup did not complete, generate the required
 `SITE_URL`, `JWT_PRIVATE_KEY`, and `JWKS` values with:
 
 ```bash
-pnpm exec @convex-dev/auth --skip-git-check --web-server-url http://localhost:5173
+npx @convex-dev/auth --skip-git-check --web-server-url http://localhost:5173
 ```
 
 The Convex project also keeps these three values as **Development** and
 **Preview** default environment variables. Convex copies project defaults into
 new deployments; it does not update deployments that already exist. Development
 uses `http://localhost:5173` for `SITE_URL`, while previews use
-`https://chessmerge.com` as the stable redirect fallback. Cloudflare preview
-builds use `--preview-name` to preserve users, games, sessions, and the deployment
-URL until Convex expires the preview. Preview build settings must use the project Preview key.
-
-After the Convex deploy, the standard `scripts/ensure-convex-auth.ts` preserves existing auth keys.
-It creates a matching key pair only when both keys are absent. A failed read or partial key pair
-stops the build. The app-only `scripts/ensure-preview-site-url.ts` then preserves `SITE_URL`
-or sets `https://chessmerge.com` when that value is absent. It runs only for preview Workers Builds.
+`https://chessmerge.com` as the stable redirect fallback. A new preview gets its
+keys and `SITE_URL` from these defaults. Production gets them once from the
+setup command with `--prod`, described below.
 
 Manage the defaults in Convex Project Settings or with
 `pnpm exec convex env default --help`. Keep `JWT_PRIVATE_KEY` and `JWKS` from the

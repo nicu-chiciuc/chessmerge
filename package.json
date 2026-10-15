@@ -8,23 +8,20 @@
     "dev:frontend": "vite --open",
     "dev:backend": "convex dev",
     "predev": "convex dev --until-success && convex dev --once --run-sh \"node setup.mjs --once\" ",
-    "build": "node ./scripts/build-cloudflare.ts && node ./scripts/ensure-preview-site-url.ts",
     "build:app": "tsc -b && vite build",
-    "deploy": "wrangler deploy",
-    "deploy:preview": "wrangler preview",
+    "deploy": "convex-hosting deploy --build \"pnpm run build:app\" --dist dist/client --html-handling none --not-found-handling single-page-application",
+    "deploy:dev": "convex-hosting deploy --dev --build \"pnpm run build:app\" --dist dist/client --html-handling none --not-found-handling single-page-application",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives",
     "lint:strict": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc -b",
     "type-check:watch": "tsc -b --watch",
     "type-check:convex": "tsc --project convex/tsconfig.json --noEmit",
-    "preview": "wrangler dev --config ./wrangler.jsonc --port 8787",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "node ./scripts/run-e2e-smoke.ts",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
@@ -37,12 +34,13 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@robolex/sure": "^0.12.0",
+    "@samebase/convex-hosting": "0.8.0",
     "@tanstack/react-router": "1.170.40",
     "@tanstack/react-start": "1.168.59",
     "@tscu/dependent": "npm:@jsr/tscu__dependent@^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.45.0",
+    "convex": "^1.46.0",
     "dependent-ts": "^0.0.4",
     "lucide-react": "^0.511.0",
     "react": "^19.0.0",
@@ -72,11 +70,9 @@
     "tailwindcss": "^4.3.3",
     "tw-animate-css": "^1.3.3",
     "typescript": "~5.7.2",
-    "typescript-eslint": "^8.24.1",
+    "typescript-eslint": "^8.71.1",
     "vite": "^7.3.6",
-    "vite-plus": "0.3.0",
-    "vitest": "4.1.11",
-    "wrangler": "4.145.0"
+    "vitest": "4.1.11"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -88,6 +84,7 @@
       "browserslist": "4.29.3",
       "js-yaml": "4.3.2",
       "shell-quote": "1.11.0",
+      "source-map-js": "1.2.2",
       "yaml": "2.8.3"
     }
   }

@@ -19,7 +19,6 @@ import type * as emails from "../emails.js";
 import type * as gameLogic from "../gameLogic.js";
 import type * as http from "../http.js";
 import type * as publicPlayers from "../publicPlayers.js";
-import type * as router from "../router.js";
 
 import type {
   ApiFromModules,
@@ -39,7 +38,6 @@ declare const fullApi: ApiFromModules<{
   gameLogic: typeof gameLogic;
   http: typeof http;
   publicPlayers: typeof publicPlayers;
-  router: typeof router;
 }>;
 
 /**
@@ -68,4 +66,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  hosting: import("@samebase/convex-hosting/_generated/component.js").ComponentApi<"hosting">;
+};
