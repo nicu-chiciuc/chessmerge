@@ -1,3 +1,4 @@
+import { convexSsr } from "@samebase/convex-hosting-tanstack-start/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -8,16 +9,14 @@ import path from "path";
 export default defineConfig({
   plugins: [
     tailwindcss(),
+    convexSsr(),
     tanstackStart({
-      // Convex Auth owns its session in the browser. Start still provides the
-      // typed route tree and build pipeline, but authenticated UI is not SSR'd.
-      spa: {
-        enabled: true,
-        maskPath: "/#__chessmerge-spa-shell",
-        prerender: {
-          outputPath: "/index.html",
-        },
-      },
+      // Prerenders /rules only, so Convex hosting serves it as a file. A
+      // prerendered route and its parents must not query Convex: CI builds
+      // with a placeholder VITE_CONVEX_URL.
+      pages: [
+        { path: "/rules", prerender: { enabled: true, crawlLinks: false } },
+      ],
     }),
     react(),
   ],

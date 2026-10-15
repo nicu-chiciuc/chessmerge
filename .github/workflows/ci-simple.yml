@@ -39,7 +39,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       
+      # The /rules prerender creates the router, which needs VITE_CONVEX_URL.
       - name: Run build
+        env:
+          VITE_CONVEX_URL: https://placeholder.convex.cloud
         run: pnpm run build:app
 
       - name: Run type checking
