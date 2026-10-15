@@ -8,7 +8,7 @@ test.describe("shareable challenges", () => {
   }) => {
     const response = await page.goto("/challenge/not-a-convex-id");
 
-    expect(response?.status()).toBe(200);
+    expect(response?.status()).toBe(404);
     await expect(
       page.getByRole("heading", { name: "Challenge unavailable" }),
     ).toBeVisible();
@@ -268,11 +268,15 @@ test.describe("shareable challenges", () => {
       await expect(spectatorPage).toHaveURL(gameUrl);
 
       await guestPage.setViewportSize({ width: 320, height: 720 });
-      const currentIdentity = guestPage.locator("header span[title]");
+      const settingsLink = guestPage.locator('header a[href="/settings"]');
+      const currentIdentity = settingsLink.locator("span");
       await expect(currentIdentity).toBeVisible();
       const currentName = (await currentIdentity.textContent())?.trim();
       expect(currentName).toBeTruthy();
-      await expect(currentIdentity).toHaveAttribute("title", currentName!);
+      await expect(settingsLink).toHaveAttribute(
+        "title",
+        `${currentName!} settings`,
+      );
       await expect(
         guestPage.getByRole("button", { name: /Lobby/ }),
       ).toBeVisible();
@@ -282,9 +286,8 @@ test.describe("shareable challenges", () => {
       const longName = "VeryLongChessPlayer_2026";
       await currentIdentity.evaluate((element, name) => {
         element.textContent = name;
-        element.title = name;
       }, longName);
-      await expect(currentIdentity).toHaveAttribute("title", longName);
+      await expect(currentIdentity).toHaveText(longName);
       await expect
         .poll(() =>
           currentIdentity.evaluate(
