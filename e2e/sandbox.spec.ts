@@ -4,6 +4,11 @@ import { boardToString, stringToBoard } from "../lib/chessmerge";
 
 const chosenSetup = "4k3/8/8/8/8/8/4P3/4K3 b - - 0 1";
 const serializedChosenSetup = "4k3/8/8/8/8/8/4P3/4K3_b_-_-_0_1";
+const serializedAfterKingMove = "8/4k3/8/8/8/8/4P3/4K3_w_-_-_1_1";
+const serializedAfterWhiteMove =
+  "rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR_b_KQkq_-_1_1";
+const serializedAfterBlackMove =
+  "rnbqkbnr/pppp1ppp/4p3/8/8/4P3/PPPP1PPP/RNBQKBNR_w_KQkq_-_2_1";
 const promotionSetup = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const mergedPieceSetup = "4k3/8/8/3R:N4/8/8/8/4K3 w - - 0 1";
 
@@ -104,7 +109,7 @@ test.describe("Sandbox", () => {
       .toEqual({ innerWidth: 320, scrollWidth: 320 });
   });
 
-  test("plays both turns, undoes, and resets without changing the setup URL", async ({
+  test("plays both turns, undoes, and resets with the position in the URL", async ({
     page,
   }) => {
     const browserErrors: string[] = [];
@@ -128,16 +133,22 @@ test.describe("Sandbox", () => {
       /e2, white pawn/i,
     );
     await expect(page.getByText("White to move")).toBeVisible();
+    expect(gameStateParam(page)).toBeNull();
 
     await square(page, "e2").click();
     await expect(square(page, "e3")).toHaveAttribute("data-legal-move", "true");
     await square(page, "e3").click();
     await expect(page.getByText("Black to move")).toBeVisible();
-    expect(new URL(page.url()).searchParams.has("gameState")).toBe(false);
+    await expect
+      .poll(() => gameStateParam(page))
+      .toBe(serializedAfterWhiteMove);
 
     await square(page, "e7").click();
     await square(page, "e6").click();
     await expect(page.getByText("White to move")).toBeVisible();
+    await expect
+      .poll(() => gameStateParam(page))
+      .toBe(serializedAfterBlackMove);
 
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page.getByText("Black to move")).toBeVisible();
@@ -145,6 +156,9 @@ test.describe("Sandbox", () => {
       "aria-label",
       /black pawn/i,
     );
+    await expect
+      .poll(() => gameStateParam(page))
+      .toBe(serializedAfterWhiteMove);
 
     await page.getByRole("button", { name: "Reset" }).click();
     await expect(page.getByText("White to move")).toBeVisible();
@@ -153,11 +167,12 @@ test.describe("Sandbox", () => {
       /white pawn/i,
     );
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
+    await expect.poll(() => gameStateParam(page)).toBeNull();
     expect(browserErrors).toEqual([]);
     expect(openedWebSockets).toEqual([]);
   });
 
-  test("edits and shares a chosen setup while moves stay local", async ({
+  test("copies a link that opens the current position", async ({
     context,
     page,
   }) => {
@@ -178,9 +193,7 @@ test.describe("Sandbox", () => {
     await expect(page.getByLabel("Board text")).toHaveValue(
       /\.  \.  \.  \.  P  \.  \.  \. /,
     );
-    await expect
-      .poll(() => new URL(page.url()).searchParams.get("gameState"))
-      .toBe(serializedChosenSetup);
+    await expect.poll(() => gameStateParam(page)).toBe(serializedChosenSetup);
     await expect(
       page.getByRole("button", { name: "Use current board" }),
     ).toHaveCount(0);
@@ -199,28 +212,32 @@ test.describe("Sandbox", () => {
     await square(page, "e8").click();
     await square(page, "e7").click();
     await expect(page.getByText("White to move")).toBeVisible();
-    expect(new URL(page.url()).searchParams.get("gameState")).toBe(
-      serializedChosenSetup,
-    );
+    await expect.poll(() => gameStateParam(page)).toBe(serializedAfterKingMove);
 
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await page.getByRole("button", { name: "Copy setup link" }).click();
-    await expect(page.getByText("Setup link copied.")).toBeVisible();
+    await page.getByRole("button", { name: "Copy link" }).click();
+    await expect(page.getByText("Link copied.")).toBeVisible();
     const copiedLink = await page.evaluate(() =>
       navigator.clipboard.readText(),
     );
-    expect(new URL(copiedLink).searchParams.get("gameState")).toBe(
-      serializedChosenSetup,
-    );
+    expect(copiedLink).toBe(page.url());
 
-    await page.reload();
-    await expect(page.getByText("Black to move")).toBeVisible({
+    const sharedPage = await context.newPage();
+    await sharedPage.goto(copiedLink);
+    await expect(sharedPage.getByText("White to move")).toBeVisible({
       timeout: 15_000,
     });
-    await expect(square(page, "e8")).toHaveAttribute(
+    await expect(square(sharedPage, "e7")).toHaveAttribute(
       "aria-label",
       /black king/i,
     );
+    await expect(square(sharedPage, "e2")).toHaveAttribute(
+      "aria-label",
+      /white pawn/i,
+    );
+    await expect(
+      sharedPage.getByRole("button", { name: "Undo" }),
+    ).toBeDisabled();
   });
 
   test("focuses the promotion choice and locks the board", async ({ page }) => {
@@ -307,4 +324,8 @@ test.describe("Sandbox", () => {
 
 function square(page: Page, name: string) {
   return page.locator(`button[data-square="${name}"]`);
+}
+
+function gameStateParam(page: Page) {
+  return new URL(page.url()).searchParams.get("gameState");
 }

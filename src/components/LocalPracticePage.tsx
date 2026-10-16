@@ -54,7 +54,7 @@ export function LocalPracticePage() {
       : defaultPosition;
   const invalidLinkMessage =
     parsedPosition.kind === "invalid"
-      ? `This setup link is invalid. ${parsedPosition.message} The starting board was loaded.`
+      ? `This link is invalid. ${parsedPosition.message} The starting board was loaded.`
       : null;
 
   return (
@@ -134,14 +134,28 @@ function SandboxSessionView({
     }
   }, [selectedPieceMode, selectedSquare, session.position]);
 
-  function commitMove(move: Move) {
-    const nextPosition = applyMove(session.position, move);
+  function showSession(nextSession: SandboxSession) {
+    setSession(nextSession);
+    // The URL carries the shown position, so the address bar is always a
+    // shareable link. Undo history stays local, and the page keeps its scroll.
+    void navigate({
+      replace: true,
+      resetScroll: false,
+      search: (previous) => ({
+        ...previous,
+        gameState: isDefaultSandboxPosition(nextSession.position)
+          ? undefined
+          : serializeSandboxPosition(nextSession.position),
+      }),
+    });
+  }
 
-    setSession((previous) => ({
-      ...previous,
-      position: nextPosition,
-      history: [...previous.history, previous.position],
-    }));
+  function commitMove(move: Move) {
+    showSession({
+      ...session,
+      position: applyMove(session.position, move),
+      history: [...session.history, session.position],
+    });
     setBoardEditor(syncedTextEditor);
     setPositionEditor(syncedTextEditor);
     clearInteraction();
@@ -191,22 +205,18 @@ function SandboxSessionView({
       return;
     }
 
-    setSession((previous) => ({
-      ...previous,
+    showSession({
+      ...session,
       position: previousPosition,
-      history: previous.history.slice(0, -1),
-    }));
+      history: session.history.slice(0, -1),
+    });
     setBoardEditor(syncedTextEditor);
     setPositionEditor(syncedTextEditor);
     clearInteraction();
   }
 
   function reset() {
-    setSession((previous) => ({
-      ...previous,
-      position: previous.setup,
-      history: [],
-    }));
+    showSession({ ...session, position: session.setup, history: [] });
     setBoardEditor(syncedTextEditor);
     setPositionEditor(syncedTextEditor);
     clearInteraction();
@@ -226,12 +236,11 @@ function SandboxSessionView({
 
     setBoardEditor({ kind: "editing", value, error: null });
     setPositionEditor(syncedTextEditor);
-    setSession({
+    showSession({
       setup: parsedBoard.gameState,
       position: parsedBoard.gameState,
       history: [],
     });
-    replaceSetupUrl(parsedBoard.gameState);
     clearInteraction();
   }
 
@@ -249,12 +258,11 @@ function SandboxSessionView({
 
     setPositionEditor({ kind: "editing", value, error: null });
     setBoardEditor(syncedTextEditor);
-    setSession({
+    showSession({
       setup: parsedPosition.gameState,
       position: parsedPosition.gameState,
       history: [],
     });
-    replaceSetupUrl(parsedPosition.gameState);
     clearInteraction();
   }
 
@@ -266,33 +274,10 @@ function SandboxSessionView({
     setPositionEditor(syncedTextEditor);
   }
 
-  function replaceSetupUrl(setup: GameState) {
-    void navigate({
-      replace: true,
-      search: (previous) => ({
-        ...previous,
-        gameState: isDefaultSandboxPosition(setup)
-          ? undefined
-          : serializeSandboxPosition(setup),
-      }),
-    });
-  }
-
-  async function copySetupLink() {
-    const url = new URL(window.location.href);
-
-    if (isDefaultSandboxPosition(session.setup)) {
-      url.searchParams.delete("gameState");
-    } else {
-      url.searchParams.set(
-        "gameState",
-        serializeSandboxPosition(session.setup),
-      );
-    }
-
+  async function copyLink() {
     try {
-      await navigator.clipboard.writeText(url.toString());
-      setCopyMessage("Setup link copied.");
+      await navigator.clipboard.writeText(window.location.href);
+      setCopyMessage("Link copied.");
     } catch {
       setCopyMessage("Copy failed. Use the browser address bar.");
     }
@@ -393,10 +378,10 @@ function SandboxSessionView({
               className="col-span-2"
               type="button"
               variant="secondary"
-              onClick={() => void copySetupLink()}
+              onClick={() => void copyLink()}
             >
               <Link aria-hidden="true" />
-              Copy setup link
+              Copy link
             </Button>
           </div>
 
