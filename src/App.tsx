@@ -79,9 +79,8 @@ export default function App() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  // The root route renders the practice page without the Convex provider.
-  const isLocalPracticeRoute = pathname.startsWith("/practice");
-  const isGameRoute = pathname.startsWith("/game") || isLocalPracticeRoute;
+  const isGameRoute =
+    pathname.startsWith("/game") || pathname.startsWith("/practice");
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -99,20 +98,12 @@ export default function App() {
             </Button>
           )}
         </div>
-        {!isLocalPracticeRoute && (
-          <div className="ml-auto min-w-0 max-w-full">
-            <AccountControls />
-          </div>
-        )}
+        <div className="ml-auto min-w-0 max-w-full">
+          <AccountControls />
+        </div>
       </header>
       <main className="flex flex-1 flex-col">
-        {isLocalPracticeRoute ? (
-          <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
-            <Outlet />
-          </div>
-        ) : (
-          <Content />
-        )}
+        <Content />
       </main>
       <footer className="mx-auto flex w-full max-w-6xl justify-end px-3 py-3 text-muted-foreground sm:px-6">
         <SamebaseAttribution />
