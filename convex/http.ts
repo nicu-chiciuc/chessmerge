@@ -20,7 +20,7 @@ http.route({
   pathPrefix: "/",
   method: "GET",
   handler: httpAction((ctx, request) =>
-    serveSite(ctx, components.hosting, request, versionId, async () =>
+    serveSite(ctx, components.hosting, request, versionId, () =>
       server.fetch(request),
     ),
   ),
