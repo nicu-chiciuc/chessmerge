@@ -10,29 +10,25 @@ import type {} from "@samebase/convex-hosting-tanstack-start/server-build";
 import server from "../dist/server/server.js";
 
 const http = httpRouter();
-const toServer = httpAction((_ctx, request) => server.fetch(request));
 
 auth.addHttpRoutes(http);
 
-// Every request that is not a GET goes to the app's server, as every request
-// that is not a GET or HEAD goes to a Cloudflare Worker. Convex answers HEAD
+// Every method, every path, as a Cloudflare Worker with static assets: the
+// uploaded file for a path that has one (another method than GET or HEAD on
+// it answers 405), else the page that TanStack Start renders, signed out,
+// because Convex Auth keeps the session in the browser. Convex answers HEAD
 // through GET. Convex picks an exact path, then the longest prefix, so the
 // routes of auth.addHttpRoutes keep winning over "/".
-for (const method of ["POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const) {
-  http.route({ pathPrefix: "/", method, handler: toServer });
+const site = httpAction(serveSite(components.hosting, versionId, server));
+for (const method of [
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "OPTIONS",
+] as const) {
+  http.route({ pathPrefix: "/", method, handler: site });
 }
-
-// The built site. Convex Auth's exact routes and longer prefixes win over "/".
-// A path without a file is a page: TanStack Start renders it, signed out,
-// because Convex Auth keeps the session in the browser.
-http.route({
-  pathPrefix: "/",
-  method: "GET",
-  handler: httpAction((ctx, request) =>
-    serveSite(ctx, components.hosting, request, versionId, () =>
-      server.fetch(request),
-    ),
-  ),
-});
 
 export default http;
