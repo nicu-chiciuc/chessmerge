@@ -8,6 +8,29 @@ const promotionSetup = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const mergedPieceSetup = "4k3/8/8/3R:N4/8/8/8/4K3 w - - 0 1";
 
 test.describe("Sandbox", () => {
+  test("opens from the lobby and returns to it", async ({ page }) => {
+    const browserErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        browserErrors.push(message.text());
+      }
+    });
+    page.on("pageerror", (error) => browserErrors.push(error.message));
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sandbox" }).click();
+    await expect(page.getByRole("heading", { name: "Sandbox" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.locator("button[data-square]")).toHaveCount(64);
+
+    await page.getByRole("button", { name: "← Lobby" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Play ChessMerge" }),
+    ).toBeVisible();
+    expect(browserErrors).toEqual([]);
+  });
+
   test("keeps incomplete editable positions interactive", async ({ page }) => {
     const browserErrors: string[] = [];
     page.on("console", (message) => {
@@ -108,14 +131,12 @@ test.describe("Sandbox", () => {
     page,
   }) => {
     const browserErrors: string[] = [];
-    const openedWebSockets: string[] = [];
     page.on("console", (message) => {
       if (message.type() === "error") {
         browserErrors.push(message.text());
       }
     });
     page.on("pageerror", (error) => browserErrors.push(error.message));
-    page.on("websocket", (socket) => openedWebSockets.push(socket.url()));
 
     await page.goto("/practice");
 
@@ -154,7 +175,6 @@ test.describe("Sandbox", () => {
     );
     await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
     expect(browserErrors).toEqual([]);
-    expect(openedWebSockets).toEqual([]);
   });
 
   test("edits and shares a chosen setup while moves stay local", async ({

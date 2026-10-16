@@ -5,7 +5,6 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
-  useRouterState,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -35,22 +34,13 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
   const { convexQueryClient } = Route.useRouteContext();
-  const isLocalPracticeRoute = useRouterState({
-    select: (state) => state.location.pathname.startsWith("/practice"),
-  });
-  const app = <App />;
-
   // Convex Auth reads its token from localStorage in an effect, so the server
   // and the hydration render signed out, and both renders agree.
   return (
     <RootDocument>
-      {isLocalPracticeRoute ? (
-        app
-      ) : (
-        <ConvexAuthProvider client={convexQueryClient.convexClient}>
-          {app}
-        </ConvexAuthProvider>
-      )}
+      <ConvexAuthProvider client={convexQueryClient.convexClient}>
+        <App />
+      </ConvexAuthProvider>
     </RootDocument>
   );
 }
