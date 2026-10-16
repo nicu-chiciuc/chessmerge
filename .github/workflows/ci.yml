@@ -145,7 +145,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The shell prerender creates the Convex client, which needs an absolute URL.
+      # The /rules prerender creates the router, which needs VITE_CONVEX_URL.
       - name: Build
         env:
           VITE_CONVEX_URL: https://placeholder.convex.cloud

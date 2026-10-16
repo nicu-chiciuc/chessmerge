@@ -1,27 +1,33 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Link, useHydrated, useNavigate } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "convex/react";
 import { BookOpen, FlaskConical, Swords } from "lucide-react";
-import { useState } from "react";
 
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { EmailSubscribe } from "./EmailSubscribe";
+import { liveGamesQuery } from "./GameLobby.queries";
 
 type GameSummary = FunctionReturnType<typeof api.gameLogic.listGames>[number];
 
 export function GameLobby({
+  activeSince,
   isAuthenticated = false,
 }: {
+  activeSince: number;
   isAuthenticated?: boolean;
 }) {
-  const [activeSince] = useState(() => Date.now() - 24 * 60 * 60 * 1_000);
-  const liveGames = useQuery(api.gameLogic.listLiveGames, { activeSince });
+  const { data: liveGames } = useSuspenseQuery(liveGamesQuery(activeSince));
   const myGames = useQuery(
     api.gameLogic.listGames,
     isAuthenticated ? {} : "skip",
   );
   const navigate = useNavigate();
+  // The server does not know the visitor's locale and time zone, so the live
+  // games' times render after hydration. "My games" renders after sign-in,
+  // which happens in the browser.
+  const isHydrated = useHydrated();
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-3 py-6 sm:px-6 sm:py-10">
@@ -81,11 +87,7 @@ export function GameLobby({
             </span>
           </div>
 
-          {liveGames === undefined ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Loading games…
-            </p>
-          ) : liveGames.length === 0 ? (
+          {liveGames.length === 0 ? (
             <div className="rounded-lg border border-dashed p-6 text-center">
               <p className="font-medium">No games are live right now.</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -131,7 +133,7 @@ export function GameLobby({
                     dateTime={new Date(game.lastMoveAt).toISOString()}
                     className="hidden shrink-0 text-xs text-muted-foreground sm:block"
                   >
-                    {formatLastMove(game.lastMoveAt)}
+                    {isHydrated ? formatLastMove(game.lastMoveAt) : null}
                   </time>
                 </button>
               ))}

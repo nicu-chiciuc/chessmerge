@@ -6,7 +6,7 @@ import { api } from "../../convex/_generated/api";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
 import { EmailSubscribe } from "./EmailSubscribe";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { getAllMovesForCell } from "../../lib/chessmerge";
 import type {
   GameState,
@@ -54,8 +54,14 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
   const winner = game.status === "completed" ? game.winner : undefined;
   const gameEndReason =
     game.status === "completed" ? game.gameEndReason : undefined;
+  const announcedGameId = useRef<string | null>(null);
 
   useEffect(() => {
+    // Once per game: the server renders signed out, so playerColor changes
+    // from null to the player's color after Convex Auth loads.
+    if (!gameEndReason || announcedGameId.current === gameId) return;
+    announcedGameId.current = gameId;
+
     if (gameEndReason === "checkmate") {
       toast.success(`Checkmate! ${winner === "w" ? "White" : "Black"} wins!`);
     } else if (gameEndReason === "stalemate") {
@@ -69,7 +75,7 @@ export function ChessGameWrapper({ game }: { game: GameView }) {
         toast.info("You resigned.");
       }
     }
-  }, [game.playerColor, gameEndReason, winner]);
+  }, [game.playerColor, gameEndReason, gameId, winner]);
 
   const isMyTurn = gameState.options.turn === game.playerColor;
   const isBlackPlayer = game.playerColor === "b";

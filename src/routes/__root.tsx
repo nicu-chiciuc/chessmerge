@@ -1,17 +1,21 @@
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import {
   HeadContent,
   Scripts,
-  createRootRoute,
-  useHydrated,
+  createRootRouteWithContext,
   useRouterState,
 } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import App from "../App";
 import appCss from "../index.css?url";
-import { ConvexClientProvider } from "../lib/convex";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
+  convexQueryClient: ConvexQueryClient;
+}>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -30,18 +34,22 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const isHydrated = useHydrated();
+  const { convexQueryClient } = Route.useRouteContext();
   const isLocalPracticeRoute = useRouterState({
     select: (state) => state.location.pathname.startsWith("/practice"),
   });
   const app = <App />;
 
+  // Convex Auth reads its token from localStorage in an effect, so the server
+  // and the hydration render signed out, and both renders agree.
   return (
     <RootDocument>
-      {!isHydrated ? null : isLocalPracticeRoute ? (
+      {isLocalPracticeRoute ? (
         app
       ) : (
-        <ConvexClientProvider>{app}</ConvexClientProvider>
+        <ConvexAuthProvider client={convexQueryClient.convexClient}>
+          {app}
+        </ConvexAuthProvider>
       )}
     </RootDocument>
   );

@@ -33,7 +33,7 @@ pnpm run dev
 
 ### Build and deploy
 
-- `pnpm run build:app` - Type-check and build the application into `dist/client`
+- `pnpm run build:app` - Type-check and build the browser files into `dist/client` and the server render into `dist/server`
 - `pnpm run deploy` - Build, upload the site, and push the functions to the production Convex deployment
 - `pnpm run deploy:dev` - The same for the development deployment in `.env.local`
 
@@ -52,9 +52,10 @@ GitHub Actions deploys:
   the preview URL (`.github/workflows/preview.yml`). Later pushes reuse the preview, so users,
   games, and sessions stay until Convex expires it.
 
-`convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes. In a new clone,
-`convex dev` cannot push until that file exists, so run `npx convex dev --skip-push` (it creates
-the development deployment and `.env.local` without a push), then `pnpm run deploy:dev`, then
+`convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes, and the server
+build `dist/server/server.js`. In a new clone, `convex dev` cannot push until both exist, so run
+`npx convex dev --skip-push` (it creates the development deployment and `.env.local` without a
+push), then `pnpm run deploy:dev` (it builds `dist/` and writes the version file), then
 `pnpm run dev`.
 
 **Note:** The type checking setup uses TypeScript project references with separate configurations:
@@ -67,13 +68,19 @@ The generated Convex bindings in `convex/_generated` are committed so CI can
 build without development deployment credentials. Run
 `pnpm exec convex codegen` after changing backend modules or the schema.
 
-TanStack Start runs in SPA mode for this application. It prerenders the browser
-shell to `dist/client/index.html`, and Convex hosting serves that shell when a
-browser opens a route directly (`--not-found-handling single-page-application`).
-The fallback applies to navigations only: a request without
-`Sec-Fetch-Mode: navigate`, such as plain `curl`, gets 404 for a route path.
-Convex Auth and all authenticated game data initialize in the browser; the Start
-prerender step does not read or recreate an authenticated session on the server.
+Convex renders the pages on the server. A path without a file reaches
+`convex/http.ts`, which renders it with the TanStack Start server build through
+[`@samebase/convex-hosting-tanstack-start`](https://github.com/samebase/convex-hosting/tree/main/packages/convex-hosting-tanstack-start).
+Route loaders load the public Convex data (the lobby's live games, a challenge,
+a game), so the first HTML contains it, and the browser keeps it live. A
+missing challenge or game answers 404. Convex Auth keeps the session in the
+browser's localStorage, so the server always renders signed out, and the
+visitor's own data (the header name, "My games", a player's controls) appears
+after the page loads.
+
+`/rules` is prerendered at build time and served as a file. A prerendered route
+and its parents must not query Convex, because CI builds with a placeholder
+`VITE_CONVEX_URL`.
 
 ### Authentication email setup
 

@@ -1,4 +1,5 @@
 import type { GameState } from "lib/chessmerge";
+import { useHydrated } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import { useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
@@ -27,6 +28,9 @@ export function GameInfo({
   const [isRequestingRematch, setIsRequestingRematch] = useState(false);
   const [rematchError, setRematchError] = useState<string | null>(null);
   const resignButton = useRef<HTMLButtonElement>(null);
+  // The server does not know the visitor's locale and time zone, so the time
+  // renders after hydration.
+  const isHydrated = useHydrated();
 
   const confirmResign = async () => {
     if (!onResign || isResigning) return;
@@ -160,7 +164,7 @@ export function GameInfo({
         </div>
         <div className="text-xs text-gray-500">
           {game.status === "completed" ? "Ended" : "Last move"}:{" "}
-          {new Date(game.lastMoveAt).toLocaleTimeString()}
+          {isHydrated ? new Date(game.lastMoveAt).toLocaleTimeString() : null}
         </div>
       </div>
 
