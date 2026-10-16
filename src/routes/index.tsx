@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
     // Rounded to the hour, so preloads and navigations within the hour reuse
     // one query key and one subscription.
     const activeSince = Math.floor(Date.now() / HOUR) * HOUR - 24 * HOUR;
-    await context.queryClient.ensureQueryData(liveGamesQuery(activeSince));
+    await context.queryClient.query(liveGamesQuery(activeSince));
     return activeSince;
   },
   component: LobbyRoute,

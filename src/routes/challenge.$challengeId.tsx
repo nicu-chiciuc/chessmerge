@@ -9,7 +9,7 @@ import { resolveChallengeView } from "../components/challenge-view";
 
 export const Route = createFileRoute("/challenge/$challengeId")({
   loader: async ({ context, params }) => {
-    const challenge = await context.queryClient.ensureQueryData(
+    const challenge = await context.queryClient.query(
       challengeQuery(params.challengeId),
     );
     // A malformed id and a missing row both give null, for every viewer.

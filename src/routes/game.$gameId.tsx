@@ -9,9 +9,7 @@ import { Button } from "../components/ui/button";
 
 export const Route = createFileRoute("/game/$gameId")({
   loader: async ({ context, params }) => {
-    const game = await context.queryClient.ensureQueryData(
-      gameQuery(params.gameId),
-    );
+    const game = await context.queryClient.query(gameQuery(params.gameId));
     if (game === null) throw notFound();
     return game;
   },
