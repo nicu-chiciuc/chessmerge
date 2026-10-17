@@ -36,7 +36,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@robolex/sure": "^0.12.0",
     "@samebase/convex-hosting": "0.12.0",
-    "@samebase/convex-hosting-tanstack-start": "0.9.1",
+    "@samebase/convex-hosting-tanstack-start": "0.9.3",
     "@tanstack/react-query": "5.103.1",
     "@tanstack/react-router": "1.170.41",
     "@tanstack/react-router-ssr-query": "1.167.3",
