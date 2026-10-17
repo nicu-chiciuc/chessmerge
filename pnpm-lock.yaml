@@ -47,11 +47,11 @@ importers:
         specifier: ^0.12.0
         version: 0.12.0
       '@samebase/convex-hosting':
-        specifier: 0.11.0
-        version: 0.11.0(convex@1.46.0(react@19.3.0))
+        specifier: 0.12.0
+        version: 0.12.0(convex@1.46.0(react@19.3.0))
       '@samebase/convex-hosting-tanstack-start':
-        specifier: 0.9.0
-        version: 0.9.0(@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0))(@convex-dev/react-query@0.1.0(@tanstack/react-query@5.103.1(react@19.3.0))(convex@1.46.0(react@19.3.0)))(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-start@1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.62.5)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)))(convex@1.46.0(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0))
+        specifier: 0.9.1
+        version: 0.9.1(@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0))(@convex-dev/react-query@0.1.0(@tanstack/react-query@5.103.1(react@19.3.0))(convex@1.46.0(react@19.3.0)))(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-start@1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.62.5)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)))(convex@1.46.0(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0))
       '@tanstack/react-query':
         specifier: 5.103.1
         version: 5.103.1(react@19.3.0)
@@ -1071,10 +1071,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@samebase/convex-hosting-tanstack-start@0.9.0':
-    resolution: {integrity: sha512-XNvWRc6sTGhkf7VZ+2FARabUBbgU969ixsDwbu2vY8kEte9srUER0+KIivuIsJa+l/d0hldlvRUXzKZC4Z+qGQ==}
+  '@samebase/convex-hosting-tanstack-start@0.9.1':
+    resolution: {integrity: sha512-/KktEK3FDPsAAtmuioaz6RJklhBv7m/LKkfzCwJc0NtGi45DJ7knZkR8pefAiwFCSojyf1qVB2ITQWhbAmcwfA==}
+    engines: {node: '>=22'}
     peerDependencies:
-      '@convex-dev/auth': ^2.0.0-alpha.2
+      '@convex-dev/auth': '*'
       '@convex-dev/react-query': ^0.1.0
       '@tanstack/react-router': ^1.170.38
       '@tanstack/react-start': ^1.168.60
@@ -1088,8 +1089,9 @@ packages:
       '@convex-dev/react-query':
         optional: true
 
-  '@samebase/convex-hosting@0.11.0':
-    resolution: {integrity: sha512-KI1otPnD3/gj+tDz22Qq8zVi9wTljLJrWai7jiio0qMJaJUAb9fmSSFKseXICa+W3BHu8DIyVyPzudlckB5ZLg==}
+  '@samebase/convex-hosting@0.12.0':
+    resolution: {integrity: sha512-4UwAb2fVcy10JF+VTk7dGA6HdnROIsJMqVtseJnioexfqfL1CXh07BM895mrvlJ6ipG+oZIjUr1jaNl6dq5fLA==}
+    engines: {node: '>=22'}
     hasBin: true
     peerDependencies:
       convex: ^1.46.0
@@ -3798,7 +3800,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.5':
     optional: true
 
-  '@samebase/convex-hosting-tanstack-start@0.9.0(@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0))(@convex-dev/react-query@0.1.0(@tanstack/react-query@5.103.1(react@19.3.0))(convex@1.46.0(react@19.3.0)))(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-start@1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.62.5)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)))(convex@1.46.0(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0))':
+  '@samebase/convex-hosting-tanstack-start@0.9.1(@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0))(@convex-dev/react-query@0.1.0(@tanstack/react-query@5.103.1(react@19.3.0))(convex@1.46.0(react@19.3.0)))(@tanstack/react-router@1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-start@1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.62.5)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)))(convex@1.46.0(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0))':
     dependencies:
       '@tanstack/react-router': 1.170.41(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-start': 1.168.60(esbuild@0.28.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rollup@4.62.5)(vite@7.3.6(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0))
@@ -3810,7 +3812,7 @@ snapshots:
       '@convex-dev/auth': 0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)
       '@convex-dev/react-query': 0.1.0(@tanstack/react-query@5.103.1(react@19.3.0))(convex@1.46.0(react@19.3.0))
 
-  '@samebase/convex-hosting@0.11.0(convex@1.46.0(react@19.3.0))':
+  '@samebase/convex-hosting@0.12.0(convex@1.46.0(react@19.3.0))':
     dependencies:
       convex: 1.46.0(react@19.3.0)
       ignore: 7.0.12
