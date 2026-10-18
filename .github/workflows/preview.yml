@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
 
+# The jobs get only the preview key, so pull request code never holds the production key.
 # deployments: write lets the cleanup mark the branch's GitHub deployments inactive.
 permissions:
   contents: read
@@ -35,8 +36,7 @@ jobs:
       - id: deploy
         uses: samebase/convex-hosting/actions/deploy@v1
         with:
-          deploy-key: ${{ secrets.CONVEX_DEPLOY_KEY }}
-          preview-deploy-key: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+          deploy-key: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
       - uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           header: preview
@@ -54,8 +54,7 @@ jobs:
     steps:
       - uses: samebase/convex-hosting/actions/deploy@v1
         with:
-          deploy-key: ${{ secrets.CONVEX_DEPLOY_KEY }}
-          preview-deploy-key: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+          deploy-key: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
       - uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           header: preview
