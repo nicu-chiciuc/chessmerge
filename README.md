@@ -124,6 +124,10 @@ application email uses `ChessMerge <notifications@chessmerge.com>`. See
 
 ### Environment Variables
 
+Newsletter signup is paused. Subscription creation and status lookup are internal Convex
+functions. Existing subscriber records remain in `emailSubscribers`, and existing unsubscribe
+links continue to work.
+
 For the email unsubscribe functionality to work properly, you need to set the following environment variable in your [Convex Dashboard](https://dashboard.convex.dev):
 
 - **`FRONTEND_URL`**: Your frontend site's URL (for example, `http://localhost:5173` for development or `https://chessmerge.com` for production)
