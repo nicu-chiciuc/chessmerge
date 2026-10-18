@@ -105,7 +105,25 @@ export default function App() {
       <main className="flex flex-1 flex-col">
         <Content />
       </main>
-      <footer className="mx-auto flex w-full max-w-6xl justify-end px-3 py-3 text-muted-foreground sm:px-6">
+      <footer className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 px-3 py-3 text-muted-foreground sm:px-6">
+        <p className="py-3 text-xs">
+          Pieces adapted from{" "}
+          <a
+            href="https://commons.wikimedia.org/wiki/Template:SVG_chess_pieces"
+            className="underline"
+          >
+            Cburnett and contributors
+          </a>
+          {", "}
+          <a
+            href="https://creativecommons.org/licenses/by-sa/3.0/"
+            rel="license"
+            className="underline"
+          >
+            CC BY-SA 3.0
+          </a>
+          .
+        </p>
         <SamebaseAttribution />
       </footer>
       <Toaster />
