@@ -12,7 +12,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
   deployments: write
 
 jobs:
@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: deploy-${{ github.head_ref || 'production' }}
+      group: deploy ${{ github.head_ref && format('preview/{0}', github.head_ref) || 'production' }}
       queue: max
     environment:
-      name: ${{ github.head_ref && format('preview/{0}', github.head_ref) || 'production' }}
+      name: ${{ github.head_ref && 'preview' || 'production' }}
       url: ${{ steps.deploy.outputs.url }}
       deployment: ${{ github.event.action != 'closed' }}
     steps:
@@ -43,7 +43,22 @@ jobs:
       - if: github.event.action != 'closed'
         run: pnpm install --frozen-lockfile
       - id: deploy
-        uses: samebase/convex-hosting/actions/deploy@f320730486a2e34275a8f4224c806646550d6fcb
+        uses: samebase/convex-hosting/actions/deploy@v1
         with:
           deploy-key: ${{ secrets.CONVEX_DEPLOY_KEY }}
           preview-deploy-key: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+      - if: steps.deploy.outputs.preview-name
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: preview
+          message: |
+            Preview `${{ steps.deploy.outputs.preview-name }}`: ${{ steps.deploy.outputs.url }}
+            Deployment: ${{ steps.deploy.outputs.deployment-url }}
+            Dashboard: ${{ steps.deploy.outputs.dashboard-url }}
+      - if: github.event.action == 'closed'
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: preview
+          append: true
+          only_update: true
+          message: Preview deleted when the pull request closed.
