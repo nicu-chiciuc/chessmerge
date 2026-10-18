@@ -6,7 +6,6 @@ import { BookOpen, FlaskConical, Swords } from "lucide-react";
 
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { EmailSubscribe } from "./EmailSubscribe";
 import { liveGamesQuery } from "./GameLobby.queries";
 
 type GameSummary = FunctionReturnType<typeof api.gameLogic.listGames>[number];
@@ -189,33 +188,27 @@ export function GameLobby({
         ) : null}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-        <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-serif text-2xl tracking-tight">
-              How merging works
-            </h2>
-            <Button asChild size="sm" variant="outline">
-              <Link to="/rules">
-                <BookOpen aria-hidden="true" />
-                Full rules
-              </Link>
-            </Button>
-          </div>
-          <ul className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-            <Rule>Move onto a friendly piece to merge them.</Rule>
-            <Rule>Move either half to split the pair again.</Rule>
-            <Rule>The pair may move using either piece's movement.</Rule>
-            <Rule>Kings cannot merge with another piece.</Rule>
-            <Rule>Capturing a merged square captures both pieces.</Rule>
-            <Rule>Pawns move one square; en passant is disabled.</Rule>
-          </ul>
-        </section>
-
-        <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
-          <EmailSubscribe hideCard />
-        </section>
-      </div>
+      <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-serif text-2xl tracking-tight">
+            How merging works
+          </h2>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/rules">
+              <BookOpen aria-hidden="true" />
+              Full rules
+            </Link>
+          </Button>
+        </div>
+        <ul className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+          <Rule>Move onto a friendly piece to merge them.</Rule>
+          <Rule>Move either half to split the pair again.</Rule>
+          <Rule>The pair may move using either piece's movement.</Rule>
+          <Rule>Kings cannot merge with another piece.</Rule>
+          <Rule>Capturing a merged square captures both pieces.</Rule>
+          <Rule>Pawns move one square; en passant is disabled.</Rule>
+        </ul>
+      </section>
     </div>
   );
 }

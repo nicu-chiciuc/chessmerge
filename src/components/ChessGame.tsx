@@ -5,7 +5,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
 import { ChessBoard } from "./ChessBoard";
 import { GameInfo } from "./GameInfo";
-import { EmailSubscribe } from "./EmailSubscribe";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { getAllMovesForCell } from "../../lib/chessmerge";
 import type {
@@ -277,9 +276,6 @@ export function ChessGame({
         {/* <div className="flex-1">
           <MoveHistory moves={moveHistory} />
         </div> */}
-        <div className="flex-1">
-          <EmailSubscribe compact />
-        </div>
       </div>
     </div>
   );

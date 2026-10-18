@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
-import { EmailSubscribe } from "../components/EmailSubscribe";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -51,10 +50,6 @@ export function LoginPage() {
         </div>
 
         <SignInForm />
-
-        <div className="w-full">
-          <EmailSubscribe />
-        </div>
       </div>
     </div>
   );

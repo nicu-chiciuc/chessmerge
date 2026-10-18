@@ -1,9 +1,14 @@
-import { mutation, query, internalAction } from "./_generated/server";
+import {
+  mutation,
+  internalMutation,
+  internalQuery,
+  internalAction,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { sendEmail } from "./email";
 
-export const subscribe = mutation({
+export const subscribe = internalMutation({
   args: {
     email: v.string(),
   },
@@ -66,7 +71,7 @@ export const subscribe = mutation({
   },
 });
 
-export const getSubscriptionStatus = query({
+export const getSubscriptionStatus = internalQuery({
   args: {
     email: v.string(),
   },
