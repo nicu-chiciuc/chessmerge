@@ -56,7 +56,7 @@ of convex-hosting:
 
 - A push to `main` deploys production with the repository secret `CONVEX_DEPLOY_KEY`, the
   production deploy key.
-- A pull request from this repository deploys the Convex preview `pr-<number>` with the
+- A pull request from this repository deploys a Convex preview named after its branch with the
   repository secret `CONVEX_PREVIEW_DEPLOY_KEY`, the project's preview deploy key, and shows the
   preview URL on the pull request. Later pushes reuse the preview, so users, games, and sessions
   stay until the pull request closes, which deletes the preview.

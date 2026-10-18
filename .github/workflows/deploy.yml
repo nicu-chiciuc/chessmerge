@@ -1,6 +1,6 @@
 # Deploys ChessMerge through samebase/convex-hosting's deploy action, which runs `pnpm run deploy`:
-# a push to main deploys production, a pull request deploys the preview pr-<number>, and its close
-# deletes that preview.
+# a push to main deploys production, a pull request deploys the preview named after the branch, and
+# its close deletes that preview.
 name: Deploy
 
 on:
@@ -13,19 +13,20 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  deployments: write
 
 jobs:
   deploy:
-    # A pull request from a fork gets no secrets.
     if: github.event.pull_request.head.repo.full_name == github.repository || !github.head_ref
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: deploy-${{ github.event.number || 'production' }}
+      group: deploy-${{ github.head_ref || 'production' }}
       queue: max
     environment:
-      name: ${{ github.head_ref && 'preview' || 'production' }}
+      name: ${{ github.head_ref && format('preview/{0}', github.head_ref) || 'production' }}
       url: ${{ steps.deploy.outputs.url }}
+      deployment: ${{ github.event.action != 'closed' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,7 +43,7 @@ jobs:
       - if: github.event.action != 'closed'
         run: pnpm install --frozen-lockfile
       - id: deploy
-        uses: samebase/convex-hosting/actions/deploy@6fb27501a0317547ef914cc78fd682020050aff4
+        uses: samebase/convex-hosting/actions/deploy@f320730486a2e34275a8f4224c806646550d6fcb
         with:
           deploy-key: ${{ secrets.CONVEX_DEPLOY_KEY }}
           preview-deploy-key: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
