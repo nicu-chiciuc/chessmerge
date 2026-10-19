@@ -1,69 +1,33 @@
 name: Preview
 
 on:
-  pull_request:
-    branches: [main]
-
-permissions:
-  contents: read
-
+  pull_request: { types: [opened, synchronize, reopened, closed] }
 jobs:
   preview:
-    name: Deploy preview
-    # A pull request from a fork gets no secrets.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions: { contents: read, pull-requests: write }
+    if:
+      github.event.action != 'closed' && github.event.pull_request.head.repo.full_name ==
+      github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      pull-requests: write # gh pr comment posts the preview URL.
-    # One run per pull request; a newer push waits, so the last deploy is the newest commit.
-    concurrency:
-      group: preview-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
+    environment: { name: preview, url: "${{ steps.deploy.outputs.url }}" }
+    concurrency: { group: "preview-${{ github.head_ref }}", queue: max }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
+        with: { ref: "${{ github.event.pull_request.head.sha }}", persist-credentials: false }
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # A re-run of an old run checks out its old commit, and its deploy would put older code
-      # over the newer preview. Only the commit that the pull request points to now deploys.
-      - name: Check that this commit is the head of the pull request
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
-          head=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
-          if [ "$head" != "$EVENT_HEAD" ]; then
-            echo "::error::$EVENT_HEAD is stale: the pull request now points to $head. Convex was not deployed."
-            exit 1
-          fi
-
-      # The preview deployment is named after the branch, so a second push reuses it. The deploy
-      # writes url=<site URL> to $GITHUB_OUTPUT.
-      - name: Deploy the preview
-        id: deploy
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
-        run: pnpm run deploy --preview-name "$GITHUB_HEAD_REF"
-
-      - name: Post the preview URL
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-          URL: ${{ steps.deploy.outputs.url }}
-        run: |
-          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none \
-            --body "Preview: $URL"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - id: deploy
+        uses: samebase/convex-hosting/actions/preview@v1
+        with: { deploy-key: "${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}" }
+  cleanup:
+    permissions: { contents: read, pull-requests: write }
+    if:
+      github.event.action == 'closed' && github.event.pull_request.head.repo.full_name ==
+      github.repository
+    runs-on: ubuntu-latest
+    concurrency: { group: "preview-${{ github.head_ref }}", queue: max }
+    steps:
+      - uses: samebase/convex-hosting/actions/cleanup@v1
+        with: { deploy-key: "${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}" }

@@ -50,14 +50,16 @@ Convex serves the site next to the backend with
 functions, and the push switches the site. Deploy with these scripts, not with a plain
 `npx convex deploy`, which pushes no site version.
 
-GitHub Actions deploys:
+GitHub Actions deploys through the
+[deploy action](https://github.com/samebase/convex-hosting/blob/main/docs/deploy.md#github-actions)
+of convex-hosting:
 
 - A push to `main` deploys production with the repository secret `CONVEX_DEPLOY_KEY`, the
   production deploy key (`.github/workflows/deploy.yml`).
 - A pull request from this repository deploys a Convex preview named after its branch with the
-  repository secret `CONVEX_PREVIEW_DEPLOY_KEY`, the project's preview deploy key, and comments
-  the preview URL (`.github/workflows/preview.yml`). Later pushes reuse the preview, so users,
-  games, and sessions stay until Convex expires it.
+  repository secret `CONVEX_PREVIEW_DEPLOY_KEY`, the project's preview deploy key, and comments the
+  preview URL on the pull request (`.github/workflows/preview.yml`). Later pushes reuse the preview,
+  so users, games, and sessions stay until the pull request closes, which deletes the preview.
 
 `convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes, and the server
 build `dist/server/server.js`. In a new clone, `convex dev` cannot push until both exist, so run

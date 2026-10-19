@@ -1,50 +1,20 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
-
-permissions:
-  contents: read
-
+  push: { branches: [main] }
+permissions: { contents: read }
 jobs:
-  deploy:
-    name: Deploy production
+  production:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # One deploy at a time; a newer push waits, so the last deploy is the newest commit.
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
+    environment: { name: Production, url: "${{ steps.deploy.outputs.url }}" }
+    concurrency: { group: production, queue: max }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
+        with: { persist-credentials: false }
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # A re-run of an old run checks out its old commit, and its deploy would put older code
-      # and functions over newer ones. Only the commit that main points to now deploys.
-      - name: Check that this commit is the head of main
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          if [ "$head" != "$GITHUB_SHA" ]; then
-            echo "::error::$GITHUB_SHA is stale: main now points to $head. Convex was not deployed."
-            exit 1
-          fi
-
-      - name: Deploy
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: pnpm run deploy
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - id: deploy
+        uses: samebase/convex-hosting/actions/deploy@v1
+        with: { deploy-key: "${{ secrets.CONVEX_DEPLOY_KEY }}" }
