@@ -41,7 +41,7 @@ pnpm run dev
 ### Build and deploy
 
 - `pnpm run build:app` - Type-check and build the browser files into `dist/client` and the server render into `dist/server`
-- `pnpm run deploy` - Build, upload the site, and push the functions to the production Convex deployment
+- `pnpm run deploy` - Build, upload the site, and push the functions to the production Convex deployment, or to the deployment of the key in `CONVEX_DEPLOY_KEY`
 - `pnpm run deploy:dev` - The same for the development deployment in `.env.local`
 
 Convex serves the site next to the backend with
@@ -50,16 +50,32 @@ Convex serves the site next to the backend with
 functions, and the push switches the site. Deploy with these scripts, not with a plain
 `npx convex deploy`, which pushes no site version.
 
-GitHub Actions deploys through the
-[deploy action](https://github.com/samebase/convex-hosting/blob/main/docs/deploy.md#github-actions)
-of convex-hosting:
+GitHub Actions deploys with [Alchemy](https://alchemy.run) and
+[`@samebase/alchemy-convex`](https://github.com/samebase/alchemy-convex). `alchemy.run.ts` is the
+stack, and `.github/workflows/alchemy.yml` runs it:
 
-- A push to `main` deploys production with the repository secret `CONVEX_DEPLOY_KEY`, the
-  production deploy key (`.github/workflows/deploy.yml`).
-- A pull request from this repository deploys a Convex preview named after its branch with the
-  repository secret `CONVEX_PREVIEW_DEPLOY_KEY`, the project's preview deploy key, and comments the
-  preview URL on the pull request (`.github/workflows/preview.yml`). Later pushes reuse the preview,
-  so users, games, and sessions stay until the pull request closes, which deletes the preview.
+- A push to `main` deploys the stage `prod`, the production deployment `adorable-weasel-392`,
+  which serves https://chessmerge.com.
+- A pull request from this repository deploys the stage `pr-<number>`, a Convex preview with that
+  name, and comments the preview URL on the pull request. Later pushes reuse the preview, so users,
+  games, and sessions stay until the pull request closes, which destroys the stage and deletes the
+  preview.
+
+The stack runs `pnpm run deploy` only when the functions, the build inputs, `package.json`, or the
+lockfile changed, with a deploy key that it creates for that push and deletes after it. The state
+of every stage is in the `alchemy-state` project of the Convex team `nicu`, under the stack name
+`nicu-chiciuc/chessmerge`, so Samebase shows the deployments.
+
+Every run needs one repository secret, `CONVEX_ACCESS_TOKEN`, a team access token. Without it, the
+workflow deploys nothing and prints a notice. Set it up once:
+
+1. In the Convex dashboard, open the team `nicu`, then **Settings**, **Access Tokens**, and create
+   a token named `nicu-chiciuc/chessmerge alchemy.yml`. Copy it and run
+   `gh secret set CONVEX_ACCESS_TOKEN`, which asks for the pasted value without showing it. No
+   deploy key is stored anywhere.
+2. Run `alchemy.yml` once on `main` with **adopt** (`gh workflow run alchemy.yml -f adopt=true`).
+   The stage `prod` takes over the existing project `chessmerge` and its production deployment and
+   pushes to it; nothing is created or deleted. Each push to `main` deploys from then on.
 
 `convex/http.ts` imports `.convex-hosting/version.js`, which a deploy writes, and the server
 build `dist/server/server.js`. In a new clone, `convex dev` cannot push until both exist, so run
