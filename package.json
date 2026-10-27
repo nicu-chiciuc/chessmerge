@@ -90,8 +90,6 @@
   "pnpm": {
     "overrides": {
       "@effect/platform-node-shared": "4.0.5",
-      "@effect/sql-d1": "4.0.5",
-      "@effect/sql-sqlite-do": "4.0.5",
       "@hono/node-server": "1.19.17",
       "@humanfs/node": "0.16.8",
       "browserslist": "4.29.3",
