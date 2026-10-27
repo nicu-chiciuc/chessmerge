@@ -53,10 +53,11 @@
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
+    "@alchemy.run/github": "2.0.0-beta.84",
     "@effect/platform-node": "4.0.5",
     "@eslint/js": "^9.21.0",
     "@playwright/test": "^1.58.1",
-    "@samebase/alchemy-convex": "0.10.0",
+    "@samebase/alchemy-convex": "0.11.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.10",
@@ -64,7 +65,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "4.1.12",
     "@vitest/ui": "4.1.12",
-    "alchemy": "2.0.0-beta.83",
+    "alchemy": "2.0.0-beta.84",
     "convex-test": "^0.0.56",
     "dotenv": "^16.4.7",
     "effect": "4.0.5",
@@ -89,8 +90,6 @@
   "pnpm": {
     "overrides": {
       "@effect/platform-node-shared": "4.0.5",
-      "@effect/sql-d1": "4.0.5",
-      "@effect/sql-sqlite-do": "4.0.5",
       "@hono/node-server": "1.19.17",
       "@humanfs/node": "0.16.8",
       "browserslist": "4.29.3",
