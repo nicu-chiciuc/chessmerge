@@ -12,9 +12,9 @@
 // run needs the team token CONVEX_ACCESS_TOKEN, or a Convex CLI login
 // (`npx convex login`) on a laptop; it mints the deploy keys itself.
 import { execFileSync } from "node:child_process";
+import * as GitHub from "@alchemy.run/github";
 import * as Convex from "@samebase/alchemy-convex";
 import * as Alchemy from "alchemy";
-import * as GitHub from "alchemy/GitHub";
 import * as Output from "alchemy/Output";
 import * as RemovalPolicy from "alchemy/RemovalPolicy";
 import * as Effect from "effect/Effect";
