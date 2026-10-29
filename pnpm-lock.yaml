@@ -12,6 +12,7 @@ overrides:
   hono: 4.13.13
   js-yaml: 4.3.2
   lodash: 4.18.1
+  seroval: 1.6.12
   shell-quote: 1.11.0
   source-map-js: 1.2.2
   valibot: 1.5.0
@@ -114,8 +115,8 @@ importers:
         specifier: ^1.58.1
         version: 1.58.1
       '@samebase/alchemy-convex':
-        specifier: 0.11.0
-        version: 0.11.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)
+        specifier: 0.12.0
+        version: 0.12.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))
@@ -1323,8 +1324,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@samebase/alchemy-convex@0.11.0':
-    resolution: {integrity: sha512-3fGlAP5ksIkQ3VsZJ4S0DigiTUBhT0LDfB+LakTSwdS8K0egaxSAI4sfQt2hFRNRYqlZw7/bbP21slejQqltWw==}
+  '@samebase/alchemy-convex@0.12.0':
+    resolution: {integrity: sha512-ZGK15PC9QwGTJuDfUOVZ6ad1NToCyXkPzYMFtMMttpjWwEFQTSRALQrztmgMk6ntrsCOAXGWR3ABa39vDccLJQ==}
     engines: {node: '>=22'}
     peerDependencies:
       '@effect/platform-node': ^4.0.5
@@ -2967,10 +2968,10 @@ packages:
     resolution: {integrity: sha512-N7mWAMydj89EnYTHtRpS3LBrAz3J9O6oVrqpuXuvlAHfAUG8WEKqtbAd7SBiJNY5NfCAFhSdyAh7wI4Shjqy4g==}
     engines: {node: '>=10'}
     peerDependencies:
-      seroval: ^1.0
+      seroval: 1.6.12
 
-  seroval@1.6.8:
-    resolution: {integrity: sha512-HlSgSAkTk4EqHcje1ptJjfZi1YDv5KbhVJ/d3P7T/nAXua2VmDu+AKDX5VTdFfZf48nDkWB2TKYt0DrCSa+3wg==}
+  seroval@1.6.12:
+    resolution: {integrity: sha512-CqbIVfk/7GL3ITwZI55lcPbpQbjHZ2DD5cUj4iH7E9YsCfHNJV1mx7yNp86Z84w5IpmkZZS/2s5vPOWmVWSdQg==}
     engines: {node: '>=10'}
 
   server-only@0.0.1:
@@ -4274,7 +4275,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.5':
     optional: true
 
-  '@samebase/alchemy-convex@0.11.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)':
+  '@samebase/alchemy-convex@0.12.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)':
     dependencies:
       '@convex-dev/platform': 0.1.11
       '@effect/platform-node': 4.0.5(effect@4.0.5)(redis@6.3.0)
@@ -4485,8 +4486,8 @@ snapshots:
     dependencies:
       '@tanstack/history': 1.162.4
       cookie-es: 3.1.1
-      seroval: 1.6.8
-      seroval-plugins: 1.6.8(seroval@1.6.8)
+      seroval: 1.6.12
+      seroval-plugins: 1.6.8(seroval@1.6.12)
 
   '@tanstack/router-generator@1.167.40':
     dependencies:
@@ -4548,7 +4549,7 @@ snapshots:
       '@tanstack/router-core': 1.171.34
       '@tanstack/start-fn-stubs': 1.162.0
       '@tanstack/start-storage-context': 1.167.36
-      seroval: 1.6.8
+      seroval: 1.6.12
 
   '@tanstack/start-fn-stubs@1.162.0': {}
 
@@ -4567,7 +4568,7 @@ snapshots:
       lightningcss: 1.33.0
       pathe: 2.0.3
       picomatch: 4.0.7
-      seroval: 1.6.8
+      seroval: 1.6.12
       source-map: 0.7.6
       srvx: 0.11.22
       tinyglobby: 0.2.17
@@ -4599,7 +4600,7 @@ snapshots:
       '@tanstack/start-storage-context': 1.167.36
       fetchdts: 0.1.7
       h3-v2: h3@2.0.1-rc.20
-      seroval: 1.6.8
+      seroval: 1.6.12
     transitivePeerDependencies:
       - crossws
 
@@ -6087,11 +6088,11 @@ snapshots:
 
   semver@7.8.5: {}
 
-  seroval-plugins@1.6.8(seroval@1.6.8):
+  seroval-plugins@1.6.8(seroval@1.6.12):
     dependencies:
-      seroval: 1.6.8
+      seroval: 1.6.12
 
-  seroval@1.6.8: {}
+  seroval@1.6.12: {}
 
   server-only@0.0.1: {}
 
