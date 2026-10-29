@@ -63,8 +63,9 @@ stack, and `.github/workflows/alchemy.yml` runs it:
 
 The stack runs `pnpm run deploy` only when the functions, the build inputs, `package.json`, or the
 lockfile changed, with a deploy key that it creates for that push and deletes after it. The state
-of every stage is in the `alchemy-state` project of the Convex team `nicu`, under the stack name
-`nicu-chiciuc/chessmerge`, so Samebase shows the deployments.
+of every stage is in the `alchemyState` component of the `alchemy-state` project of the Convex team
+`nicu` (store version 4), under the stack name `nicu-chiciuc/chessmerge`, so Samebase shows the
+deployments.
 
 Every run needs one repository secret, `CONVEX_ACCESS_TOKEN`, a team access token. Without it, the
 workflow deploys nothing and prints a notice. Set it up once:
