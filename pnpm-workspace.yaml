@@ -1,3 +1,0 @@
-overrides:
-  # Two advisories on seroval 1.6.8 (GHSA-f86p-h4j2-7qgj, GHSA-9wx9-5pv9-3349); 1.6.12 is clean.
-  seroval: 1.6.12
