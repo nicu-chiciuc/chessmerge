@@ -114,8 +114,8 @@ importers:
         specifier: ^1.58.1
         version: 1.58.1
       '@samebase/alchemy-convex':
-        specifier: 0.11.0
-        version: 0.11.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)
+        specifier: 0.12.0
+        version: 0.12.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))
@@ -1323,8 +1323,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@samebase/alchemy-convex@0.11.0':
-    resolution: {integrity: sha512-3fGlAP5ksIkQ3VsZJ4S0DigiTUBhT0LDfB+LakTSwdS8K0egaxSAI4sfQt2hFRNRYqlZw7/bbP21slejQqltWw==}
+  '@samebase/alchemy-convex@0.12.0':
+    resolution: {integrity: sha512-ZGK15PC9QwGTJuDfUOVZ6ad1NToCyXkPzYMFtMMttpjWwEFQTSRALQrztmgMk6ntrsCOAXGWR3ABa39vDccLJQ==}
     engines: {node: '>=22'}
     peerDependencies:
       '@effect/platform-node': ^4.0.5
@@ -4274,7 +4274,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.5':
     optional: true
 
-  '@samebase/alchemy-convex@0.11.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)':
+  '@samebase/alchemy-convex@0.12.0(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(alchemy@2.0.0-beta.84(@effect/platform-node@4.0.5(effect@4.0.5)(redis@6.3.0))(@types/react@19.1.6)(effect@4.0.5)(vite@7.3.7(@types/node@22.15.29)(jiti@2.7.0)(lightningcss@1.33.0)(yaml@2.8.3))(ws@8.22.0))(convex@1.48.0(react@19.3.0))(effect@4.0.5)':
     dependencies:
       '@convex-dev/platform': 0.1.11
       '@effect/platform-node': 4.0.5(effect@4.0.5)(redis@6.3.0)
