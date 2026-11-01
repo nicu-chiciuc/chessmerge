@@ -8,7 +8,7 @@ on:
 permissions: { contents: read, pull-requests: write }
 jobs:
   alchemy:
-    uses: samebase/samebase/.github/workflows/alchemy-deploy.yml@6f6e3f08d5f8e60098a1b45f5c7dac9dd092aa56
+    uses: samebase/samebase/.github/workflows/alchemy-deploy.yml@1be01142b0fdc03c3f521b2077fc9381abfd2020
     with: { adopt: "${{ inputs.adopt == true }}" }
     secrets:
       CONVEX_ACCESS_TOKEN: ${{ secrets.CONVEX_ACCESS_TOKEN }}
