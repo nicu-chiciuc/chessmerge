@@ -20,9 +20,6 @@ import * as RemovalPolicy from "alchemy/RemovalPolicy";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
-/** The Convex team that holds the project and the state. */
-const team = "nicu";
-
 /** The GitHub repository, `owner/name`: GITHUB_REPOSITORY in Actions, else the origin remote. */
 const repository =
   process.env["GITHUB_REPOSITORY"] ??
@@ -41,7 +38,7 @@ export default Alchemy.Stack(
   repository,
   {
     providers: Layer.mergeAll(GitHub.providers(), Convex.providers()),
-    state: Convex.state({ team }),
+    state: Convex.withRunRecord(Convex.state()),
   },
   Effect.gen(function* () {
     const { stage } = yield* Alchemy.Stack;
@@ -68,7 +65,6 @@ export default Alchemy.Stack(
     const project =
       stage === "prod"
         ? yield* Convex.Project("Project", {
-            team,
             name: repository.slice(repository.indexOf("/") + 1),
           })
         : yield* Convex.Project.ref("Project", { stage: "prod" });
